@@ -14,7 +14,7 @@
         Cifrados Origin
     </h1>
     <p class="text-slate-400 text-lg max-w-2xl text-center">
-        Plataforma colaborativa de criptografía. Selecciona un algoritmo para explorar su funcionamiento en tiempo real.
+        Plataforma colaborativa de criptografia. Selecciona un algoritmo para explorar su funcionamiento en tiempo real.
     </p>
 </header>
 
@@ -23,21 +23,31 @@
 
         <a th:href="@{/cesar}" class="group relative block p-8 bg-slate-800 border border-slate-700 rounded-2xl shadow-xl hover:border-blue-500 hover:shadow-blue-500/20 transition-all duration-300 hover:-translate-y-2">
             <div class="flex items-center justify-between mb-4">
-                <h2 class="text-2xl font-bold text-white group-hover:text-blue-400 transition-colors">César</h2>
-                <span class="bg-blue-500/10 text-blue-400 text-xs font-semibold px-3 py-1 rounded-full border border-blue-500/20">Sustitución</span>
+                <h2 class="text-2xl font-bold text-white group-hover:text-blue-400 transition-colors">Cesar</h2>
+                <span class="bg-blue-500/10 text-blue-400 text-xs font-semibold px-3 py-1 rounded-full border border-blue-500/20">Sustitucion</span>
             </div>
             <p class="text-slate-400 text-sm">
-                Método de cifrado por sustitución monoalfabética que desplaza cada letra un número fijo de posiciones.
+                Metodo de cifrado por sustitucion monoalfabetica que desplaza cada letra un numero fijo de posiciones.
+            </p>
+        </a>
+
+        <a th:href="@{/rot13}" class="group relative block p-8 bg-slate-800 border border-slate-700 rounded-2xl shadow-xl hover:border-emerald-500 hover:shadow-emerald-500/20 transition-all duration-300 hover:-translate-y-2">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-2xl font-bold text-white group-hover:text-emerald-400 transition-colors">ROT13</h2>
+                <span class="bg-emerald-500/10 text-emerald-400 text-xs font-semibold px-3 py-1 rounded-full border border-emerald-500/20">Sustitucion</span>
+            </div>
+            <p class="text-slate-400 text-sm">
+                Variante del cifrado Cesar que desplaza cada letra 13 posiciones en el alfabeto ingles.
             </p>
         </a>
 
         <div class="group relative block p-8 bg-slate-800/50 border border-slate-700/50 rounded-2xl cursor-not-allowed">
             <div class="flex items-center justify-between mb-4">
-                <h2 class="text-2xl font-bold text-slate-500">Vigenère</h2>
+                <h2 class="text-2xl font-bold text-slate-500">Vigenere</h2>
                 <span class="bg-slate-700/50 text-slate-400 text-xs font-semibold px-3 py-1 rounded-full">En desarrollo</span>
             </div>
             <p class="text-slate-500 text-sm">
-                Cifrado polialfabético que utiliza una matriz o tabla de sustitución basada en una palabra clave.
+                Cifrado polialfabetico que utiliza una matriz o tabla de sustitucion basada en una palabra clave.
             </p>
         </div>
 
