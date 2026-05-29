@@ -1,0 +1,15 @@
+/* src/main/resources/static/css/global.css */
+/* Un detalle de UI/UX profesional para el scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+}
+::-webkit-scrollbar-track {
+    background: #0f172a; /* bg-slate-900 */
+}
+::-webkit-scrollbar-thumb {
+    background: #3b82f6; /* bg-blue-500 */
+    border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: #2563eb; /* bg-blue-600 */
+}
