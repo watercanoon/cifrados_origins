@@ -5,29 +5,37 @@ import org.springframework.stereotype.Service;
 @Service
 public class AtbashService {
 
-    private static final String ALFABETO_ES = "ABCDEFGHIJKLMNÑOPQRSTUVWXYZ"; // 27 letras
-    private static final String ALFABETO_EN = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";  // 26 letras
+    private static final String ALFABETO_ES = "ABCDEFGHIJKLMNÑOPQRSTUVWXYZ";
+    private static final String ALFABETO_EN = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
     public String procesarAtbash(String texto, String idioma) {
-        if (texto == null || texto.isBlank()) return "";
+
+        if (texto == null) return "";
+
+        String alfabeto = idioma != null && idioma.equalsIgnoreCase("EN")
+                ? ALFABETO_EN
+                : ALFABETO_ES;
 
         StringBuilder resultado = new StringBuilder();
-        texto = texto.toUpperCase();
 
-        String alfabetoUsado = "EN".equalsIgnoreCase(idioma) ? ALFABETO_EN : ALFABETO_ES;
-        int longitudAlfabeto = alfabetoUsado.length();
+        for (char c : texto.toCharArray()) {
 
-        for (int i = 0; i < texto.length(); i++) {
-            char caracter = texto.charAt(i);
-            int indexActual = alfabetoUsado.indexOf(caracter);
+            char upper = Character.toUpperCase(c);
+            int index = alfabeto.indexOf(upper);
 
-            if (indexActual != -1) {
-                // Lógica de Atbash: Índice Inverso = (N - 1) - Índice Actual
-                int indexInverso = (longitudAlfabeto - 1) - indexActual;
-                resultado.append(alfabetoUsado.charAt(indexInverso));
+            if (index != -1) {
+                int inverso = alfabeto.length() - 1 - index;
+                char nuevo = alfabeto.charAt(inverso);
+
+                // mantener mayúscula/minúscula
+                if (Character.isLowerCase(c)) {
+                    resultado.append(Character.toLowerCase(nuevo));
+                } else {
+                    resultado.append(nuevo);
+                }
+
             } else {
-                // Mantener espacios, números y símbolos
-                resultado.append(caracter);
+                resultado.append(c);
             }
         }
 
