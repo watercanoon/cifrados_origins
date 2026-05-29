@@ -2,6 +2,7 @@
 <html lang="es" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cifrado Vigenère - Cifrados Origin</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" th:href="@{/css/global.css}">
@@ -13,12 +14,12 @@
 <div class="container mx-auto px-4 py-8 max-w-5xl">
     <a th:href="@{/}" class="text-emerald-400 mb-6 inline-block hover:text-emerald-300">← Volver al Menú</a>
 
-    <header class="mb-10 border-b border-slate-700 pb-4 flex justify-between items-center">
+    <header class="mb-10 border-b border-slate-700 pb-4 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
         <div>
-            <h1 class="text-3xl font-bold text-white">Cifrado de Vigenère</h1>
+            <h1 class="text-3xl font-bold text-white">Cifrado de Vigenére</h1>
             <p class="text-slate-400">Sustitución Polialfabética</p>
         </div>
-        <div class="flex items-center space-x-2 bg-slate-800 py-2 px-4 rounded-full border border-slate-700">
+        <div class="flex items-center space-x-2 bg-slate-800 py-2 px-4 rounded-full border border-slate-700 w-fit">
             <span id="ws-status" class="w-3 h-3 bg-red-500 rounded-full animate-pulse"></span>
             <span class="text-sm font-medium text-slate-300">Conexión STOMP</span>
         </div>
