@@ -24,6 +24,9 @@ public class WebController {
     @GetMapping("/atbash")
     public String atbash() {return "atbash";}
 
+    @GetMapping("/rot47")
+    public String root47() {return "rot47";}
+
     // Aqui iran agregando las demas rutas tus companeros
     // @GetMapping("/vigenere")
     // public String vigenere() { return "vigenere"; }
