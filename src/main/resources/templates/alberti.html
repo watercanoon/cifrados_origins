@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Alberti</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.5.1/sockjs.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+</head>
+
+<body class="bg-slate-950 text-white">
+
+<div class="max-w-6xl mx-auto p-6">
+
+  <h1 class="text-3xl font-bold text-cyan-400">
+    Cifrado Alberti
+  </h1>
+
+  <div class="grid grid-cols-3 gap-6 mt-6">
+
+    <!-- PANEL -->
+    <div class="bg-slate-900 p-4 rounded-xl">
+
+      <h2 class="font-bold mb-3">Parámetros</h2>
+
+      <label>Giro inicial</label>
+      <input id="giroInput" type="number"
+             class="w-full p-2 bg-slate-800 rounded mb-3" value="1">
+
+      <label>Bloque (cada N letras gira)</label>
+      <input id="bloqueInput" type="number"
+             class="w-full p-2 bg-slate-800 rounded mb-3" value="4">
+
+      <label>Dirección</label>
+      <select id="dirInput" class="w-full p-2 bg-slate-800 rounded mb-3">
+        <option value="DER">Derecha</option>
+        <option value="IZQ">Izquierda</option>
+      </select>
+
+      <div class="text-xs text-yellow-300 mb-2">
+        FIJO: ABCDEFGILMNOPQRSTVXZ1234
+      </div>
+
+      <div class="text-xs text-green-300 mb-4">
+        MÓVIL: usqomkhfdbacegilnprtxz&y
+      </div>
+
+      <button id="btnCifrar"
+              class="bg-blue-600 w-full py-2 rounded mb-2">
+        Cifrar
+      </button>
+
+      <button id="btnNuevo"
+              class="bg-red-600 w-full py-2 rounded">
+        Nuevo
+      </button>
+
+      <div class="mt-3 flex items-center gap-2">
+        <span id="ws-status" class="w-3 h-3 bg-red-500 rounded-full"></span>
+        <span class="text-sm">STOMP</span>
+      </div>
+
+    </div>
+
+    <!-- TEXTO -->
+    <div class="col-span-2 space-y-4">
+
+<textarea id="textoInput"
+          class="w-full p-3 bg-slate-900 rounded"
+          rows="6"></textarea>
+
+      <textarea id="textoOutput"
+                class="w-full p-3 bg-slate-900 border border-cyan-600 text-cyan-300"
+                rows="6" readonly></textarea>
+
+    </div>
+
+  </div>
+</div>
+
+<script src="/js/alberti.js"></script>
+
+</body>
+</html>

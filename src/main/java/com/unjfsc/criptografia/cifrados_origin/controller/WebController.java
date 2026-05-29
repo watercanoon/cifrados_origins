@@ -27,6 +27,9 @@ public class WebController {
     @GetMapping("/rot47")
     public String root47() {return "rot47";}
 
+    @GetMapping("/alberti")
+    public String alberti() {return "alberti";}
+
     // Aqui iran agregando las demas rutas tus companeros
     // @GetMapping("/vigenere")
     // public String vigenere() { return "vigenere"; }
