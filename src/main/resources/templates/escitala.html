@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cifrado Escítala - Cifrados Origin</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.5.1/sockjs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+</head>
+<body class="bg-[#0f172a] text-slate-200 font-sans min-h-screen flex flex-col justify-between">
+<header class="border-b border-slate-800 bg-[#1e293b]/50 backdrop-blur p-4 shadow-lg">
+    <div class="max-w-5xl mx-auto flex justify-between items-center">
+        <h1 class="text-xl font-bold bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
+            🪘 CIFRADO ESCÍTALA
+        </h1>
+        <a href="/" class="text-sm text-slate-400 hover:text-cyan-400 transition">← Volver al Dashboard</a>
+    </div>
+</header>
+
+<main class="max-w-3xl mx-auto w-full p-6 my-auto">
+    <div class="bg-[#1e293b] rounded-2xl p-6 shadow-2xl border border-slate-800">
+        <p class="text-sm text-slate-400 mb-6">
+            El método espartano de transposición. El texto se escribe en filas alrededor de un bastón y se lee por columnas (caras).
+        </p>
+
+        <div class="space-y-4">
+            <div>
+                <label class="block text-xs font-semibold text-cyan-400 uppercase tracking-wider mb-2">Mensaje / Texto</label>
+                <textarea id="textoInput" rows="3" class="w-full bg-[#0f172a] border border-slate-700 rounded-xl p-3 text-slate-200 focus:outline-none focus:border-cyan-500 transition placeholder-slate-500" placeholder="Escribe tu mensaje aquí..."></textarea>
+            </div>
+
+            <div>
+                <label class="block text-xs font-semibold text-cyan-400 uppercase tracking-wider mb-2">Clave (Caras del Bastón / Columnas)</label>
+                <input id="claveInput" type="number" min="2" value="4" class="w-full bg-[#0f172a] border border-slate-700 rounded-xl p-3 text-slate-200 focus:outline-none focus:border-cyan-500 transition">
+            </div>
+
+            <div class="grid grid-cols-2 gap-4 pt-2">
+                <button id="btnCifrar" class="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-semibold py-3 px-6 rounded-xl shadow-lg shadow-cyan-500/20 active:scale-[0.98] transition cursor-pointer text-center">
+                    🔒 Cifrar Texto
+                </button>
+                <button id="btnDescifrar" class="bg-gradient-to-r from-slate-700 to-slate-800 hover:from-slate-600 hover:to-slate-700 border border-slate-600 text-slate-200 font-semibold py-3 px-6 rounded-xl active:scale-[0.98] transition cursor-pointer text-center">
+                    🔓 Descifrar Texto
+                </button>
+            </div>
+        </div>
+
+        <div class="mt-8 pt-6 border-t border-slate-800">
+            <label class="block text-xs font-semibold text-emerald-400 uppercase tracking-wider mb-2">Resultado en Tiempo Real</label>
+            <div id="resultadoBox" class="w-full bg-[#0f172a] border border-emerald-900/50 rounded-xl p-4 text-emerald-400 font-mono text-lg min-h-[60px] flex items-center break-all shadow-inner">
+                ...
+            </div>
+        </div>
+    </div>
+</main>
+
+<footer class="text-center p-4 text-xs text-slate-600 border-t border-slate-900">
+    Universidad Nacional José Faustino Sánchez Carrión • Ingeniería de Sistemas
+</footer>
+
+<script src="/js/escitala.js"></script>
+</body>
+</html>
