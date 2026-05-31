@@ -62,16 +62,6 @@
             </p>
         </a>
 
-        <a th:href="@{/atbash}" class="group relative block p-8 bg-slate-800 border border-slate-700 rounded-2xl shadow-xl hover:border-yellow-500 hover:shadow-yellow-500/20 transition-all duration-300 hover:-translate-y-2">
-            <div class="flex items-center justify-between mb-4">
-                <h2 class="text-2xl font-bold text-white group-hover:text-yellow-400 transition-colors">Atbash</h2>
-                <span class="bg-yellow-500/10 text-yellow-400 text-xs font-semibold px-3 py-1 rounded-full border border-yellow-500/20">Espejo</span>
-            </div>
-            <p class="text-slate-400 text-sm">
-                Cifrado de sustitución invertida donde la primera letra del alfabeto se cambia por la última.
-            </p>
-        </a>
-
         <a th:href="@{/atbash}"
            class="group relative block p-8 bg-slate-800 border border-slate-700 rounded-2xl shadow-xl
           hover:border-purple-500 hover:shadow-purple-500/20 transition-all duration-300 hover:-translate-y-2">
@@ -88,6 +78,44 @@
 
             <p class="text-slate-400 text-sm">
                 Cifrado de sustitución donde cada letra se reemplaza por su opuesta en el alfabeto (A ↔ Z).
+            </p>
+
+        </a>
+
+        <a th:href="@{/rot47}"
+           class="group relative block p-8 bg-slate-800 border border-slate-700 rounded-2xl shadow-xl hover:border-emerald-500 hover:shadow-emerald-500/20 transition-all duration-300 hover:-translate-y-2">
+
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-2xl font-bold text-white group-hover:text-emerald-400 transition-colors">
+                    ROT 47
+                </h2>
+
+                <span class="bg-emerald-500/10 text-emerald-400 text-xs font-semibold px-3 py-1 rounded-full border border-emerald-500/20">
+            ASCII
+        </span>
+            </div>
+
+            <p class="text-slate-400 text-sm">
+                Cifrado basado en desplazamiento ASCII de 47 posiciones para demostraciones de sustitución avanzada.
+            </p>
+
+        </a>
+
+        <a th:href="@{/alberti}"
+           class="group relative block p-8 bg-slate-800 border border-slate-700 rounded-2xl shadow-xl hover:border-cyan-500 hover:shadow-cyan-500/20 transition-all duration-300 hover:-translate-y-2">
+
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-2xl font-bold text-white group-hover:text-cyan-400 transition-colors">
+                    Alberti
+                </h2>
+
+                <span class="bg-cyan-500/10 text-cyan-400 text-xs font-semibold px-3 py-1 rounded-full border border-cyan-500/20">
+            Disco
+        </span>
+            </div>
+
+            <p class="text-slate-400 text-sm">
+                Cifrado con disco móvil del Renacimiento basado en sustitución variable.
             </p>
 
         </a>
