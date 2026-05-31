@@ -18,29 +18,33 @@ document.addEventListener("DOMContentLoaded", () => {
     const discoInterior = document.getElementById('discoInterior');
 
     // Función para renderizar letras en círculo
-    function renderizarDisco(contenedor, alfabeto, radioPorcentaje) {
+    function renderizarDisco(contenedor, alfabeto, porcentajeDelRadio) {
         contenedor.innerHTML = '';
         const cantidad = alfabeto.length;
         const anguloPorLetra = 360 / cantidad;
+
+        // Calculamos la distancia en PÍXELES reales desde el centro hacia el borde
+        const radioEnPixeles = (contenedor.clientWidth / 2) * (porcentajeDelRadio / 100);
 
         for (let i = 0; i < cantidad; i++) {
             const span = document.createElement('span');
             span.className = 'letra-disco';
             span.innerText = alfabeto[i];
 
-            // Colocar la letra rotando su eje y alejándola del centro
-            span.style.transform = `rotate(${i * anguloPorLetra}deg) translateY(-${radioPorcentaje}%)`;
+            // 1. translate(-50%, -50%) centra el eje exactamente en el medio
+            // 2. rotate(...) gira la letra apuntando hacia afuera
+            // 3. translateY(...) empuja la letra hacia el borde del disco
+            span.style.transform = `translate(-50%, -50%) rotate(${i * anguloPorLetra}deg) translateY(-${radioEnPixeles}px)`;
 
-            // Para que las letras no queden de cabeza en la parte inferior, las contrarotamos si queremos,
-            // pero en los discos criptográficos reales las letras giran con el disco.
             contenedor.appendChild(span);
         }
     }
 
     // Actualizar visualmente los discos
     function actualizarDiscos() {
-        renderizarDisco(discoExterior, alfabetoExtInput.value, 42);
-        renderizarDisco(discoInterior, alfabetoIntInput.value, 38);
+        // Empujamos las letras al 85% y 75% del borde de sus respectivos contenedores
+        renderizarDisco(discoExterior, alfabetoExtInput.value, 85);
+        renderizarDisco(discoInterior, alfabetoIntInput.value, 75);
     }
 
     // Simular el giro gráfico basado en la entrada de texto

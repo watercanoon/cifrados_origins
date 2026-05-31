@@ -9,26 +9,22 @@ import org.springframework.stereotype.Controller;
 @Controller
 public class AlbertiController {
 
-    private final AlbertiService service;
+    private final AlbertiService albertiService;
 
-    public AlbertiController(AlbertiService service) {
-        this.service = service;
+    public AlbertiController(AlbertiService albertiService) {
+        this.albertiService = albertiService;
     }
 
     @MessageMapping("/alberti")
     @SendTo("/topic/alberti")
-    public CifradoResponse procesar(CifradoRequest request) {
-
-        return new CifradoResponse(
-                service.procesar(
-                        request.getTexto(),
-                        request.getClave(),
-                        request.getGiro(),
-                        request.getBloque(),
-                        request.getDireccion(),
-                        request.getOperacion()
-                ),
-                "ALBERTI"
+    public CifradoResponse manejarCifradoAlberti(CifradoRequest request) {
+        String resultado = albertiService.procesarAlberti(
+                request.getTexto(),
+                request.getClave(),
+                request.getOperacion(),
+                request.getIdioma()
         );
+
+        return new CifradoResponse(resultado, "ALBERTI");
     }
 }
