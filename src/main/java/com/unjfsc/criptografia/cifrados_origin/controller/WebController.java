@@ -30,7 +30,13 @@ public class WebController {
     @GetMapping("/alberti")
     public String alberti() {return "alberti";}
 
+    @GetMapping("/vigenere")
+    public String vigenere() { return "vigenere"; }
+
+    @GetMapping("/polybios")
+    public String polybios() { return "polybios"; }
+
     // Aqui iran agregando las demas rutas tus companeros
-    // @GetMapping("/vigenere")
-    // public String vigenere() { return "vigenere"; }
+    // @GetMapping("/escitala")
+    // public String escitala() { return "escitala"; }
 }

@@ -1,85 +1,102 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
 <head>
   <meta charset="UTF-8">
-  <title>Alberti</title>
-
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cifrado Alberti - Cifrados Origin</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" th:href="@{/css/global.css}">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🔐</text></svg>">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.5.1/sockjs.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+  <style>
+    /* Estilos específicos para alinear las letras en círculo */
+    .letra-disco {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform-origin: center;
+      translate: -50% -50%;
+      font-family: monospace;
+      font-weight: bold;
+    }
+  </style>
 </head>
+<body class="bg-slate-900 text-slate-200 min-h-screen font-sans">
+<div class="container mx-auto px-4 py-8 max-w-6xl">
+  <a th:href="@{/}" class="text-indigo-400 mb-6 inline-block hover:text-indigo-300">← Volver al Menú</a>
 
-<body class="bg-slate-950 text-white">
+  <header class="mb-8 border-b border-slate-700 pb-4 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+    <div>
+      <h1 class="text-3xl font-bold text-white">Cifrado de Alberti</h1>
+      <p class="text-slate-400">Simulador de Discos Concéntricos Móviles</p>
+    </div>
+    <div class="flex items-center space-x-2 bg-slate-800 py-2 px-4 rounded-full border border-slate-700 w-fit">
+      <span id="ws-status" class="w-3 h-3 bg-red-500 rounded-full animate-pulse"></span>
+      <span class="text-sm font-medium text-slate-300">Conexión STOMP</span>
+    </div>
+  </header>
 
-<div class="max-w-6xl mx-auto p-6">
+  <div class="bg-slate-800 p-6 rounded-xl border border-slate-700 mb-6 flex flex-col items-center justify-center overflow-hidden">
+    <h2 class="text-xl font-semibold mb-4 text-indigo-400">Simulador de Discos</h2>
 
-  <h1 class="text-3xl font-bold text-cyan-400">
-    Cifrado Alberti
-  </h1>
+    <div class="relative w-64 h-64 md:w-80 md:h-80 flex items-center justify-center bg-slate-900 rounded-full border-4 border-slate-600 shadow-[0_0_30px_rgba(79,70,229,0.3)]">
 
-  <div class="grid grid-cols-3 gap-6 mt-6">
+      <div id="discoExterior" class="absolute w-full h-full text-white text-sm md:text-base"></div>
 
-    <!-- PANEL -->
-    <div class="bg-slate-900 p-4 rounded-xl">
+      <div id="discoInterior" class="absolute w-48 h-48 md:w-60 md:h-60 bg-indigo-900/50 rounded-full border-2 border-indigo-500 text-indigo-200 text-xs md:text-sm transition-transform duration-700 ease-in-out shadow-inner"></div>
 
-      <h2 class="font-bold mb-3">Parámetros</h2>
+      <div class="absolute w-4 h-4 bg-indigo-500 rounded-full shadow-[0_0_10px_#6366f1]"></div>
 
-      <label>Giro inicial</label>
-      <input id="giroInput" type="number"
-             class="w-full p-2 bg-slate-800 rounded mb-3" value="1">
+      <div class="absolute top-0 w-1 h-12 bg-red-500 opacity-70 z-10 -translate-y-4 rounded"></div>
+    </div>
+  </div>
 
-      <label>Bloque (cada N letras gira)</label>
-      <input id="bloqueInput" type="number"
-             class="w-full p-2 bg-slate-800 rounded mb-3" value="4">
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <div class="bg-slate-800 p-6 rounded-xl border border-slate-700 h-fit space-y-4">
+      <h2 class="text-xl font-semibold mb-2 text-white border-b border-slate-700 pb-2">Parámetros (K)</h2>
 
-      <label>Dirección</label>
-      <select id="dirInput" class="w-full p-2 bg-slate-800 rounded mb-3">
-        <option value="DER">Derecha</option>
-        <option value="IZQ">Izquierda</option>
-      </select>
-
-      <div class="text-xs text-yellow-300 mb-2">
-        FIJO: ABCDEFGILMNOPQRSTVXZ1234
+      <div>
+        <label class="block text-sm text-slate-400 mb-1">Disco Exterior (String)</label>
+        <input type="text" id="alfabetoExtInput" value="ABCDEFGHIJKLMNÑOPQRSTUVWXYZ" class="w-full bg-slate-900 border border-slate-600 rounded p-2 text-white outline-none">
+      </div>
+      <div>
+        <label class="block text-sm text-slate-400 mb-1">Disco Interior (String)</label>
+        <input type="text" id="alfabetoIntInput" value="abcdefghijklmnñopqrstuvwxyz" class="w-full bg-slate-900 border border-slate-600 rounded p-2 text-white outline-none">
+      </div>
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm text-slate-400 mb-1">Período (n)</label>
+          <input type="number" id="periodoInput" value="4" class="w-full bg-slate-900 border border-slate-600 rounded p-2 text-white outline-none" title="Cada cuántas letras gira el disco">
+        </div>
+        <div>
+          <label class="block text-sm text-slate-400 mb-1">Giro (Posiciones)</label>
+          <input type="number" id="giroInput" value="3" class="w-full bg-slate-900 border border-slate-600 rounded p-2 text-white outline-none">
+        </div>
       </div>
 
-      <div class="text-xs text-green-300 mb-4">
-        MÓVIL: usqomkhfdbacegilnprtxz&y
+      <div>
+        <label class="block text-sm text-slate-400 mb-1">Operación</label>
+        <div class="flex rounded shadow-sm">
+          <button type="button" id="btnCifrar" class="flex-1 px-4 py-2 text-sm text-white bg-indigo-600 border border-indigo-600 rounded-l">Cifrar</button>
+          <button type="button" id="btnDescifrar" class="flex-1 px-4 py-2 text-sm text-slate-300 bg-slate-700 border border-slate-600 rounded-r">Descifrar</button>
+        </div>
       </div>
-
-      <button id="btnCifrar"
-              class="bg-blue-600 w-full py-2 rounded mb-2">
-        Cifrar
-      </button>
-
-      <button id="btnNuevo"
-              class="bg-red-600 w-full py-2 rounded">
-        Nuevo
-      </button>
-
-      <div class="mt-3 flex items-center gap-2">
-        <span id="ws-status" class="w-3 h-3 bg-red-500 rounded-full"></span>
-        <span class="text-sm">STOMP</span>
-      </div>
-
     </div>
 
-    <!-- TEXTO -->
-    <div class="col-span-2 space-y-4">
-
-<textarea id="textoInput"
-          class="w-full p-3 bg-slate-900 rounded"
-          rows="6"></textarea>
-
-      <textarea id="textoOutput"
-                class="w-full p-3 bg-slate-900 border border-cyan-600 text-cyan-300"
-                rows="6" readonly></textarea>
-
+    <div class="md:col-span-2 space-y-6">
+      <div class="bg-slate-800 p-6 rounded-xl border border-slate-700">
+        <label class="block text-sm text-slate-400 mb-2 uppercase">Texto de Entrada</label>
+        <textarea id="textoInput" rows="3" class="w-full bg-slate-900 border border-slate-600 rounded p-3 text-white outline-none resize-none"></textarea>
+      </div>
+      <div class="bg-indigo-900/20 p-6 rounded-xl border border-indigo-800/40">
+        <label class="block text-sm text-indigo-400 mb-2 uppercase">Texto Resultante</label>
+        <textarea id="textoOutput" rows="3" class="w-full bg-slate-900/50 border border-indigo-700/50 rounded p-3 text-indigo-100 resize-none font-mono outline-none" readonly></textarea>
+      </div>
     </div>
-
   </div>
 </div>
 
-<script src="/js/alberti.js"></script>
-
+<script th:src="@{/js/alberti.js}"></script>
 </body>
 </html>
