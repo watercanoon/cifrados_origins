@@ -21,6 +21,11 @@ public class WebController {
         return "rot13";
     }
 
+    @GetMapping("/rot5")
+    public String rot5() {
+        return "rot5";
+    }
+
     @GetMapping("/atbash")
     public String atbash() {return "atbash";}
 
@@ -36,7 +41,7 @@ public class WebController {
     @GetMapping("/polybios")
     public String polybios() { return "polybios"; }
 
-    // Aqui iran agregando las demas rutas tus companeros
+    // Aqui iran agregando las demas rutas
     // @GetMapping("/escitala")
     // public String escitala() { return "escitala"; }
 }

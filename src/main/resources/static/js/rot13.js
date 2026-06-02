@@ -7,7 +7,10 @@ const idiomaSelect = document.getElementById("idiomaSelect");
 const btnCifrar = document.getElementById("btnCifrar");
 const btnDescifrar = document.getElementById("btnDescifrar");
 const wsStatus = document.getElementById("ws-status");
+const alfabetoDisplay = document.getElementById("alfabetoDisplay");
 let alertaEnMostrada = false;
+const ALFABETO_ES = "ABCDEFGHIJKLMNÑOPQRSTUVWXYZ";
+const ALFABETO_EN = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
 function actualizarEstadoConectado(conectado) {
     wsStatus.classList.toggle("bg-red-500", !conectado);
@@ -47,6 +50,10 @@ function validarTextoPorIdioma() {
         alert("El alfabeto ingles no incluye la letra Ñ.");
         alertaEnMostrada = true;
     }
+}
+
+function actualizarAlfabetoDisplay() {
+    alfabetoDisplay.textContent = idiomaSelect.value === "EN" ? ALFABETO_EN : ALFABETO_ES;
 }
 
 function enviarCifrado() {
@@ -89,6 +96,7 @@ function conectarWebSocket() {
 textoInput.addEventListener("input", enviarCifrado);
 idiomaSelect.addEventListener("change", function () {
     alertaEnMostrada = false;
+    actualizarAlfabetoDisplay();
     enviarCifrado();
 });
 btnCifrar.addEventListener("click", function () {
@@ -99,4 +107,5 @@ btnDescifrar.addEventListener("click", function () {
 });
 
 actualizarEstadoConectado(false);
+actualizarAlfabetoDisplay();
 conectarWebSocket();
