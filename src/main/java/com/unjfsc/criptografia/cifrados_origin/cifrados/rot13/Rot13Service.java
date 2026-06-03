@@ -1,5 +1,4 @@
 package com.unjfsc.criptografia.cifrados_origin.cifrados.rot13;
-
 import org.springframework.stereotype.Service;
 
 @Service
@@ -13,7 +12,6 @@ public class Rot13Service {
         if (texto == null || texto.isBlank()) {
             return "";
         }
-
         StringBuilder resultado = new StringBuilder();
         String textoNormalizado = texto.toUpperCase();
         String alfabetoUsado = "ES".equalsIgnoreCase(idioma) ? ALFABETO_ES : ALFABETO_EN;
@@ -27,7 +25,6 @@ public class Rot13Service {
                 resultado.append(caracter);
                 continue;
             }
-
             int desplazamiento = descifrar ? -DESPLAZAMIENTO_ROT13 : DESPLAZAMIENTO_ROT13;
             int nuevaPosicion = Math.floorMod(posicionActual + desplazamiento, alfabetoUsado.length());
             resultado.append(alfabetoUsado.charAt(nuevaPosicion));
