@@ -5,59 +5,65 @@ import org.springframework.stereotype.Service;
 @Service
 public class PolybiosService {
 
-    // Matriz base de 5x5 (25 letras exactas, sin J y sin Ñ)
     private static final String ALFABETO_BASE = "ABCDEFGHIKLMNOPQRSTUVWXYZ";
 
-    public String procesarPolybios(String texto, String operacion, String idioma) {
+    public String procesarPolybios(String texto, String operacion, String clave, String idioma) {
         if (texto == null || texto.isBlank()) return "";
 
-        texto = texto.toUpperCase();
-
-        // Regla Universal: J siempre se convierte en I
-        texto = texto.replace("J", "I");
-
-        // Regla para Español: Ñ se convierte en N
-        if ("ES".equalsIgnoreCase(idioma)) {
-            texto = texto.replace("Ñ", "N");
-        }
-
+        String matrizPolybios = generarMatriz(clave, idioma);
         StringBuilder resultado = new StringBuilder();
 
         if ("CIFRAR".equalsIgnoreCase(operacion)) {
-            for (int i = 0; i < texto.length(); i++) {
-                char caracter = texto.charAt(i);
-                int index = ALFABETO_BASE.indexOf(caracter);
+            texto = texto.toUpperCase().replace("J", "I");
+            if ("ES".equalsIgnoreCase(idioma)) {
+                texto = texto.replace("Ñ", "N");
+            }
+            texto = texto.replaceAll("[^A-Z]", "");
 
+            for (char caracter : texto.toCharArray()) {
+                int index = matrizPolybios.indexOf(caracter);
                 if (index != -1) {
-                    // Cálculo de coordenadas en matriz 5x5
                     int fila = (index / 5) + 1;
                     int columna = (index % 5) + 1;
-                    resultado.append(fila).append(columna).append(" ");
-                } else if (caracter != ' ') {
-                    // Opcional: mantener números o símbolos especiales
-                    resultado.append(caracter).append(" ");
+                    resultado.append(fila).append(columna);
                 }
             }
         } else {
-            // Lógica de DESCIFRADO
-            String[] pares = texto.trim().split("\\s+");
-            for (String par : pares) {
-                try {
-                    // Validar que el par sean dos números del 1 al 5
-                    if (par.length() == 2 && par.matches("[1-5]{2}")) {
-                        int fila = Character.getNumericValue(par.charAt(0)) - 1;
-                        int columna = Character.getNumericValue(par.charAt(1)) - 1;
-                        int index = (fila * 5) + columna;
-                        resultado.append(ALFABETO_BASE.charAt(index));
-                    } else {
-                        resultado.append(par); // Mantener caracteres especiales no procesables
-                    }
-                } catch (Exception e) {
-                    resultado.append("?"); // Indicador de error de formato
+            String coordenadasLimpias = texto.replaceAll("[^1-5]", "");
+            for (int i = 0; i < coordenadasLimpias.length() - 1; i += 2) {
+                int fila = Character.getNumericValue(coordenadasLimpias.charAt(i)) - 1;
+                int columna = Character.getNumericValue(coordenadasLimpias.charAt(i + 1)) - 1;
+                int index = (fila * 5) + columna;
+                resultado.append(matrizPolybios.charAt(index));
+            }
+        }
+
+        return resultado.toString();
+    }
+
+    private String generarMatriz(String clave, String idioma) {
+        StringBuilder matriz = new StringBuilder();
+
+        if (clave != null && !clave.isBlank()) {
+            String claveLimpia = clave.toUpperCase().replace("J", "I");
+            if ("ES".equalsIgnoreCase(idioma)) {
+                claveLimpia = claveLimpia.replace("Ñ", "N");
+            }
+            claveLimpia = claveLimpia.replaceAll("[^A-Z]", "");
+
+            for (char c : claveLimpia.toCharArray()) {
+                if (matriz.indexOf(String.valueOf(c)) == -1) {
+                    matriz.append(c);
                 }
             }
         }
 
-        return resultado.toString().trim();
+        for (char c : ALFABETO_BASE.toCharArray()) {
+            if (matriz.indexOf(String.valueOf(c)) == -1) {
+                matriz.append(c);
+            }
+        }
+
+        return matriz.toString();
     }
 }

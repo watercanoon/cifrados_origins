@@ -41,6 +41,9 @@ public class WebController {
     @GetMapping("/polybios")
     public String polybios() { return "polybios"; }
 
+    @GetMapping("/escitala")
+    public String escitala() { return "escitala"; }
+
     // Aqui iran agregando las demas rutas
     // @GetMapping("/escitala")
     // public String escitala() { return "escitala"; }

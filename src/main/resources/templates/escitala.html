@@ -3,128 +3,388 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cifrado Escítala - Cifrados Origin</title>
+    <title>Escítala 3D | CriptoSuite</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" th:href="@{/css/global.css}">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.5.1/sockjs.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+    <link rel="stylesheet" th:href="@{/css/global.css}">
+    <style>
+        body { background-color: #0f172a; color: #f8fafc; }
+        .scene-3d { perspective: 1200px; }
+        .cylinder-3d {
+            transform-style: preserve-3d;
+            transition: transform 0.6s cubic-bezier(0.25, 0.1, 0.25, 1), width 0.3s, height 0.3s;
+        }
+        .face-3d { backface-visibility: hidden; position: absolute; }
+
+        .tutorial-focus {
+            position: relative;
+            z-index: 20;
+            box-shadow: 0 0 0 4px rgba(34,211,238,.5), 0 0 35px rgba(34,211,238,.4);
+            border-radius: 12px;
+            transition: all .3s ease;
+        }
+
+        /* Radio toggle mejorado */
+        .radio-toggle input:checked + .radio-label-cifrar { background: #06b6d4; color: #fff; box-shadow: 0 0 16px rgba(6,182,212,.4); }
+        .radio-toggle input:checked + .radio-label-descifrar { background: #2563eb; color: #fff; box-shadow: 0 0 16px rgba(37,99,235,.4); }
+
+        /* Slider personalizado */
+        input[type=range] {
+            -webkit-appearance: none;
+            appearance: none;
+            height: 6px;
+            border-radius: 3px;
+            background: linear-gradient(to right, #06b6d4 var(--fill), #1e293b var(--fill));
+            outline: none;
+            cursor: pointer;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px; height: 18px;
+            border-radius: 50%;
+            background: #06b6d4;
+            border: 2px solid #0f172a;
+            box-shadow: 0 0 0 2px #06b6d4;
+            cursor: pointer;
+            transition: box-shadow .2s;
+        }
+        input[type=range]::-webkit-slider-thumb:hover { box-shadow: 0 0 0 5px rgba(6,182,212,.3); }
+
+        /* Textarea mejorado */
+        .text-area-panel { min-height: 160px; }
+
+        /* Animación fade-in */
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(12px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in { animation: fadeInUp .45s ease both; }
+        .animate-fade-in-delay { animation: fadeInUp .45s .15s ease both; }
+
+        /* Scrollbar */
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+
+        /* glass-panel si no viene del global.css */
+        .glass-panel {
+            background: rgba(15,23,42,.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(51,65,85,.6);
+        }
+
+        /* Cyber grid si no viene del global */
+        .cyber-grid {
+            background-image:
+                    linear-gradient(rgba(6,182,212,.03) 1px, transparent 1px),
+                    linear-gradient(90deg, rgba(6,182,212,.03) 1px, transparent 1px);
+            background-size: 40px 40px;
+        }
+
+        /* Stat badge */
+        .stat-badge {
+            background: rgba(15,23,42,.8);
+            border: 1px solid rgba(51,65,85,.7);
+        }
+
+        /* Botón acción */
+        .btn-action {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 14px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: .06em;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all .2s;
+            white-space: nowrap;
+        }
+        .btn-util {
+            background: rgba(30,41,59,.8);
+            color: #94a3b8;
+            border: 1px solid rgba(51,65,85,.5);
+        }
+        .btn-util:hover { background: rgba(6,182,212,.12); color: #22d3ee; border-color: rgba(6,182,212,.3); }
+        .btn-util-red:hover { background: rgba(239,68,68,.12); color: #f87171; border-color: rgba(239,68,68,.3); }
+        .btn-primary {
+            background: rgba(8,47,73,.7);
+            color: #67e8f9;
+            border: 1px solid rgba(6,182,212,.4);
+        }
+        .btn-primary:hover { background: rgba(6,182,212,.25); border-color: rgba(6,182,212,.7); }
+        .btn-rotate {
+            background: rgba(8,47,73,.5);
+            color: #a5f3fc;
+            border: 1px solid rgba(6,182,212,.3);
+        }
+        .btn-rotate.active { background: rgba(127,29,29,.5); color: #fca5a5; border-color: rgba(239,68,68,.4); }
+
+        /* View toggle */
+        .view-btn { padding: 5px 12px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; border-radius: 6px; cursor: pointer; transition: all .2s; color: #64748b; }
+        .view-btn.active { background: #06b6d4; color: #fff; box-shadow: 0 0 12px rgba(6,182,212,.35); }
+        .view-btn:not(.active):hover { color: #e2e8f0; }
+
+        /* Sección info */
+        .info-box { background: rgba(6,182,212,.06); border: 1px solid rgba(6,182,212,.18); border-radius: 12px; }
+
+        /* Línea divisora de sección */
+        .section-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: #64748b; }
+
+        /* Connection dot */
+        .conn-dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; }
+        .conn-dot.connected { background: #34d399; box-shadow: 0 0 6px #34d399; }
+        .conn-dot.disconnected { background: #f87171; box-shadow: 0 0 6px #f87171; }
+    </style>
 </head>
-<body class="bg-slate-900 text-slate-200 min-h-screen font-sans">
+<body class="min-h-screen p-3 sm:p-5 md:p-8 font-sans antialiased cyber-grid">
 
-<div class="container mx-auto px-4 py-8 max-w-5xl">
-    <a th:href="@{/}" class="inline-flex items-center text-blue-400 hover:text-blue-300 transition-colors mb-6">
-        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
-        Volver al Menú
-    </a>
+<div id="toast-container" class="fixed top-4 right-4 z-50 flex flex-col gap-2 max-w-xs w-full"></div>
 
-    <header class="mb-10 flex items-center justify-between border-b border-slate-700 pb-4">
-        <div>
-            <h1 class="text-3xl font-bold text-white tracking-tight">Cifrado Escítala</h1>
-            <p class="text-slate-400 mt-1">Transposición espartana interactiva via WebSockets</p>
+<div class="max-w-7xl mx-auto">
+
+    <!-- HEADER -->
+    <header class="mb-6 sm:mb-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 animate-fade-in">
+        <div class="flex items-start gap-4">
+            <div class="hidden sm:flex w-12 h-12 rounded-xl bg-cyan-500/10 border border-cyan-500/20 items-center justify-center flex-shrink-0">
+                <svg class="w-6 h-6 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 4.5v15m7.5-7.5h-15"/>
+                    <circle cx="12" cy="12" r="9" stroke-width="1.5"/>
+                </svg>
+            </div>
+            <div>
+                <div class="flex items-center gap-2 mb-1">
+                    <h1 class="text-2xl sm:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">Escítala Espartana</h1>
+                    <span id="connStatus" class="flex items-center gap-1.5 text-[10px] font-semibold text-slate-500 bg-slate-900 border border-slate-700 px-2 py-0.5 rounded-full">
+                        <span class="conn-dot disconnected" id="connDot"></span>
+                        <span id="connLabel">offline</span>
+                    </span>
+                </div>
+                <p class="text-slate-400 text-xs sm:text-sm">Cifrado de transposición clásico con simulador holográfico 3D</p>
+            </div>
         </div>
-        <div class="flex items-center space-x-2 bg-slate-800 py-2 px-4 rounded-full border border-slate-700 shadow-inner">
-            <span id="ws-status" class="w-3 h-3 bg-red-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(239,68,68,0.8)]"></span>
-            <span class="text-sm font-medium text-slate-300">Conexión STOMP</span>
-        </div>
+        <a th:href="@{/}" class="btn-action btn-util text-xs sm:text-sm px-4 py-2 w-full sm:w-auto justify-center">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+            Inicio
+        </a>
     </header>
 
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div class="bg-slate-800 p-6 rounded-xl shadow-xl border border-slate-700 h-fit">
-            <h2 class="text-xl font-semibold mb-6 text-white border-b border-slate-700 pb-2">Configuración</h2>
-            <div class="space-y-6">
-                <div>
-                    <label class="block text-sm font-medium text-slate-400 mb-2">Caras del Bastón (Clave)</label>
-                    <input type="number" id="claveInput" value="4" min="2" class="w-full bg-slate-900 border border-slate-600 rounded-lg p-3 text-white font-bold focus:ring-blue-500 focus:border-blue-500 outline-none transition-all shadow-inner">
-                </div>
+    <!-- MAIN GRID -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6 animate-fade-in-delay">
 
-                <div>
-                    <label class="block text-sm font-medium text-slate-400 mb-2">Modo de Operación</label>
-                    <div class="flex items-center justify-between bg-slate-900 border border-slate-600 rounded-lg p-3 shadow-inner">
-                        <span id="lblCifrar" class="text-sm font-bold text-blue-400 transition-colors">Cifrar</span>
-                        <label class="relative inline-flex items-center cursor-pointer mx-2">
-                            <input type="checkbox" id="toggleModo" class="sr-only peer">
-                            <div class="w-12 h-6 bg-blue-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600 shadow-inner"></div>
-                        </label>
-                        <span id="lblDescifrar" class="text-sm font-medium text-slate-500 transition-colors">Descifrar</span>
-                    </div>
-                </div>
+        <!-- COLUMNA IZQUIERDA -->
+        <div class="lg:col-span-5 flex flex-col gap-4 sm:gap-6">
 
-                <div class="pt-2">
-                    <button type="button" id="btnProcesar" class="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white font-bold py-3.5 px-4 rounded-xl shadow-lg active:scale-[0.98] transition-all flex justify-center items-center gap-2 cursor-pointer">
-                        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clip-rule="evenodd"></path></svg>
-                        Procesar Transposición
-                    </button>
-                </div>
-            </div>
-        </div>
+            <!-- PANEL PARÁMETROS -->
+            <div class="glass-panel rounded-2xl p-5 sm:p-6">
+                <h2 class="text-sm font-bold text-white mb-5 border-b border-slate-700/60 pb-3 flex items-center gap-2">
+                    <svg class="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/></svg>
+                    Parámetros
+                </h2>
+                <div class="space-y-6">
 
-        <div class="md:col-span-2 space-y-6">
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div class="bg-slate-800 p-5 rounded-xl shadow-lg border border-slate-700" id="panelInput">
-                    <label id="tituloInput" class="block text-xs font-bold text-blue-400 mb-2 uppercase tracking-wider">Texto Plano (Entrada)</label>
-                    <textarea id="textoInput" rows="3" class="w-full bg-slate-900 border border-slate-600 rounded-lg p-3 text-white focus:ring-blue-500 focus:border-blue-500 transition-colors resize-none outline-none shadow-inner" placeholder="Escribe tu mensaje..."></textarea>
-                </div>
-
-                <div class="bg-slate-800/50 p-5 rounded-xl shadow-lg border border-slate-700/50" id="panelOutput">
-                    <label id="tituloOutput" class="block text-xs font-bold text-emerald-400 mb-2 uppercase tracking-wider">Texto Cifrado (Resultado)</label>
-                    <textarea id="textoOutput" rows="3" class="w-full bg-slate-900/50 border border-slate-700 rounded-lg p-3 text-emerald-100 resize-none font-mono text-lg outline-none shadow-inner" readonly placeholder="Esperando datos..."></textarea>
-                </div>
-            </div>
-
-            <div id="panelMatriz" class="bg-slate-800 p-6 rounded-xl shadow-xl border border-slate-700">
-                <div class="flex justify-between items-center mb-5">
-                    <label class="block text-sm font-bold text-amber-500 uppercase tracking-wider">🪵 Bastón de Mando Espartano</label>
-
-                    <button id="btnAutoGiro" class="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold py-1.5 px-3 rounded-lg shadow transition-colors active:scale-95 cursor-pointer">
-                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd"></path></svg>
-                        Auto-Giro
-                    </button>
-                </div>
-
-                <div class="flex items-center justify-center py-4 bg-slate-950/40 rounded-2xl border border-slate-800/60 p-4">
-                    <div class="w-6 h-16 bg-gradient-to-b from-[#201207] via-[#422714] to-[#170c04] border-y-2 border-l-2 border-[#120903] rounded-l-xl shadow-2xl shrink-0 z-20"></div>
-
-                    <div class="relative w-full h-24 bg-gradient-to-b from-[#3a2210] via-[#633e1f] to-[#261509] border-y-2 border-[#1c0f06] overflow-hidden flex justify-center shadow-[inset_0_8px_20px_rgba(0,0,0,0.95),0_8px_16px_rgba(0,0,0,0.4)] z-10">
-                        <div class="absolute inset-0 bg-[linear-gradient(90deg,rgba(0,0,0,0.25)_1px,transparent_2px)] bg-[size:16px_100%] opacity-40"></div>
-                        <div id="cintaBaston" class="absolute top-0 left-0 w-full flex flex-col transition-transform duration-300 ease-in-out">
+                    <!-- Operación -->
+                    <div>
+                        <p class="section-title mb-2">Operación</p>
+                        <div class="grid grid-cols-2 gap-2 p-1 bg-slate-900/80 rounded-xl border border-slate-700/60">
+                            <label class="radio-toggle cursor-pointer">
+                                <input type="radio" name="operacion" value="CIFRAR" class="sr-only" checked>
+                                <div class="radio-label-cifrar text-center px-4 py-2.5 text-xs font-bold rounded-lg text-slate-400 hover:text-white transition select-none">
+                                    🔒 Cifrar
+                                </div>
+                            </label>
+                            <label class="radio-toggle cursor-pointer">
+                                <input type="radio" name="operacion" value="DESCIFRAR" class="sr-only">
+                                <div class="radio-label-descifrar text-center px-4 py-2.5 text-xs font-bold rounded-lg text-slate-400 hover:text-white transition select-none">
+                                    🔓 Descifrar
+                                </div>
+                            </label>
                         </div>
                     </div>
 
-                    <div class="w-6 h-16 bg-gradient-to-b from-[#201207] via-[#422714] to-[#170c04] border-y-2 border-r-2 border-[#120903] rounded-r-xl shadow-2xl shrink-0 z-20"></div>
+                    <!-- Clave slider -->
+                    <div>
+                        <div class="flex justify-between items-center mb-3">
+                            <p class="section-title">Diámetro del Bastón</p>
+                            <div class="flex items-center gap-1.5">
+                                <span id="claveValueDisplay" class="text-lg font-black text-cyan-400 tabular-nums w-7 text-right">4</span>
+                                <span class="text-xs text-slate-500">unidades</span>
+                            </div>
+                        </div>
+                        <input type="range" id="clave" min="2" max="15" value="4" class="w-full" style="--fill: 18%">
+                        <div class="flex justify-between mt-1.5">
+                            <span class="text-[10px] text-slate-600">2</span>
+                            <span class="text-[10px] text-slate-600">15</span>
+                        </div>
+                    </div>
 
-                    <div class="flex flex-col gap-1.5 ml-4 shrink-0 z-20">
-                        <button id="btnArriba" class="bg-slate-700 hover:bg-slate-600 text-slate-200 p-2.5 rounded-t-xl border border-slate-600 active:bg-slate-500 shadow-md transition cursor-pointer hover:text-amber-400">
-                            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M14.707 12.707a1 1 0 01-1.414 0L10 9.414l-3.293 3.293a1 1 0 01-1.414-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 010 1.414z" clip-rule="evenodd"></path></svg>
-                        </button>
-                        <button id="btnAbajo" class="bg-slate-700 hover:bg-slate-600 text-slate-200 p-2.5 rounded-b-xl border border-slate-600 active:bg-slate-500 shadow-md transition cursor-pointer hover:text-amber-400">
-                            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg>
+                    <div class="stat-badge rounded-lg p-2.5 text-center border-cyan-500/20">
+                        <span class="block text-[9px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Diámetro</span>
+                        <span id="statVueltas" class="text-sm font-black text-cyan-400 tabular-nums">4</span>
+                    </div>
+
+                </div>
+
+                <!-- Info box -->
+                <div class="mt-6 info-box p-4">
+                    <h3 class="text-cyan-400 font-bold text-xs mb-2 flex items-center gap-2">
+                        <svg class="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        ¿Cómo funciona?
+                    </h3>
+                    <p class="text-[11px] text-slate-400 leading-relaxed">
+                        La <strong class="text-slate-300">Escítala</strong> es un cifrado de <strong class="text-slate-300">transposición</strong>: no altera las letras, solo reordena su posición.
+                        El mensaje se enrolla en un bastón de <em>N</em> caras; al desenrollar la cinta, el texto aparece mezclado.
+                        Solo un receptor con el mismo diámetro puede volver a alinear las caras y leer el mensaje.
+                    </p>
+                </div>
+            </div>
+
+            <!-- PANEL SIMULADOR 3D -->
+            <div class="glass-panel rounded-2xl p-5 sm:p-6 flex-1 flex flex-col">
+                <div class="flex flex-col xs:flex-row justify-between items-start xs:items-center gap-3 mb-4">
+                    <p class="section-title text-cyan-500">Simulador 3D</p>
+                    <div class="flex items-center gap-2 w-full xs:w-auto">
+                        <!-- Vista toggle -->
+                        <div class="flex bg-slate-900/80 rounded-lg border border-slate-700/60 p-0.5 flex-1 xs:flex-none">
+                            <button id="btnViewHoriz" class="view-btn active flex-1 xs:flex-none">Horiz</button>
+                            <button id="btnViewVert" class="view-btn flex-1 xs:flex-none">Vert</button>
+                        </div>
+                        <!-- Giro -->
+                        <button id="btnAutoGiro" class="btn-action btn-rotate flex-shrink-0">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                            Girar
                         </button>
                     </div>
                 </div>
 
-                <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-5 pt-4 border-t border-slate-700/60 text-center">
-                    <div class="bg-slate-900/40 p-2.5 rounded-xl border border-slate-800">
-                        <span class="block text-[10px] text-slate-400 font-bold uppercase tracking-widest">Caracteres</span>
-                        <span id="statLongitud" class="text-base font-black text-blue-400">0</span>
+                <!-- Escena 3D -->
+                <div id="sceneContainer" class="scene-3d w-full h-36 sm:h-40 flex items-center justify-center relative rounded-xl border border-cyan-500/15 bg-slate-950/60 overflow-visible transition-all duration-500 my-1">
+                    <div id="cylinder" class="cylinder-3d flex justify-center items-center relative w-full h-[40px]"></div>
+                </div>
+
+                <!-- Stats -->
+                <div class="grid grid-cols-3 gap-2 mt-4">
+                    <div class="stat-badge rounded-lg p-2.5 text-center">
+                        <span class="block text-[9px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Longitud</span>
+                        <span id="statLongitud" class="text-sm font-black text-slate-200 tabular-nums">0</span>
                     </div>
-                    <div class="bg-slate-900/40 p-2.5 rounded-xl border border-slate-800">
-                        <span class="block text-[10px] text-slate-400 font-bold uppercase tracking-widest">Vueltas Tira</span>
-                        <span id="statVueltas" class="text-base font-black text-amber-500">0</span>
+                    <div class="stat-badge rounded-lg p-2.5 text-center border-cyan-500/20">
+                        <span class="block text-[9px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Caras</span>
+                        <span id="statVueltas" class="text-sm font-black text-cyan-400 tabular-nums">4</span>
                     </div>
-                    <div class="bg-slate-900/40 p-2.5 rounded-xl border border-slate-800">
-                        <span class="block text-[10px] text-slate-400 font-bold uppercase tracking-widest">Secciones</span>
-                        <span id="statSecciones" class="text-base font-black text-purple-400">0</span>
-                    </div>
-                    <div class="bg-slate-900/40 p-2.5 rounded-xl border border-slate-800">
-                        <span class="block text-[10px] text-slate-400 font-bold uppercase tracking-widest">Relleno (X)</span>
-                        <span id="statRelleno" class="text-base font-black text-red-400">0</span>
+                    <div class="stat-badge rounded-lg p-2.5 text-center">
+                        <span class="block text-[9px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Relleno X</span>
+                        <span id="statRelleno" class="text-sm font-black text-red-400 tabular-nums">0</span>
                     </div>
                 </div>
             </div>
+        </div>
+
+        <!-- COLUMNA DERECHA -->
+        <div class="lg:col-span-7 flex flex-col gap-4 sm:gap-6">
+
+            <!-- PANEL TEXTO ENTRADA -->
+            <div class="glass-panel rounded-2xl p-5 sm:p-6 flex flex-col" style="min-height: 200px;">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
+                    <div>
+                        <p class="section-title mb-0.5">Texto Original</p>
+                        <p class="text-[10px] text-slate-600">Texto plano a enrollar en el bastón</p>
+                    </div>
+                    <div class="flex gap-2 w-full sm:w-auto">
+                        <button id="btnPegar" type="button" class="btn-action btn-util flex-1 sm:flex-none justify-center">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+                            Pegar
+                        </button>
+                        <button id="btnLimpiar" type="button" class="btn-action btn-util btn-util-red flex-1 sm:flex-none justify-center">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                            Limpiar
+                        </button>
+                    </div>
+                </div>
+                <textarea id="textoEntrada"
+                          placeholder="Escribe el texto a enrollar en el bastón…"
+                          class="w-full flex-1 bg-slate-900/30 border border-slate-700/40 rounded-xl text-white text-base sm:text-lg placeholder-slate-600 resize-none outline-none custom-scrollbar p-3 sm:p-4 focus:border-cyan-500/40 focus:bg-slate-900/50 transition text-area-panel"
+                          style="min-height: 140px;"></textarea>
+            </div>
+
+            <!-- PANEL RESULTADO -->
+            <div class="glass-panel rounded-2xl p-5 sm:p-6 flex flex-col border-cyan-500/20 relative overflow-hidden" style="min-height: 200px;">
+                <div class="absolute top-0 right-0 w-48 h-48 bg-cyan-500/5 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4 relative z-10">
+                    <div>
+                        <p class="section-title text-cyan-500 mb-0.5">Resultado Transpuesto</p>
+                        <p class="text-[10px] text-slate-600">Texto cifrado listo para transmitir</p>
+                    </div>
+                    <button id="btnCopiar" class="btn-action btn-primary w-full sm:w-auto justify-center">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                        Copiar resultado
+                    </button>
+                </div>
+                <textarea id="textoSalida"
+                          placeholder="Esperando mensaje…"
+                          readonly
+                          class="w-full flex-1 bg-slate-900/30 border border-cyan-500/15 rounded-xl text-cyan-300 text-base sm:text-lg font-mono resize-none outline-none custom-scrollbar p-3 sm:p-4 relative z-10 text-area-panel"
+                          style="min-height: 140px;"></textarea>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- BOTÓN TUTORIAL -->
+<button id="btnTutorial" title="Tutorial interactivo"
+        class="fixed bottom-6 right-6 sm:bottom-8 sm:right-8 z-40 bg-cyan-600 hover:bg-cyan-500 text-white w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center shadow-[0_0_24px_rgba(6,182,212,.5)] border-2 border-cyan-300/40 transition-all hover:scale-110 hover:shadow-[0_0_32px_rgba(6,182,212,.7)] cursor-pointer">
+    <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+</button>
+
+<!-- OVERLAY TUTORIAL -->
+<div id="tutorialOverlay" class="fixed inset-0 bg-transparent pointer-events-none z-40 hidden transition-opacity duration-300"></div>
+
+<!-- BURBUJA TUTORIAL -->
+<div id="tutorialBubble" class="fixed z-50 w-[270px] sm:w-80 bg-slate-900 border border-cyan-500/40 rounded-2xl shadow-[0_20px_60px_rgba(6,182,212,.35)] transform transition-all duration-400 opacity-0 scale-95 hidden flex-col pointer-events-auto overflow-hidden">
+    <div class="bg-gradient-to-r from-slate-800/90 to-slate-800/60 border-b border-cyan-500/25 p-3 flex justify-between items-center">
+        <div class="flex items-center gap-2 text-cyan-400 font-bold uppercase tracking-wider text-[10px]">
+            <svg class="w-3.5 h-3.5 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+            Entrenamiento · Escítala
+        </div>
+        <button id="btnCerrarTutorial" class="text-slate-500 hover:text-red-400 p-1 rounded-lg hover:bg-slate-700/50 transition cursor-pointer">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+    </div>
+    <div class="p-4 sm:p-5">
+        <h3 id="tutTitle" class="text-base font-black text-white mb-1.5">Paso 1</h3>
+        <p id="tutText" class="text-slate-300 text-sm leading-relaxed">Instrucciones aquí…</p>
+    </div>
+    <div class="bg-slate-950/60 px-4 py-3 border-t border-cyan-500/20 flex justify-between items-center gap-2">
+        <div class="flex gap-1.5" id="tutDots">
+            <span class="w-2 h-2 rounded-full bg-cyan-400 shadow-[0_0_6px_#22d3ee]"></span>
+            <span class="w-2 h-2 rounded-full bg-slate-700"></span>
+            <span class="w-2 h-2 rounded-full bg-slate-700"></span>
+            <span class="w-2 h-2 rounded-full bg-slate-700"></span>
+        </div>
+        <div class="flex gap-2">
+            <button id="btnTutPrev" class="hidden px-3 py-1.5 text-[11px] font-bold text-slate-400 hover:text-white uppercase transition cursor-pointer rounded-lg hover:bg-slate-800">← Atrás</button>
+            <button id="btnTutNext" class="px-4 py-1.5 bg-cyan-600 hover:bg-cyan-500 text-white text-[11px] font-bold rounded-lg uppercase shadow-lg shadow-cyan-500/25 transition cursor-pointer">Siguiente →</button>
         </div>
     </div>
 </div>
 
 <script th:src="@{/js/escitala.js}"></script>
+<script>
+    // Mejora: actualizar fill del slider en tiempo real
+    document.getElementById('clave').addEventListener('input', function() {
+        const min = +this.min, max = +this.max, val = +this.value;
+        this.style.setProperty('--fill', ((val - min) / (max - min) * 100) + '%');
+    });
+    // Inicializar fill
+    (function() {
+        const s = document.getElementById('clave');
+        const min = +s.min, max = +s.max, val = +s.value;
+        s.style.setProperty('--fill', ((val - min) / (max - min) * 100) + '%');
+    })();
+</script>
 </body>
 </html>

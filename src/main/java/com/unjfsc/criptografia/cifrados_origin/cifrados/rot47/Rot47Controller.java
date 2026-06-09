@@ -2,7 +2,6 @@ package com.unjfsc.criptografia.cifrados_origin.cifrados.rot47;
 
 import com.unjfsc.criptografia.cifrados_origin.dto.CifradoRequest;
 import com.unjfsc.criptografia.cifrados_origin.dto.CifradoResponse;
-
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.stereotype.Controller;
@@ -18,17 +17,17 @@ public class Rot47Controller {
 
     @MessageMapping("/rot47")
     @SendTo("/topic/rot47")
-    public CifradoResponse procesar(CifradoRequest request) {
+    public CifradoResponse manejarCifradoRot47(CifradoRequest request) {
+        if (request.getTexto() == null || request.getTexto().trim().isEmpty()) {
+            return new CifradoResponse("", "ROT47", "El texto no puede estar vacío.");
+        }
 
-        String operacion = request.getOperacion() != null
-                ? request.getOperacion()
-                : "CIFRAR";
-
-        String resultado = rot47Service.procesar(
-                request.getTexto(),
-                operacion
-        );
-
-        return new CifradoResponse(resultado, "rot47");
+        try {
+            // ROT47 no requiere parámetros extra de idioma u operación
+            String resultado = rot47Service.procesarRot47(request.getTexto());
+            return new CifradoResponse(resultado, "ROT47", null);
+        } catch (Exception e) {
+            return new CifradoResponse("", "ROT47", "Error interno al procesar ROT47.");
+        }
     }
 }

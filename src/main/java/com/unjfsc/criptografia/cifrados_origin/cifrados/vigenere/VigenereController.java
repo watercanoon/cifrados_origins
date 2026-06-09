@@ -18,9 +18,27 @@ public class VigenereController {
     @MessageMapping("/vigenere")
     @SendTo("/topic/vigenere")
     public CifradoResponse manejarCifradoVigenere(CifradoRequest request) {
-        String idioma = (request.getIdioma() != null) ? request.getIdioma() : "ES";
-        String resultado = vigenereService.procesarVigenere(request.getTexto(), request.getClave(), request.getOperacion(), idioma);
+        if (request.getTexto() == null || request.getTexto().trim().isEmpty()) {
+            return new CifradoResponse("", "VIGENÈRE", "El texto no puede estar vacío.");
+        }
 
-        return new CifradoResponse(resultado, "VIGENÉRE");
+        if (request.getClave() == null || request.getClave().trim().isEmpty()) {
+            return new CifradoResponse("", "VIGENÈRE", "Se requiere una palabra clave.");
+        }
+
+        String idioma = (request.getIdioma() != null) ? request.getIdioma() : "ES";
+
+        try {
+            String resultado = vigenereService.procesarVigenere(
+                    request.getTexto(),
+                    request.getClave(),
+                    request.getOperacion(),
+                    idioma,
+                    request.getAlfabetoCustom()
+            );
+            return new CifradoResponse(resultado, "VIGENÈRE", null);
+        } catch (Exception e) {
+            return new CifradoResponse("", "VIGENÈRE", "Error interno al procesar Vigenère.");
+        }
     }
 }

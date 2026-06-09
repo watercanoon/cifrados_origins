@@ -5,48 +5,57 @@ import org.springframework.stereotype.Service;
 @Service
 public class VigenereService {
 
-    private static final String ALFABETO_ES = "ABCDEFGHIJKLMNÑOPQRSTUVWXYZ"; // 27 letras
-    private static final String ALFABETO_EN = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";  // 26 letras
+    private static final String ALFABETO_ES = "ABCDEFGHIJKLMNÑOPQRSTUVWXYZ";
+    private static final String ALFABETO_EN = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
-    public String procesarVigenere(String texto, String clave, String operacion, String idioma) {
-        if (texto == null || texto.isBlank()) return "";
-        if (clave == null || clave.isBlank()) clave = "A"; // Clave neutra por defecto
+    public String procesarVigenere(String texto, String clave, String operacion, String idioma, String alfabetoCustom) {
+        String alfabetoActual = determinarAlfabeto(idioma, alfabetoCustom);
+        int modulo = alfabetoActual.length();
 
         StringBuilder resultado = new StringBuilder();
-        String textoNormalizado = texto.toUpperCase();
-        String claveNormalizada = clave.toUpperCase();
+        String textoUpper = texto.toUpperCase();
+        String claveUpper = clave.toUpperCase();
 
-        String alfabetoUsado = "EN".equalsIgnoreCase(idioma) ? ALFABETO_EN : ALFABETO_ES;
-        int modulo = alfabetoUsado.length();
-        int indiceClave = 0; // Se mueve independientemente de los espacios en blanco
-        boolean cifrar = !"DESCIFRAR".equalsIgnoreCase(operacion);
+        int j = 0; // Índice para recorrer la clave
 
-        for (int i = 0; i < textoNormalizado.length(); i++) {
-            char caracter = textoNormalizado.charAt(i);
-            int posicionTexto = alfabetoUsado.indexOf(caracter);
+        for (int i = 0; i < texto.length(); i++) {
+            char c = texto.charAt(i);
+            char cUpper = Character.toUpperCase(c);
+            int indexTexto = alfabetoActual.indexOf(cUpper);
 
-            if (posicionTexto != -1) {
-                // Obtener posición de la letra de la clave actual
-                char charClave = claveNormalizada.charAt(indiceClave % claveNormalizada.length());
-                int posicionClave = alfabetoUsado.indexOf(charClave);
-                if (posicionClave == -1) posicionClave = 0; // Ignorar caracteres inválidos en la clave
+            if (indexTexto != -1) {
+                // Obtenemos el carácter correspondiente de la clave
+                char charClave = claveUpper.charAt(j % claveUpper.length());
+                int indexClave = alfabetoActual.indexOf(charClave);
 
-                int nuevaPosicion;
-                if (cifrar) {
-                    // C_i = (M_i + K_i) mod N
-                    nuevaPosicion = Math.floorMod(posicionTexto + posicionClave, modulo);
-                } else {
-                    // M_i = (C_i - K_i) mod N
-                    nuevaPosicion = Math.floorMod(posicionTexto - posicionClave, modulo);
+                if (indexClave == -1) indexClave = 0;
+
+                int nuevoIndex;
+                if ("DESCIFRAR".equalsIgnoreCase(operacion)) {
+                    nuevoIndex = (indexTexto - indexClave + modulo) % modulo;
+                } else { // CIFRAR
+                    nuevoIndex = (indexTexto + indexClave) % modulo;
                 }
 
-                resultado.append(alfabetoUsado.charAt(nuevaPosicion));
-                indiceClave++; // Solo avanza si se procesó una letra válida
+                char cifrado = alfabetoActual.charAt(nuevoIndex);
+                // Respetamos la capitalización original
+                resultado.append(Character.isLowerCase(c) ? Character.toLowerCase(cifrado) : cifrado);
+                j++; // Solo avanzamos la clave si procesamos una letra válida
             } else {
-                resultado.append(caracter); // Mantiene espacios y signos de puntuación
+                // Símbolos y espacios pasan intactos
+                resultado.append(c);
             }
         }
 
         return resultado.toString();
+    }
+
+    private String determinarAlfabeto(String idioma, String alfabetoCustom) {
+        if ("CUSTOM".equalsIgnoreCase(idioma) && alfabetoCustom != null && !alfabetoCustom.isEmpty()) {
+            return alfabetoCustom.toUpperCase();
+        } else if ("EN".equalsIgnoreCase(idioma)) {
+            return ALFABETO_EN;
+        }
+        return ALFABETO_ES;
     }
 }

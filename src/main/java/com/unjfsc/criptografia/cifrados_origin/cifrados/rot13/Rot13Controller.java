@@ -18,9 +18,15 @@ public class Rot13Controller {
     @MessageMapping("/rot13")
     @SendTo("/topic/rot13")
     public CifradoResponse manejarCifradoRot13(CifradoRequest request) {
-        String idioma = request.getIdioma() != null ? request.getIdioma() : "EN";
-        String operacion = request.getOperacion() != null ? request.getOperacion() : "CIFRAR";
-        String resultado = rot13Service.procesarRot13(request.getTexto(), operacion, idioma);
-        return new CifradoResponse(resultado, "ROT13");
+        if (request.getTexto() == null || request.getTexto().trim().isEmpty()) {
+            return new CifradoResponse("", "ROT13", "El texto no puede estar vacío.");
+        }
+        String idioma = (request.getIdioma() != null) ? request.getIdioma() : "ES";
+        try {
+            String resultado = rot13Service.procesarRot13(request.getTexto(), request.getOperacion(), idioma, request.getAlfabetoCustom());
+            return new CifradoResponse(resultado, "ROT13", null);
+        } catch (Exception e) {
+            return new CifradoResponse("", "ROT13", "Error interno.");
+        }
     }
 }

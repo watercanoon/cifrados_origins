@@ -18,8 +18,12 @@ public class PolybiosController {
     @MessageMapping("/polybios")
     @SendTo("/topic/polybios")
     public CifradoResponse manejarCifradoPolybios(CifradoRequest request) {
-        String idioma = (request.getIdioma() != null) ? request.getIdioma() : "ES";
-        String resultado = polybiosService.procesarPolybios(request.getTexto(), request.getOperacion(), idioma);
+        // Extraemos la clave y el idioma que el usuario seleccionó en la interfaz
+        String clave = (request.getClave() != null) ? request.getClave() : "";
+        String idioma = (request.getIdioma() != null) ? request.getIdioma() : "ES"; // Por defecto ES si viene vacío
+
+        // Pasamos los 4 parámetros al servicio: texto, operacion, clave, idioma
+        String resultado = polybiosService.procesarPolybios(request.getTexto(), request.getOperacion(), clave, idioma);
 
         return new CifradoResponse(resultado, "POLYBIOS");
     }

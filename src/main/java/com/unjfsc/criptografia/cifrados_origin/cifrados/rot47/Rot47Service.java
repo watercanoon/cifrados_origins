@@ -5,26 +5,25 @@ import org.springframework.stereotype.Service;
 @Service
 public class Rot47Service {
 
-    public String procesar(String texto, String operacion) {
+    public String procesarRot47(String texto) {
+        StringBuilder resultado = new StringBuilder();
 
-        if (texto == null || texto.isEmpty()) return "";
+        for (int i = 0; i < texto.length(); i++) {
+            char c = texto.charAt(i);
 
-        return rot47(texto);
-    }
-
-    private String rot47(String input) {
-
-        StringBuilder output = new StringBuilder();
-
-        for (char c : input.toCharArray()) {
-
+            // ROT47 solo opera sobre caracteres ASCII imprimibles entre 33 (!) y 126 (~)
             if (c >= 33 && c <= 126) {
-                output.append((char) (33 + ((c + 14) % 94)));
+                int nuevoC = c + 47;
+                // Si excede el límite superior de los caracteres imprimibles, damos la vuelta
+                if (nuevoC > 126) {
+                    nuevoC = nuevoC - 94; // 94 es la cantidad total de caracteres en este rango
+                }
+                resultado.append((char) nuevoC);
             } else {
-                output.append(c);
+                // Espacios (ASCII 32) y otros caracteres invisibles pasan intactos
+                resultado.append(c);
             }
         }
-
-        return output.toString();
+        return resultado.toString();
     }
 }

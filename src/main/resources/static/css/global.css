@@ -1,7 +1,11 @@
 /* src/main/resources/static/css/global.css */
-/* Un detalle de UI/UX profesional para el scrollbar */
+
+/* =========================================
+   SISTEMA DE SCROLLBAR PROFESIONAL
+   ========================================= */
 ::-webkit-scrollbar {
     width: 8px;
+    height: 8px;
 }
 ::-webkit-scrollbar-track {
     background: #0f172a; /* bg-slate-900 */
@@ -12,4 +16,43 @@
 }
 ::-webkit-scrollbar-thumb:hover {
     background: #2563eb; /* bg-blue-600 */
+}
+
+/* =========================================
+   UTILIDADES UI/UX (GLASSMORPHISM)
+   ========================================= */
+.glass-panel {
+    background: rgba(30, 41, 59, 0.6);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.glass-panel:hover {
+    border-color: rgba(59, 130, 246, 0.3); /* Borde azul sutil en hover */
+    transition: all 0.3s ease;
+}
+
+/* =========================================
+   ANIMACIONES GLOBALES
+   ========================================= */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+    animation: fadeIn 0.4s ease-out forwards;
+}
+
+/* Patrón de fondo cibernético para el body (usado en index) */
+.cyber-grid {
+    background:
+            linear-gradient(rgba(14, 165, 233, 0.04) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(14, 165, 233, 0.04) 1px, transparent 1px),
+            radial-gradient(circle at top center, rgba(34, 211, 238, 0.1), transparent 40rem),
+            #020617; /* slate-950 */
+    background-size: 40px 40px, 40px 40px, auto;
+    background-attachment: fixed;
 }

@@ -3,99 +3,348 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Cifrado Alberti - Cifrados Origin</title>
+  <title>Discos de Alberti | CriptoSuite</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" th:href="@{/css/global.css}">
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🔐</text></svg>">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.5.1/sockjs.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+  <link rel="stylesheet" th:href="@{/css/global.css}">
   <style>
-    /* Estilos específicos para alinear las letras en círculo */
-    .letra-disco {
-      position: absolute;
-      left: 50%;
-      top: 50%;
-      transform-origin: center;
-      font-family: monospace;
-      font-weight: bold;
+    body { background-color: #0f172a; color: #f8fafc; }
+
+    .tutorial-focus {
+      position: relative; z-index: 20;
+      box-shadow: 0 0 0 4px rgba(34,211,238,.5), 0 0 35px rgba(34,211,238,.4);
+      border-radius: 12px; transition: all .3s ease;
+    }
+    .alberti-wheel { transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1); }
+
+    /* Radio toggle */
+    .radio-toggle input:checked + .radio-label-cifrar { background: #06b6d4; color: #fff; box-shadow: 0 0 16px rgba(6,182,212,.4); }
+    .radio-toggle input:checked + .radio-label-descifrar { background: #2563eb; color: #fff; box-shadow: 0 0 16px rgba(37,99,235,.4); }
+
+    /* Slider */
+    input[type=range] {
+      -webkit-appearance: none; appearance: none;
+      height: 6px; border-radius: 3px;
+      background: linear-gradient(to right, #06b6d4 var(--fill), #1e293b var(--fill));
+      outline: none; cursor: pointer;
+    }
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 18px; height: 18px; border-radius: 50%;
+      background: #06b6d4; border: 2px solid #0f172a;
+      box-shadow: 0 0 0 2px #06b6d4; cursor: pointer; transition: box-shadow .2s;
+    }
+    input[type=range]::-webkit-slider-thumb:hover { box-shadow: 0 0 0 5px rgba(6,182,212,.3); }
+
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(12px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .animate-fade-in { animation: fadeInUp .45s ease both; }
+    .animate-fade-in-delay { animation: fadeInUp .45s .15s ease both; }
+
+    .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+
+    .glass-panel {
+      background: rgba(15,23,42,.7);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(51,65,85,.6);
+    }
+    .cyber-grid {
+      background-image:
+              linear-gradient(rgba(6,182,212,.03) 1px, transparent 1px),
+              linear-gradient(90deg, rgba(6,182,212,.03) 1px, transparent 1px);
+      background-size: 40px 40px;
+    }
+
+    .btn-action {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 6px 14px; font-size: 11px; font-weight: 600;
+      text-transform: uppercase; letter-spacing: .06em;
+      border-radius: 8px; cursor: pointer; transition: all .2s; white-space: nowrap;
+    }
+    .btn-util { background: rgba(30,41,59,.8); color: #94a3b8; border: 1px solid rgba(51,65,85,.5); }
+    .btn-util:hover { background: rgba(6,182,212,.12); color: #22d3ee; border-color: rgba(6,182,212,.3); }
+    .btn-util-red:hover { background: rgba(239,68,68,.12); color: #f87171; border-color: rgba(239,68,68,.3); }
+    .btn-primary { background: rgba(8,47,73,.7); color: #67e8f9; border: 1px solid rgba(6,182,212,.4); }
+    .btn-primary:hover { background: rgba(6,182,212,.25); border-color: rgba(6,182,212,.7); }
+
+    .info-box { background: rgba(6,182,212,.06); border: 1px solid rgba(6,182,212,.18); border-radius: 12px; }
+    .section-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: #64748b; }
+
+    .conn-dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; }
+    .conn-dot.connected { background: #34d399; box-shadow: 0 0 6px #34d399; }
+    .conn-dot.disconnected { background: #f87171; box-shadow: 0 0 6px #f87171; }
+
+    /* Disco wrapper: shadow de profundidad */
+    .disk-container {
+      background: radial-gradient(ellipse at center, #0f1c2e 0%, #070e1a 100%);
+      border: 1px solid rgba(51,65,85,.5);
+      box-shadow: inset 0 2px 20px rgba(0,0,0,.4), 0 0 30px rgba(6,182,212,.06);
+    }
+
+    /* Letras del anillo exterior */
+    .outer-char { color: #94a3b8; font-size: 11px; font-weight: 700; }
+    @media (min-width: 640px) { .outer-char { font-size: 12px; } }
+
+    /* Letras del anillo interior */
+    .inner-char { color: #22d3ee; font-size: 10px; font-weight: 700; }
+    @media (min-width: 640px) { .inner-char { font-size: 11px; } }
+
+    /* Selector de idioma */
+    .lang-select {
+      background: rgba(15,23,42,.9); border: 1px solid rgba(6,182,212,.3);
+      color: #22d3ee; font-size: 11px; border-radius: 8px;
+      padding: 5px 10px; outline: none; cursor: pointer;
+    }
+    .lang-select:hover { border-color: rgba(6,182,212,.6); }
+
+    /* Marcador de alineación */
+    .align-marker {
+      position: absolute; top: -10px; left: 50%; transform: translateX(-50%);
+      width: 0; height: 0;
+      border-left: 8px solid transparent;
+      border-right: 8px solid transparent;
+      border-top: 14px solid #fbbf24;
+      filter: drop-shadow(0 0 6px #f59e0b);
+      z-index: 30;
     }
   </style>
 </head>
-<body class="bg-slate-900 text-slate-200 min-h-screen font-sans">
-<div class="container mx-auto px-4 py-8 max-w-6xl">
-  <a th:href="@{/}" class="text-indigo-400 mb-6 inline-block hover:text-indigo-300">← Volver al Menú</a>
+<body class="min-h-screen p-3 sm:p-5 md:p-8 font-sans antialiased cyber-grid">
 
-  <header class="mb-8 border-b border-slate-700 pb-4 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
-    <div>
-      <h1 class="text-3xl font-bold text-white">Cifrado de Alberti</h1>
-      <p class="text-slate-400">Simulador de Discos Concéntricos Móviles</p>
+<div id="toast-container" class="fixed top-4 right-4 z-50 flex flex-col gap-2 max-w-xs w-full"></div>
+
+<div class="max-w-7xl mx-auto">
+
+  <!-- HEADER -->
+  <header class="mb-6 sm:mb-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 animate-fade-in">
+    <div class="flex items-start gap-4">
+      <div class="hidden sm:flex w-12 h-12 rounded-xl bg-cyan-500/10 border border-cyan-500/20 items-center justify-center flex-shrink-0">
+        <svg class="w-6 h-6 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="9" stroke-width="1.5"/>
+          <circle cx="12" cy="12" r="4" stroke-width="1.5"/>
+          <path stroke-linecap="round" stroke-width="1.5" d="M12 3v2M12 19v2M3 12h2M19 12h2"/>
+        </svg>
+      </div>
+      <div>
+        <div class="flex items-center gap-2 mb-1">
+          <h1 class="text-2xl sm:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">Discos de Alberti</h1>
+          <span class="flex items-center gap-1.5 text-[10px] font-semibold text-slate-500 bg-slate-900 border border-slate-700 px-2 py-0.5 rounded-full">
+                        <span class="conn-dot disconnected" id="connDot"></span>
+                        <span id="connLabel">offline</span>
+                    </span>
+        </div>
+        <p class="text-slate-400 text-xs sm:text-sm">Cifrado polialfabético mediante anillos concéntricos móviles</p>
+      </div>
     </div>
-    <div class="flex items-center space-x-2 bg-slate-800 py-2 px-4 rounded-full border border-slate-700 w-fit">
-      <span id="ws-status" class="w-3 h-3 bg-red-500 rounded-full animate-pulse"></span>
-      <span class="text-sm font-medium text-slate-300">Conexión STOMP</span>
-    </div>
+    <a th:href="@{/}" class="btn-action btn-util text-xs sm:text-sm px-4 py-2 w-full sm:w-auto justify-center">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+      Inicio
+    </a>
   </header>
 
-  <div class="bg-slate-800 p-6 rounded-xl border border-slate-700 mb-6 flex flex-col items-center justify-center overflow-hidden">
-    <h2 class="text-xl font-semibold mb-4 text-indigo-400">Simulador de Discos</h2>
+  <!-- MAIN GRID -->
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6 animate-fade-in-delay">
 
-    <div class="relative w-64 h-64 md:w-80 md:h-80 flex items-center justify-center bg-slate-900 rounded-full border-4 border-slate-600 shadow-[0_0_30px_rgba(79,70,229,0.3)]">
+    <!-- COLUMNA IZQUIERDA -->
+    <div class="lg:col-span-5 flex flex-col gap-4 sm:gap-6">
 
-      <div id="discoExterior" class="absolute w-full h-full text-white text-sm md:text-base"></div>
+      <!-- PARÁMETROS -->
+      <div id="panelParametros" class="glass-panel rounded-2xl p-5 sm:p-6">
+        <h2 class="text-sm font-bold text-white mb-5 border-b border-slate-700/60 pb-3 flex items-center gap-2">
+          <svg class="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/></svg>
+          Configuración
+        </h2>
+        <div class="space-y-6">
 
-      <div id="discoInterior" class="absolute w-48 h-48 md:w-60 md:h-60 bg-indigo-900/50 rounded-full border-2 border-indigo-500 text-indigo-200 text-xs md:text-sm transition-transform duration-700 ease-in-out shadow-inner"></div>
+          <!-- Operación -->
+          <div>
+            <p class="section-title mb-2">Operación</p>
+            <div class="grid grid-cols-2 gap-2 p-1 bg-slate-900/80 rounded-xl border border-slate-700/60">
+              <label class="radio-toggle cursor-pointer">
+                <input type="radio" name="operacion" value="CIFRAR" class="sr-only" checked>
+                <div class="radio-label-cifrar text-center px-4 py-2.5 text-xs font-bold rounded-lg text-slate-400 hover:text-white transition select-none">🔒 Cifrar</div>
+              </label>
+              <label class="radio-toggle cursor-pointer">
+                <input type="radio" name="operacion" value="DESCIFRAR" class="sr-only">
+                <div class="radio-label-descifrar text-center px-4 py-2.5 text-xs font-bold rounded-lg text-slate-400 hover:text-white transition select-none">🔓 Descifrar</div>
+              </label>
+            </div>
+          </div>
 
-      <div class="absolute w-4 h-4 bg-indigo-500 rounded-full shadow-[0_0_10px_#6366f1]"></div>
+          <!-- Idioma -->
+          <div>
+            <p class="section-title mb-2">Alfabeto</p>
+            <select id="idiomaSelector" class="lang-select w-full">
+              <option value="ES">🇪🇸 Español — 27 letras (con Ñ)</option>
+              <option value="EN">🇬🇧 English — 26 letters</option>
+            </select>
+          </div>
 
-      <div class="absolute top-0 w-1 h-12 bg-red-500 opacity-70 z-10 -translate-y-4 rounded"></div>
+          <!-- Slider desfase -->
+          <div>
+            <div class="flex justify-between items-center mb-3">
+              <p class="section-title">Desfase Inicial (Giro)</p>
+              <div class="flex items-center gap-1.5">
+                <span id="claveValueDisplay" class="text-lg font-black text-cyan-400 tabular-nums w-7 text-right">0</span>
+                <span class="text-xs text-slate-500">pos</span>
+              </div>
+            </div>
+            <input type="range" id="clave" min="0" max="25" value="0" class="w-full" style="--fill: 0%">
+            <div class="flex justify-between mt-1.5">
+              <span class="text-[10px] text-slate-600">0</span>
+              <span class="text-[10px] text-slate-600">25</span>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Info -->
+        <div class="mt-6 info-box p-4">
+          <h3 class="text-cyan-400 font-bold text-xs mb-2 flex items-center gap-2">
+            <svg class="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            ¿Cómo funciona?
+          </h3>
+          <p class="text-[11px] text-slate-400 leading-relaxed mb-1.5">
+            El cifrado de Alberti es el primer sistema <strong class="text-slate-300">polialfabético</strong>.
+            Utiliza dos discos concéntricos: el exterior fijo (texto plano) y el interior móvil (texto cifrado).
+          </p>
+          <p class="text-[11px] text-slate-400 leading-relaxed">
+            La clave define la <strong class="text-slate-300">alineación inicial</strong>. El disco gira periódicamente,
+            cambiando el alfabeto equivalente y resistiendo el análisis de frecuencias.
+          </p>
+        </div>
+      </div>
+
+      <!-- SIMULADOR DISCOS -->
+      <div id="panelSimulador" class="glass-panel rounded-2xl p-5 sm:p-6 flex flex-col items-center">
+        <div class="w-full flex justify-between items-center mb-4">
+          <p class="section-title text-cyan-500">Simulador Interactivo</p>
+          <select id="idiomaSelector" class="lang-select hidden"><!-- duplicado oculto por JS --></select>
+        </div>
+
+        <!-- Disco concéntrico -->
+        <div class="relative w-60 h-60 sm:w-72 sm:h-72 rounded-full disk-container flex items-center justify-center">
+
+          <!-- Marcador triangular -->
+          <div class="align-marker"></div>
+
+          <!-- Anillo exterior (fijo) -->
+          <div id="outerRing" class="absolute w-full h-full rounded-full"></div>
+
+          <!-- Anillo interior (móvil) -->
+          <div id="innerWheel" class="alberti-wheel absolute w-40 h-40 sm:w-48 sm:h-48 rounded-full border-2 border-cyan-500/30 bg-slate-900/90 flex items-center justify-center shadow-inner">
+            <div id="innerLetters" class="absolute w-full h-full"></div>
+
+            <!-- Display central -->
+            <div class="w-16 h-16 rounded-full bg-slate-950 border border-slate-800/80 flex flex-col items-center justify-center z-20 shadow-lg relative">
+              <span class="text-[9px] text-slate-500 uppercase tracking-tight">Giro</span>
+              <span id="diskAngleDisplay" class="text-sm font-black text-cyan-400 tabular-nums">0</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Alineación base -->
+        <div class="mt-5 text-center bg-slate-900/60 border border-slate-700/50 rounded-xl py-2.5 px-8 w-full max-w-xs">
+          <p class="text-[10px] text-slate-500 uppercase tracking-wider">Alineación base (Letra A)</p>
+          <p class="text-xl font-mono font-bold text-cyan-400 mt-0.5">A ➔ <span id="alignDisplay" class="text-amber-400">c</span></p>
+        </div>
+      </div>
+    </div>
+
+    <!-- COLUMNA DERECHA -->
+    <div class="lg:col-span-7 flex flex-col gap-4 sm:gap-6">
+
+      <!-- ENTRADA -->
+      <div id="panelEntrada" class="glass-panel rounded-2xl p-5 sm:p-6 flex flex-col" style="min-height: 200px;">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
+          <div>
+            <p class="section-title mb-0.5">Texto Original</p>
+            <p class="text-[10px] text-slate-600">Mensaje a procesar en los discos</p>
+          </div>
+          <div class="flex gap-2 w-full sm:w-auto">
+            <button id="btnPegar" type="button" class="btn-action btn-util flex-1 sm:flex-none justify-center">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+              Pegar
+            </button>
+            <button id="btnLimpiar" type="button" class="btn-action btn-util btn-util-red flex-1 sm:flex-none justify-center">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+              Limpiar
+            </button>
+          </div>
+        </div>
+        <textarea id="textoEntrada"
+                  placeholder="Escribe el mensaje a procesar en los discos…"
+                  class="w-full flex-1 bg-slate-900/30 border border-slate-700/40 rounded-xl text-white text-base sm:text-lg placeholder-slate-600 resize-none outline-none custom-scrollbar p-3 sm:p-4 focus:border-cyan-500/40 focus:bg-slate-900/50 transition"
+                  style="min-height: 140px;"></textarea>
+      </div>
+
+      <!-- SALIDA -->
+      <div id="panelSalida" class="glass-panel rounded-2xl p-5 sm:p-6 flex flex-col border-cyan-500/20 relative overflow-hidden" style="min-height: 200px;">
+        <div class="absolute top-0 right-0 w-48 h-48 bg-cyan-500/5 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4 relative z-10">
+          <div>
+            <p class="section-title text-cyan-500 mb-0.5">Resultado Polialfabético</p>
+            <p class="text-[10px] text-slate-600">Salida procesada por los anillos Alberti</p>
+          </div>
+          <button id="btnCopiar" class="btn-action btn-primary w-full sm:w-auto justify-center">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+            Copiar resultado
+          </button>
+        </div>
+        <textarea id="textoSalida"
+                  placeholder="Esperando alineación de anillos…"
+                  readonly
+                  class="w-full flex-1 bg-slate-900/30 border border-cyan-500/15 rounded-xl text-cyan-300 text-base sm:text-lg font-mono resize-none outline-none custom-scrollbar p-3 sm:p-4 relative z-10"
+                  style="min-height: 140px;"></textarea>
+      </div>
+
     </div>
   </div>
+</div>
 
-  <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-    <div class="bg-slate-800 p-6 rounded-xl border border-slate-700 h-fit space-y-4">
-      <h2 class="text-xl font-semibold mb-2 text-white border-b border-slate-700 pb-2">Parámetros (K)</h2>
+<!-- BOTÓN TUTORIAL -->
+<button id="btnTutorial" title="Tutorial interactivo"
+        class="fixed bottom-6 right-6 sm:bottom-8 sm:right-8 z-40 bg-cyan-600 hover:bg-cyan-500 text-white w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center shadow-[0_0_24px_rgba(6,182,212,.5)] border-2 border-cyan-300/40 transition-all hover:scale-110 cursor-pointer">
+  <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+</button>
 
-      <div>
-        <label class="block text-sm text-slate-400 mb-1">Disco Exterior (String)</label>
-        <input type="text" id="alfabetoExtInput" value="ABCDEFGHIJKLMNÑOPQRSTUVWXYZ" class="w-full bg-slate-900 border border-slate-600 rounded p-2 text-white outline-none">
-      </div>
-      <div>
-        <label class="block text-sm text-slate-400 mb-1">Disco Interior (String)</label>
-        <input type="text" id="alfabetoIntInput" value="abcdefghijklmnñopqrstuvwxyz" class="w-full bg-slate-900 border border-slate-600 rounded p-2 text-white outline-none">
-      </div>
-      <div class="grid grid-cols-2 gap-4">
-        <div>
-          <label class="block text-sm text-slate-400 mb-1">Período (n)</label>
-          <input type="number" id="periodoInput" value="4" class="w-full bg-slate-900 border border-slate-600 rounded p-2 text-white outline-none" title="Cada cuántas letras gira el disco">
-        </div>
-        <div>
-          <label class="block text-sm text-slate-400 mb-1">Giro (Posiciones)</label>
-          <input type="number" id="giroInput" value="3" class="w-full bg-slate-900 border border-slate-600 rounded p-2 text-white outline-none">
-        </div>
-      </div>
+<div id="tutorialOverlay" class="fixed inset-0 bg-transparent pointer-events-none z-40 hidden transition-opacity duration-300"></div>
 
-      <div>
-        <label class="block text-sm text-slate-400 mb-1">Operación</label>
-        <div class="flex rounded shadow-sm">
-          <button type="button" id="btnCifrar" class="flex-1 px-4 py-2 text-sm text-white bg-indigo-600 border border-indigo-600 rounded-l">Cifrar</button>
-          <button type="button" id="btnDescifrar" class="flex-1 px-4 py-2 text-sm text-slate-300 bg-slate-700 border border-slate-600 rounded-r">Descifrar</button>
-        </div>
-      </div>
+<div id="tutorialBubble" class="fixed z-50 w-[270px] sm:w-80 bg-slate-900 border border-cyan-500/40 rounded-2xl shadow-[0_20px_60px_rgba(6,182,212,.35)] transform transition-all duration-400 opacity-0 scale-95 hidden flex-col pointer-events-auto overflow-hidden">
+  <div class="bg-gradient-to-r from-slate-800/90 to-slate-800/60 border-b border-cyan-500/25 p-3 flex justify-between items-center">
+    <div class="flex items-center gap-2 text-cyan-400 font-bold uppercase tracking-wider text-[10px]">
+      <svg class="w-3.5 h-3.5 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+      Entrenamiento · Alberti
     </div>
-
-    <div class="md:col-span-2 space-y-6">
-      <div class="bg-slate-800 p-6 rounded-xl border border-slate-700">
-        <label class="block text-sm text-slate-400 mb-2 uppercase">Texto de Entrada</label>
-        <textarea id="textoInput" rows="3" class="w-full bg-slate-900 border border-slate-600 rounded p-3 text-white outline-none resize-none"></textarea>
-      </div>
-      <div class="bg-indigo-900/20 p-6 rounded-xl border border-indigo-800/40">
-        <label class="block text-sm text-indigo-400 mb-2 uppercase">Texto Resultante</label>
-        <textarea id="textoOutput" rows="3" class="w-full bg-slate-900/50 border border-indigo-700/50 rounded p-3 text-indigo-100 resize-none font-mono outline-none" readonly></textarea>
-      </div>
+    <button id="btnCerrarTutorial" class="text-slate-500 hover:text-red-400 p-1 rounded-lg hover:bg-slate-700/50 transition cursor-pointer">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+    </button>
+  </div>
+  <div class="p-4 sm:p-5">
+    <h3 id="tutTitle" class="text-base font-black text-white mb-1.5">Título</h3>
+    <p id="tutText" class="text-slate-300 text-sm leading-relaxed">Texto informativo</p>
+  </div>
+  <div class="bg-slate-950/60 px-4 py-3 border-t border-cyan-500/20 flex justify-between items-center gap-2">
+    <div class="flex gap-1.5" id="tutDots"></div>
+    <div class="flex gap-2">
+      <button id="btnTutPrev" class="hidden px-3 py-1.5 text-[11px] font-bold text-slate-400 hover:text-white uppercase transition cursor-pointer rounded-lg hover:bg-slate-800">← Atrás</button>
+      <button id="btnTutNext" class="px-4 py-1.5 bg-cyan-600 hover:bg-cyan-500 text-white text-[11px] font-bold rounded-lg uppercase shadow-lg shadow-cyan-500/25 transition cursor-pointer">Siguiente →</button>
     </div>
   </div>
 </div>
 
 <script th:src="@{/js/alberti.js}"></script>
+<script>
+  // Actualizar fill slider en tiempo real
+  document.getElementById('clave').addEventListener('input', function() {
+    const min = +this.min, max = +this.max, val = +this.value;
+    this.style.setProperty('--fill', ((val - min) / (max - min) * 100) + '%');
+  });
+</script>
 </body>
 </html>

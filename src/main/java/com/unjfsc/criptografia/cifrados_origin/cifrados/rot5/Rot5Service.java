@@ -13,15 +13,18 @@ public class Rot5Service {
         }
 
         StringBuilder resultado = new StringBuilder();
-
-        for (char caracter : texto.toCharArray()) {
-            if (caracter >= '0' && caracter <= '9') {
-                int digito = caracter - '0';
-                int nuevoDigito = (digito + DESPLAZAMIENTO_ROT5) % 10;
-                resultado.append(nuevoDigito);
+        for (int i = 0; i < texto.length(); i++) {
+            char c = texto.charAt(i);
+            if (Character.isDigit(c)) {
+                // Es un número, aplicamos ROT5
+                int num = Character.getNumericValue(c);
+                int nuevoNum = (num + 5) % 10;
+                resultado.append(nuevoNum);
+            } else {
+                // Letras, espacios y símbolos pasan INTACTOS sin conversión
+                resultado.append(c);
             }
         }
-
         return resultado.toString();
     }
 }
