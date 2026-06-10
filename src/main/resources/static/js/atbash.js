@@ -1,261 +1,258 @@
 document.addEventListener("DOMContentLoaded", () => {
     let stompClient = null;
+    let ultimoCampoEditado = "entrada";
 
-    // Referencias DOM
-    const inputTexto = document.getElementById('textoEntrada');
-    const outputTexto = document.getElementById('textoSalida');
+    const inputTexto = document.getElementById("textoEntrada");
+    const outputTexto = document.getElementById("textoSalida");
+    const idiomaSelect = document.getElementById("idioma");
+    const customContainer = document.getElementById("customAlphabetContainer");
+    const inputCustom = document.getElementById("alfabetoCustom");
 
-    // Controles HUD Espejo
-    const gridTop = document.getElementById('alfabetoTop');
-    const gridBottom = document.getElementById('alfabetoBottom');
-    const charIn = document.getElementById('charIn');
-    const charOut = document.getElementById('charOut');
+    const gridTop = document.getElementById("alfabetoTop");
+    const gridBottom = document.getElementById("alfabetoBottom");
+    const charIn = document.getElementById("charIn");
+    const charOut = document.getElementById("charOut");
+    const connDot = document.getElementById("connDot");
+    const connLabel = document.getElementById("connLabel");
 
-    // Botones UX
-    const btnCopiar = document.getElementById('btnCopiar');
-    const btnPegar = document.getElementById('btnPegar');
-    const btnLimpiar = document.getElementById('btnLimpiar');
+    const btnCopiar = document.getElementById("btnCopiar");
+    const btnPegar = document.getElementById("btnPegar");
+    const btnLimpiar = document.getElementById("btnLimpiar");
 
-    // Configuración del Alfabeto Atbash (26 Letras, A-M y Z-N)
-    const alphabetTop = "ABCDEFGHIJKLM".split("");
-    const alphabetBot = "ZYXWVUTSRQPON".split("");
-    const charMap = {}; // Mapa para búsquedas rápidas al teclear
+    const ALFABETO_ES = "ABCDEFGHIJKLMN\u00d1OPQRSTUVWXYZ";
+    const ALFABETO_EN = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
-    // ==========================================
-    // MOTOR GRÁFICO: CONSTRUCCIÓN DEL ESPEJO
-    // ==========================================
-    function inicializarEspejo() {
-        alphabetTop.forEach((char, index) => {
-            // Fila Superior
-            let divTop = document.createElement('div');
-            divTop.innerText = char;
-            divTop.id = `top-${char}`;
-            divTop.className = "letter-cell p-1 rounded text-slate-400";
-            gridTop.appendChild(divTop);
-
-            // Fila Inferior
-            let charBot = alphabetBot[index];
-            let divBot = document.createElement('div');
-            divBot.innerText = charBot;
-            divBot.id = `bot-${charBot}`;
-            divBot.className = "letter-cell p-1 rounded text-slate-500";
-            gridBottom.appendChild(divBot);
-
-            // Mapeos para el HUD
-            charMap[char] = { peer: charBot, topId: divTop.id, botId: divBot.id };
-            charMap[charBot] = { peer: char, topId: divTop.id, botId: divBot.id };
-        });
+    function setConnStatus(online) {
+        connDot.classList.toggle("connected", online);
+        connLabel.textContent = online ? "online" : "offline";
     }
 
-    function animarTecla(charTyped) {
-        // Limpiar animaciones previas
-        document.querySelectorAll('.highlight-top, .highlight-bottom').forEach(el => {
-            el.classList.remove('highlight-top', 'highlight-bottom');
-        });
+    function limpiarAlfabeto(valor) {
+        const visto = new Set();
+        let resultado = "";
 
-        const c = charTyped.toUpperCase();
-        if (charMap[c]) {
-            const mapInfo = charMap[c];
-            document.getElementById(mapInfo.topId).classList.add('highlight-top');
-            document.getElementById(mapInfo.botId).classList.add('highlight-bottom');
+        for (const char of (valor || "").toUpperCase()) {
+            if (!/[\p{L}]/u.test(char)) continue;
+            if (visto.has(char)) continue;
 
-            charIn.innerText = c;
-            charOut.innerText = mapInfo.peer;
-        } else {
-            charIn.innerText = charTyped === ' ' ? 'ESP' : charTyped;
-            charOut.innerText = charTyped === ' ' ? 'ESP' : charTyped;
+            visto.add(char);
+            resultado += char;
+        }
+
+        return resultado;
+    }
+
+    function obtenerAlfabeto() {
+        if (idiomaSelect.value === "CUSTOM") {
+            const custom = limpiarAlfabeto(inputCustom.value);
+            return custom.length >= 2 ? custom : "";
+        }
+
+        return idiomaSelect.value === "EN" ? ALFABETO_EN : ALFABETO_ES;
+    }
+
+    function obtenerReflejo(alfabeto) {
+        return alfabeto.split("").reverse().join("");
+    }
+
+    function actualizarMapa() {
+        const alfabeto = obtenerAlfabeto();
+        const reflejo = obtenerReflejo(alfabeto);
+
+        gridTop.innerHTML = "";
+        gridBottom.innerHTML = "";
+
+        if (!alfabeto) {
+            gridTop.innerHTML = '<div class="text-xs text-slate-500 px-2 py-1">Ingresa un alfabeto personalizado valido.</div>';
+            gridBottom.innerHTML = "";
+            charIn.textContent = "-";
+            charOut.textContent = "-";
+            return;
+        }
+
+        for (let i = 0; i < alfabeto.length; i++) {
+            const baseCell = document.createElement("div");
+            baseCell.className = "letter-cell base-cell";
+            baseCell.textContent = alfabeto[i];
+            baseCell.dataset.char = alfabeto[i];
+            gridTop.appendChild(baseCell);
+
+            const cipherCell = document.createElement("div");
+            cipherCell.className = "letter-cell cipher-cell";
+            cipherCell.textContent = reflejo[i];
+            cipherCell.dataset.char = reflejo[i];
+            gridBottom.appendChild(cipherCell);
         }
     }
 
-    // ==========================================
-    // CONEXIÓN WEBSOCKET
-    // ==========================================
+    function resaltarCaracter(char) {
+        document.querySelectorAll(".active-base, .active-cipher").forEach(el => {
+            el.classList.remove("active-base", "active-cipher");
+        });
+
+        if (!char) {
+            charIn.textContent = "-";
+            charOut.textContent = "-";
+            return;
+        }
+
+        const alfabeto = obtenerAlfabeto();
+        if (!alfabeto) return;
+
+        const upper = char.toUpperCase();
+        const index = alfabeto.indexOf(upper);
+
+        if (index === -1) {
+            charIn.textContent = char === " " ? "ESP" : char;
+            charOut.textContent = char === " " ? "ESP" : char;
+            return;
+        }
+
+        const reflejo = obtenerReflejo(alfabeto);
+        const salida = reflejo[index];
+        const baseCell = gridTop.children[index];
+        const cipherCell = gridBottom.children[index];
+
+        if (baseCell) baseCell.classList.add("active-base");
+        if (cipherCell) cipherCell.classList.add("active-cipher");
+
+        charIn.textContent = upper;
+        charOut.textContent = salida;
+    }
+
     function connect() {
-        let socket = new SockJS('/ws-criptografia');
+        const socket = new SockJS("/ws-criptografia");
         stompClient = Stomp.over(socket);
         stompClient.debug = null;
 
-        stompClient.connect({}, function (frame) {
-            console.log('Conectado a STOMP (Atbash)');
-            stompClient.subscribe('/topic/atbash', function (response) {
-                let data = JSON.parse(response.body);
-                if(data.error) {
+        stompClient.connect({}, function () {
+            setConnStatus(true);
+            stompClient.subscribe("/topic/atbash", function (response) {
+                const data = JSON.parse(response.body);
+
+                if (data.error) {
                     mostrarError(data.error);
-                    outputTexto.value = "";
-                    outputTexto.classList.replace('text-cyan-300', 'text-red-400');
-                } else {
+                    return;
+                }
+
+                if (ultimoCampoEditado === "entrada") {
                     outputTexto.value = data.resultado;
-                    outputTexto.classList.replace('text-red-400', 'text-cyan-300');
+                } else {
+                    inputTexto.value = data.resultado;
                 }
             });
-        }, function(error) {
-            mostrarError("Conexión interrumpida. Reconectando...");
+        }, function () {
+            setConnStatus(false);
+            mostrarError("Conexion interrumpida. Reconectando...");
             setTimeout(connect, 3000);
         });
     }
 
-    function enviarDatos() {
-        if (!stompClient || !stompClient.connected) return;
-        const texto = inputTexto.value;
-        if(!texto) {
-            outputTexto.value = "";
-            charIn.innerText = "-";
-            charOut.innerText = "-";
-            document.querySelectorAll('.highlight-top, .highlight-bottom').forEach(el => {
-                el.classList.remove('highlight-top', 'highlight-bottom');
-            });
+    function enviarDatos(origen) {
+        ultimoCampoEditado = origen;
+        const texto = origen === "entrada" ? inputTexto.value : outputTexto.value;
+
+        actualizarMapa();
+        resaltarCaracter(texto.charAt(texto.length - 1));
+
+        if (!texto) {
+            if (origen === "entrada") {
+                outputTexto.value = "";
+            } else {
+                inputTexto.value = "";
+            }
             return;
         }
 
-        // Animar la última tecla presionada para feedback visual
-        animarTecla(texto.charAt(texto.length - 1));
+        if (idiomaSelect.value === "CUSTOM" && !obtenerAlfabeto()) {
+            mostrarError("El alfabeto personalizado necesita al menos 2 letras distintas.");
+            return;
+        }
+
+        if (!stompClient || !stompClient.connected) return;
 
         stompClient.send("/app/atbash", {}, JSON.stringify({
-            'texto': texto,
-            'operacion': 'CIFRAR' // En Atbash, cifrar y descifrar es igual
+            texto,
+            operacion: origen === "entrada" ? "CIFRAR" : "DESCIFRAR",
+            idioma: idiomaSelect.value,
+            alfabetoCustom: limpiarAlfabeto(inputCustom.value)
         }));
     }
 
-    inputTexto.addEventListener('input', enviarDatos);
+    inputTexto.addEventListener("input", () => enviarDatos("entrada"));
+    outputTexto.addEventListener("input", () => enviarDatos("salida"));
 
-    // ==========================================
-    // UX / CLIPBOARD
-    // ==========================================
-    btnPegar.addEventListener('click', async () => {
+    idiomaSelect.addEventListener("change", () => {
+        customContainer.classList.toggle("hidden", idiomaSelect.value !== "CUSTOM");
+        actualizarMapa();
+        enviarDatos(ultimoCampoEditado);
+    });
+
+    inputCustom.addEventListener("input", () => {
+        inputCustom.value = limpiarAlfabeto(inputCustom.value);
+        actualizarMapa();
+        enviarDatos(ultimoCampoEditado);
+    });
+
+    btnPegar.addEventListener("click", async () => {
         try {
             const textoPortapapeles = await navigator.clipboard.readText();
             if (textoPortapapeles) {
                 inputTexto.value = textoPortapapeles;
-                enviarDatos();
+                enviarDatos("entrada");
                 inputTexto.focus();
             }
-        } catch (err) { mostrarError("Permiso de portapapeles denegado."); }
+        } catch {
+            mostrarError("Permiso de portapapeles denegado.");
+        }
     });
 
-    btnLimpiar.addEventListener('click', () => {
-        inputTexto.value = ""; enviarDatos(); inputTexto.focus();
+    btnLimpiar.addEventListener("click", () => {
+        inputTexto.value = "";
+        outputTexto.value = "";
+        resaltarCaracter("");
+        inputTexto.focus();
     });
 
-    btnCopiar.addEventListener('click', () => {
-        outputTexto.select(); document.execCommand("copy");
+    btnCopiar.addEventListener("click", async () => {
+        if (!outputTexto.value) return;
+
+        try {
+            await navigator.clipboard.writeText(outputTexto.value);
+            mostrarExito("Texto copiado al portapapeles");
+        } catch {
+            outputTexto.select();
+            document.execCommand("copy");
+        }
     });
+
+    function mostrarToast(mensaje, tipo) {
+        const container = document.getElementById("toast-container");
+        const toast = document.createElement("div");
+        const isError = tipo === "error";
+        toast.className = `px-4 py-3 rounded-xl shadow-xl border backdrop-blur-sm text-sm font-medium ${
+            isError
+                ? "bg-red-950/90 text-red-200 border-red-700/50"
+                : "bg-emerald-950/90 text-emerald-200 border-emerald-700/50"
+        }`;
+        toast.textContent = mensaje;
+        container.appendChild(toast);
+
+        setTimeout(() => {
+            toast.style.opacity = "0";
+            toast.style.transition = "opacity .35s ease";
+            setTimeout(() => toast.remove(), 350);
+        }, 2800);
+    }
 
     function mostrarError(mensaje) {
-        const container = document.getElementById('toast-container');
-        const toast = document.createElement('div');
-        toast.className = 'bg-red-500/90 text-white px-4 py-3 rounded shadow-lg border border-red-700 flex items-center gap-3 backdrop-blur-sm animate-fade-in';
-        toast.innerHTML = `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg> <span class="text-sm font-medium">${mensaje}</span>`;
-        container.appendChild(toast);
-        setTimeout(() => { toast.style.opacity = '0'; toast.style.transition = 'opacity 0.5s ease'; setTimeout(() => toast.remove(), 500); }, 3000);
+        mostrarToast(mensaje, "error");
     }
 
-    // ==========================================
-    // SISTEMA DE BURBUJAS TUTORIAL INTERACTIVO
-    // ==========================================
-    const tutorialData = [
-        { element: '#panelParametros', title: 'Paso 1: Naturaleza Simétrica', text: 'Atbash no tiene clave matemática. Cifrar la letra "A" devuelve "Z". Volver a cifrar la "Z" devuelve la "A" original.' },
-        { element: '#panelSimulador', title: 'Paso 2: El Espejo', text: 'Este es el mapeo interno. Observa cómo al teclear un mensaje, el espejo iluminará los pares reflejados en tiempo real.' },
-        { element: '#panelEntrada', title: 'Paso 3: Mensaje', text: 'Escribe aquí tu texto original o cifrado. El motor WebSocket enviará la solicitud instantánea al backend.' },
-        { element: '#panelSalida', title: 'Paso 4: Resultado', text: 'El texto devuelto está listo para copiarse. Si pasas este mismo texto por el input, recuperarás tu mensaje.' }
-    ];
-
-    let currentStep = 0;
-    const overlay = document.getElementById('tutorialOverlay');
-    const bubble = document.getElementById('tutorialBubble');
-    const tutTitle = document.getElementById('tutTitle');
-    const tutText = document.getElementById('tutText');
-    const btnTutNext = document.getElementById('btnTutNext');
-    const btnTutPrev = document.getElementById('btnTutPrev');
-    const tutDotsContainer = document.getElementById('tutDots');
-
-    tutorialData.forEach(() => {
-        const span = document.createElement('span');
-        span.className = "w-2 h-2 rounded-full bg-slate-700";
-        tutDotsContainer.appendChild(span);
-    });
-
-    function moverBurbuja(selector) {
-        document.querySelectorAll('.tutorial-focus').forEach(el => el.classList.remove('tutorial-focus'));
-        const target = document.querySelector(selector);
-        if(!target) return;
-
-        target.classList.add('tutorial-focus');
-        target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-
-        setTimeout(() => {
-            const rect = target.getBoundingClientRect();
-            bubble.classList.remove('hidden');
-
-            const bubbleRect = bubble.getBoundingClientRect();
-            let top = rect.bottom + 15;
-            let left = rect.left + (rect.width / 2) - (bubbleRect.width / 2);
-
-            if (left < 10) left = 10;
-            if (left + bubbleRect.width > window.innerWidth - 10) {
-                left = window.innerWidth - bubbleRect.width - 10;
-            }
-            if (top + bubbleRect.height > window.innerHeight - 10) {
-                top = rect.top - bubbleRect.height - 15;
-            }
-
-            bubble.style.top = `${top}px`;
-            bubble.style.left = `${left}px`;
-            bubble.classList.remove('opacity-0', 'scale-95');
-        }, 300);
+    function mostrarExito(mensaje) {
+        mostrarToast(mensaje, "ok");
     }
 
-    function updateTutorial() {
-        bubble.classList.add('opacity-0', 'scale-95');
-
-        setTimeout(() => {
-            tutTitle.innerHTML = tutorialData[currentStep].title;
-            tutText.innerHTML = tutorialData[currentStep].text;
-
-            Array.from(tutDotsContainer.children).forEach((dot, index) => {
-                dot.className = index === currentStep
-                    ? "w-2 h-2 rounded-full bg-cyan-400 shadow-[0_0_8px_#22d3ee] transition-all"
-                    : "w-2 h-2 rounded-full bg-slate-700 transition-all";
-            });
-
-            btnTutPrev.classList.toggle('hidden', currentStep === 0);
-
-            if (currentStep === tutorialData.length - 1) {
-                btnTutNext.innerHTML = "Terminar ✓";
-                btnTutNext.classList.replace('bg-cyan-600', 'bg-emerald-600');
-                btnTutNext.classList.replace('hover:bg-cyan-500', 'hover:bg-emerald-500');
-                btnTutNext.classList.replace('shadow-cyan-500/30', 'shadow-emerald-500/30');
-            } else {
-                btnTutNext.innerHTML = "Siguiente ❯";
-                btnTutNext.classList.replace('bg-emerald-600', 'bg-cyan-600');
-                btnTutNext.classList.replace('hover:bg-emerald-500', 'hover:bg-cyan-500');
-                btnTutNext.classList.replace('shadow-emerald-500/30', 'shadow-cyan-500/30');
-            }
-
-            moverBurbuja(tutorialData[currentStep].element);
-        }, 200);
-    }
-
-    document.getElementById('btnTutorial').addEventListener('click', () => {
-        currentStep = 0;
-        overlay.classList.remove('hidden');
-        setTimeout(() => overlay.classList.remove('opacity-0'), 10);
-        updateTutorial();
-    });
-
-    function closeTutorial() {
-        document.querySelectorAll('.tutorial-focus').forEach(el => el.classList.remove('tutorial-focus'));
-        bubble.classList.add('opacity-0', 'scale-95');
-        overlay.classList.add('opacity-0');
-        setTimeout(() => {
-            bubble.classList.add('hidden');
-            overlay.classList.add('hidden');
-        }, 300);
-    }
-
-    document.getElementById('btnCerrarTutorial').addEventListener('click', closeTutorial);
-    btnTutNext.addEventListener('click', () => { currentStep < tutorialData.length - 1 ? (currentStep++, updateTutorial()) : closeTutorial(); });
-    btnTutPrev.addEventListener('click', () => { if (currentStep > 0) { currentStep--; updateTutorial(); }});
-
-    inicializarEspejo();
+    actualizarMapa();
     connect();
 });

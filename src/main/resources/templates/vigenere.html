@@ -3,109 +3,267 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vigenère | CriptoSuite</title>
+    <title>Vigenere | CriptoSuite</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.5.1/sockjs.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
     <link rel="stylesheet" th:href="@{/css/global.css}">
     <style>
         body { background-color: #0f172a; color: #f8fafc; }
+        .glass-panel {
+            background: rgba(15, 23, 42, .74);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(51, 65, 85, .62);
+        }
+        .cyber-grid {
+            background-image:
+                linear-gradient(rgba(20, 184, 166, .035) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(20, 184, 166, .035) 1px, transparent 1px);
+            background-size: 40px 40px;
+        }
+        .section-title {
+            font-size: 11px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: .08em;
+            color: #94a3b8;
+        }
+        .btn-action {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            padding: 7px 14px;
+            font-size: 11px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: .04em;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all .2s ease;
+            white-space: nowrap;
+        }
+        .btn-util {
+            background: rgba(30, 41, 59, .82);
+            color: #cbd5e1;
+            border: 1px solid rgba(71, 85, 105, .65);
+        }
+        .btn-util:hover {
+            background: rgba(20, 184, 166, .14);
+            color: #5eead4;
+            border-color: rgba(20, 184, 166, .4);
+        }
+        .btn-danger:hover {
+            background: rgba(239, 68, 68, .12);
+            color: #fca5a5;
+            border-color: rgba(239, 68, 68, .35);
+        }
+        .btn-primary {
+            background: rgba(8, 47, 73, .7);
+            color: #67e8f9;
+            border: 1px solid rgba(6, 182, 212, .45);
+        }
+        .btn-primary:hover {
+            background: rgba(6, 182, 212, .24);
+            border-color: rgba(6, 182, 212, .75);
+        }
+        .text-area {
+            width: 100%;
+            min-height: 210px;
+            resize: none;
+            outline: none;
+            border-radius: 12px;
+            border: 1px solid rgba(51, 65, 85, .55);
+            background: rgba(15, 23, 42, .58);
+            padding: 14px;
+            color: #f8fafc;
+            font-size: 16px;
+            line-height: 1.55;
+        }
+        .text-area:focus {
+            border-color: rgba(20, 184, 166, .72);
+            box-shadow: 0 0 0 3px rgba(20, 184, 166, .12);
+        }
+        .table-shell {
+            overflow: auto;
+            max-height: 520px;
+            scrollbar-width: thin;
+            scrollbar-color: #334155 transparent;
+        }
+        .table-shell::-webkit-scrollbar { width: 8px; height: 8px; }
+        .table-shell::-webkit-scrollbar-track { background: transparent; }
+        .table-shell::-webkit-scrollbar-thumb { background: #334155; border-radius: 999px; }
+        .vig-table {
+            border-collapse: separate;
+            border-spacing: 2px;
+            min-width: max-content;
+            margin: 0 auto;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+        }
+        .vig-table th,
+        .vig-table td {
+            width: 28px;
+            height: 28px;
+            text-align: center;
+            border-radius: 5px;
+            font-size: 12px;
+            font-weight: 800;
+            border: 1px solid rgba(51, 65, 85, .78);
+        }
+        .vig-table th {
+            position: sticky;
+            z-index: 3;
+            background: #020617;
+            color: #67e8f9;
+        }
+        .vig-table .top-head { top: 0; }
+        .vig-table .side-head { left: 0; color: #fde68a; }
+        .vig-table .corner {
+            left: 0;
+            top: 0;
+            z-index: 4;
+            color: #cbd5e1;
+        }
+        .vig-table td {
+            background: rgba(15, 23, 42, .84);
+            color: #cbd5e1;
+            transition: all .12s ease;
+        }
+        .vig-table .active-row,
+        .vig-table .active-col {
+            background: rgba(20, 184, 166, .22);
+            color: #f8fafc;
+        }
+        .vig-table .active-cell {
+            background: rgba(250, 204, 21, .88);
+            color: #111827;
+            border-color: rgba(254, 240, 138, 1);
+            transform: scale(1.08);
+            box-shadow: 0 0 18px rgba(250, 204, 21, .35);
+            z-index: 2;
+            position: relative;
+        }
+        .conn-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            display: inline-block;
+            background: #f87171;
+            box-shadow: 0 0 7px #f87171;
+        }
+        .conn-dot.connected {
+            background: #34d399;
+            box-shadow: 0 0 7px #34d399;
+        }
     </style>
 </head>
-<body class="min-h-screen p-4 md:p-8 font-sans antialiased cyber-grid">
+<body class="min-h-screen p-3 sm:p-5 md:p-8 font-sans antialiased cyber-grid">
 
-<div id="toast-container" class="fixed top-5 right-5 z-50 flex flex-col gap-2"></div>
+<div id="toast-container" class="fixed top-4 right-4 z-50 flex flex-col gap-2 max-w-xs w-full"></div>
 
 <div class="max-w-7xl mx-auto">
-    <header class="mb-8 flex items-center justify-between animate-fade-in">
+    <header class="mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-            <h1 class="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400">Cifrado Vigenére</h1>
-            <p class="text-slate-400 text-sm mt-1">Sustitución polialfabética mediante palabra clave</p>
+            <div class="flex items-center gap-2 mb-1">
+                <h1 class="text-2xl sm:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 via-teal-300 to-amber-300">
+                    Cifrado Vigenere
+                </h1>
+                <span class="flex items-center gap-1.5 text-[10px] font-semibold text-slate-500 bg-slate-900 border border-slate-700 px-2 py-0.5 rounded-full">
+                    <span class="conn-dot" id="connDot"></span>
+                    <span id="connLabel">offline</span>
+                </span>
+            </div>
+            <p class="text-slate-400 text-xs sm:text-sm">Cifrado polialfabetico con clave repetida y tablero dinamico.</p>
         </div>
-        <a th:href="@{/}" class="px-4 py-2 text-sm font-semibold text-slate-300 bg-slate-800 rounded-lg hover:bg-slate-700 transition">Volver al Inicio</a>
+        <a th:href="@{/}" class="btn-action btn-util w-full sm:w-auto">Inicio</a>
     </header>
 
-    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 animate-fade-in">
-
-        <div class="lg:col-span-4 glass-panel rounded-2xl p-6 h-fit">
-            <h2 class="text-lg font-bold text-white mb-6 border-b border-slate-700 pb-2">Parámetros</h2>
-
-            <form id="vigenereForm" class="space-y-6">
+    <main class="grid grid-cols-1 xl:grid-cols-12 gap-5">
+        <section class="glass-panel rounded-2xl p-4 sm:p-5 xl:col-span-7">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
                 <div>
-                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Operación</label>
-                    <div class="grid grid-cols-2 gap-2 p-1 bg-slate-900 rounded-lg border border-slate-700">
-                        <label class="cursor-pointer">
-                            <input type="radio" name="operacion" value="CIFRAR" class="peer sr-only" checked>
-                            <div class="text-center px-4 py-2 text-sm font-medium rounded-md peer-checked:bg-purple-500 peer-checked:text-white text-slate-400 hover:text-white transition">Cifrar</div>
-                        </label>
-                        <label class="cursor-pointer">
-                            <input type="radio" name="operacion" value="DESCIFRAR" class="peer sr-only">
-                            <div class="text-center px-4 py-2 text-sm font-medium rounded-md peer-checked:bg-pink-500 peer-checked:text-white text-slate-400 hover:text-white transition">Descifrar</div>
-                        </label>
+                    <p class="section-title text-cyan-400">Tabla Vigenere</p>
+                    <p class="text-[11px] text-slate-500">Columnas: texto. Filas: clave. La celda iluminada muestra la letra resultante.</p>
+                </div>
+                <span id="tableInfo" class="text-[11px] text-slate-500 font-mono"></span>
+            </div>
+            <div class="table-shell bg-slate-950/55 border border-slate-800 rounded-xl p-3">
+                <table id="vigenereTable" class="vig-table"></table>
+            </div>
+        </section>
+
+        <section class="xl:col-span-5 flex flex-col gap-5">
+            <div class="glass-panel rounded-2xl p-4 sm:p-5">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label for="idioma" class="section-title block mb-2">Alfabeto</label>
+                        <select id="idioma" class="w-full bg-slate-950/70 border border-slate-700 text-slate-100 text-sm rounded-xl px-3 py-2.5 outline-none focus:border-teal-400">
+                            <option value="ES">Espa&ntilde;ol (incluye &Ntilde;)</option>
+                            <option value="EN">Ingles</option>
+                            <option value="CUSTOM">Personalizado</option>
+                        </select>
+
+                        <div id="customAlphabetContainer" class="hidden mt-3">
+                            <label for="alfabetoCustom" class="section-title block mb-2">Alfabeto personalizado</label>
+                            <input type="text" id="alfabetoCustom" maxlength="80" placeholder="Ej: ABCDEFGHIJKLMN&Ntilde;OPQRSTUVWXYZ"
+                                   class="w-full bg-slate-950/70 border border-slate-700 text-slate-100 text-sm rounded-xl px-3 py-2.5 outline-none focus:border-teal-400 font-mono uppercase">
+                            <p class="text-[10px] text-slate-500 mt-1.5">Se eliminan letras repetidas. Minimo 2 caracteres.</p>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label for="clave" class="section-title block mb-2">Palabra clave</label>
+                        <input type="text" id="clave" value="SECRETO" placeholder="Escribe una palabra clave"
+                               class="w-full bg-slate-950/70 border border-slate-700 text-slate-100 text-sm rounded-xl px-3 py-2.5 outline-none focus:border-teal-400 font-mono uppercase">
+                        <p class="text-[10px] text-slate-500 mt-1.5">La clave avanza solo cuando el texto usa letras del alfabeto.</p>
                     </div>
                 </div>
 
-                <div>
-                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Alfabeto</label>
-                    <select id="idioma" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2.5 text-sm text-white focus:ring-2 focus:ring-purple-500 outline-none transition">
-                        <option value="ES">Español (Incluye Ñ)</option>
-                        <option value="EN">Inglés (Sin Ñ)</option>
-                        <option value="CUSTOM">Personalizado...</option>
-                    </select>
-                </div>
-
-                <div id="customAlphabetContainer" class="hidden animate-fade-in">
-                    <label class="block text-xs font-semibold text-purple-400 uppercase tracking-wider mb-2">Crea tu Alfabeto</label>
-                    <input type="text" id="alfabetoCustom" placeholder="Ej: QWERTYUIOPASDFGHJKLZXCVBNM" class="w-full bg-slate-900 border border-purple-500/50 rounded-lg px-4 py-2.5 text-sm text-white focus:ring-2 focus:ring-purple-500 outline-none uppercase transition">
-                </div>
-
-                <div>
-                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Palabra Clave</label>
-                    <input type="text" id="clave" value="SECRETO" placeholder="Escribe una palabra clave..." class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2.5 text-sm text-white uppercase focus:ring-2 focus:ring-purple-500 outline-none transition">
-                    <p class="text-[10px] text-slate-500 mt-1">Se repetirá para igualar la longitud del texto.</p>
-                </div>
-            </form>
-            <div class="mt-8 p-4 bg-purple-500/10 border border-purple-500/20 rounded-lg">
-                <h3 class="text-purple-400 font-bold text-sm mb-2 flex items-center gap-2">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                    ¿Cómo funciona?
-                </h3>
-                <p class="text-xs text-slate-400 leading-relaxed">
-                    Vigenére es una sustitución polialfabética. Utiliza una palabra clave que se repite a lo largo del texto. La posición de cada letra de la clave en el alfabeto determina el desplazamiento exacto que sufrirá la letra correspondiente de tu texto.
-                </p>
-            </div>
-        </div>
-
-        <div class="lg:col-span-8 flex flex-col gap-6">
-            <div class="glass-panel rounded-2xl p-6 flex-1 flex flex-col relative group">
-                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-3 w-full relative z-10">
-                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider">Texto Original</label>
-                    <div class="flex gap-2 w-full sm:w-auto">
-                        <button id="btnPegar" type="button" class="flex-1 sm:flex-none justify-center text-xs bg-slate-800 hover:bg-cyan-500/20 text-slate-300 hover:text-cyan-400 border border-transparent hover:border-cyan-500/30 px-3 py-1.5 rounded flex items-center gap-2 transition cursor-pointer">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg>
-                            Pegar
-                        </button>
-                        <button id="btnLimpiar" type="button" class="flex-1 sm:flex-none justify-center text-xs bg-slate-800 hover:bg-red-500/20 text-slate-300 hover:text-red-400 border border-transparent hover:border-red-500/30 px-3 py-1.5 rounded flex items-center gap-2 transition cursor-pointer">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                            Limpiar
-                        </button>
+                <div class="mt-4">
+                    <p class="section-title text-cyan-400 mb-2">Lectura actual</p>
+                    <div class="grid grid-cols-3 gap-2">
+                        <div class="bg-slate-950/60 border border-slate-800 rounded-xl p-3">
+                            <span class="block text-[10px] text-slate-500 uppercase font-bold mb-1">Texto</span>
+                            <span id="charTexto" class="font-mono text-xl font-black text-cyan-300">-</span>
+                        </div>
+                        <div class="bg-slate-950/60 border border-slate-800 rounded-xl p-3">
+                            <span class="block text-[10px] text-slate-500 uppercase font-bold mb-1">Clave</span>
+                            <span id="charClave" class="font-mono text-xl font-black text-amber-300">-</span>
+                        </div>
+                        <div class="bg-slate-950/60 border border-slate-800 rounded-xl p-3">
+                            <span class="block text-[10px] text-slate-500 uppercase font-bold mb-1">Salida</span>
+                            <span id="charResultado" class="font-mono text-xl font-black text-emerald-300">-</span>
+                        </div>
                     </div>
                 </div>
-                <textarea id="textoEntrada" placeholder="Escribe el texto a procesar aquí..." class="w-full flex-1 bg-transparent border-none text-white text-lg placeholder-slate-600 resize-none outline-none custom-scrollbar"></textarea>
             </div>
 
-            <div class="glass-panel rounded-2xl p-6 flex-1 flex flex-col border-purple-500/20">
-                <div class="flex justify-between items-center mb-3">
-                    <label class="block text-xs font-semibold text-purple-400 uppercase tracking-wider">Resultado en Tiempo Real</label>
-                    <button id="btnCopiar" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded flex items-center gap-2 transition">
-                        Copiar
-                    </button>
+            <section class="glass-panel rounded-2xl p-4 sm:p-5">
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
+                    <div>
+                        <p class="section-title">Texto original</p>
+                        <p class="text-[11px] text-slate-500">Escribe aqui para cifrar.</p>
+                    </div>
+                    <div class="flex gap-2">
+                        <button id="btnPegar" type="button" class="btn-action btn-util">Pegar</button>
+                        <button id="btnLimpiar" type="button" class="btn-action btn-util btn-danger">Limpiar</button>
+                    </div>
                 </div>
-                <textarea id="textoSalida" placeholder="Esperando mensaje..." readonly class="w-full flex-1 bg-transparent border-none text-purple-300 text-lg font-mono resize-none outline-none custom-scrollbar"></textarea>
-            </div>
-        </div>
+                <textarea id="textoEntrada" class="text-area" placeholder="Escribe texto original..."></textarea>
+            </section>
 
-    </div>
+            <section class="glass-panel rounded-2xl p-4 sm:p-5 border-cyan-500/20">
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
+                    <div>
+                        <p class="section-title text-cyan-400">Texto cifrado</p>
+                        <p class="text-[11px] text-slate-500">Tambien puedes escribir aqui para descifrar.</p>
+                    </div>
+                    <button id="btnCopiar" type="button" class="btn-action btn-primary">Copiar</button>
+                </div>
+                <textarea id="textoSalida" class="text-area text-cyan-200 font-mono" placeholder="El resultado aparecera aqui..."></textarea>
+            </section>
+        </section>
+    </main>
 </div>
 
 <script th:src="@{/js/vigenere.js}"></script>

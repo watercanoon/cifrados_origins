@@ -259,7 +259,10 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     inputTexto.addEventListener('input', enviarDatos);
-    radiosOperacion.forEach(r => r.addEventListener('change', enviarDatos));
+    radiosOperacion.forEach(r => r.addEventListener('change', () => {
+        enviarDatos();
+        inputTexto.focus();
+    }));
 
     // ==========================================
     // PORTAPAPELES

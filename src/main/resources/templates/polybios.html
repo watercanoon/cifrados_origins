@@ -156,19 +156,6 @@
         /* Stat mini cards */
         .stat-badge { background: rgba(15,23,42,.8); border: 1px solid rgba(51,65,85,.7); }
 
-        /* Clave key visual */
-        .key-chip {
-            display: inline-flex; align-items: center;
-            background: rgba(6,182,212,.1);
-            border: 1px solid rgba(6,182,212,.25);
-            border-radius: 6px;
-            padding: 2px 8px;
-            font-family: monospace;
-            font-size: 11px;
-            font-weight: 700;
-            color: #22d3ee;
-            letter-spacing: .1em;
-        }
     </style>
 </head>
 <body class="min-h-screen p-3 sm:p-5 md:p-8 font-sans antialiased cyber-grid">
@@ -242,18 +229,6 @@
                         </select>
                     </div>
 
-                    <div>
-                        <div class="flex justify-between items-center mb-2">
-                            <p class="section-title">Palabra clave</p>
-                            <span id="keyChip" class="key-chip">CLAVE</span>
-                        </div>
-                        <input type="text" id="clave"
-                               placeholder="Ej: POLIBIOS, SECRET, CLAVE…"
-                               maxlength="25"
-                               class="w-full bg-slate-900/60 border border-slate-700/50 rounded-xl text-white text-sm font-mono placeholder-slate-600 outline-none px-3 py-2.5 focus:border-cyan-500/50 focus:bg-slate-900/80 transition uppercase tracking-wider">
-                        <p class="text-[10px] text-slate-600 mt-1.5">La clave reordena el alfabeto en la cuadrícula 5×5</p>
-                    </div>
-
                 </div>
 
                 <!-- Info -->
@@ -267,8 +242,8 @@
                         Cada letra se reemplaza por sus <strong class="text-slate-300">coordenadas</strong> (fila, columna).
                     </p>
                     <p class="text-[11px] text-slate-400 leading-relaxed">
-                        Con una <strong class="text-slate-300">palabra clave</strong>, las letras de la clave ocupan primero las posiciones,
-                        seguidas del resto del alfabeto sin repetición. La letra <strong class="text-slate-300">I/J</strong> comparten celda.
+                        La matriz se mantiene fija para que las coordenadas sean consistentes. La letra <strong class="text-slate-300">I/J</strong>
+                        comparte celda y, en español, <strong class="text-slate-300">N/Ñ</strong> se representa en la misma posición.
                     </p>
                 </div>
             </div>

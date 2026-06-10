@@ -1,119 +1,345 @@
-// src/main/resources/static/js/vigenere.js
-
 document.addEventListener("DOMContentLoaded", () => {
     let stompClient = null;
+    let ultimoCampoEditado = "entrada";
+    let ultimoToastClave = 0;
 
-    const inputTexto = document.getElementById('textoEntrada');
-    const outputTexto = document.getElementById('textoSalida');
-    const inputClave = document.getElementById('clave');
-    const selectIdioma = document.getElementById('idioma');
-    const customContainer = document.getElementById('customAlphabetContainer');
-    const inputCustom = document.getElementById('alfabetoCustom');
-    const radiosOperacion = document.querySelectorAll('input[name="operacion"]');
-    const btnCopiar = document.getElementById('btnCopiar');
-    const btnLimpiar = document.getElementById('btnLimpiar');
-    const btnPegar = document.getElementById('btnPegar');
+    const inputTexto = document.getElementById("textoEntrada");
+    const outputTexto = document.getElementById("textoSalida");
+    const inputClave = document.getElementById("clave");
+    const selectIdioma = document.getElementById("idioma");
+    const customContainer = document.getElementById("customAlphabetContainer");
+    const inputCustom = document.getElementById("alfabetoCustom");
+
+    const tabla = document.getElementById("vigenereTable");
+    const tableInfo = document.getElementById("tableInfo");
+    const charTexto = document.getElementById("charTexto");
+    const charClave = document.getElementById("charClave");
+    const charResultado = document.getElementById("charResultado");
+    const connDot = document.getElementById("connDot");
+    const connLabel = document.getElementById("connLabel");
+
+    const btnCopiar = document.getElementById("btnCopiar");
+    const btnLimpiar = document.getElementById("btnLimpiar");
+    const btnPegar = document.getElementById("btnPegar");
+
+    const ALFABETO_ES = "ABCDEFGHIJKLMN\u00d1OPQRSTUVWXYZ";
+    const ALFABETO_EN = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
+    function setConnStatus(online) {
+        connDot.classList.toggle("connected", online);
+        connLabel.textContent = online ? "online" : "offline";
+    }
+
+    function limpiarLetrasUnicas(valor) {
+        const visto = new Set();
+        let resultado = "";
+
+        for (const char of (valor || "").toUpperCase()) {
+            if (!/[\p{L}]/u.test(char)) continue;
+            if (visto.has(char)) continue;
+            visto.add(char);
+            resultado += char;
+        }
+
+        return resultado;
+    }
+
+    function obtenerAlfabeto() {
+        if (selectIdioma.value === "CUSTOM") {
+            const custom = limpiarLetrasUnicas(inputCustom.value);
+            return custom.length >= 2 ? custom : "";
+        }
+
+        return selectIdioma.value === "EN" ? ALFABETO_EN : ALFABETO_ES;
+    }
+
+    function limpiarClave(valor) {
+        const alfabeto = obtenerAlfabeto();
+        let resultado = "";
+
+        for (const char of (valor || "").toUpperCase()) {
+            if (alfabeto.includes(char)) resultado += char;
+        }
+
+        return resultado;
+    }
+
+    function construirTabla() {
+        const alfabeto = obtenerAlfabeto();
+        tabla.innerHTML = "";
+
+        if (!alfabeto) {
+            tabla.innerHTML = '<tr><td class="text-slate-500 px-3 py-2">Ingresa un alfabeto personalizado valido.</td></tr>';
+            tableInfo.textContent = "";
+            return;
+        }
+
+        const thead = document.createElement("thead");
+        const headerRow = document.createElement("tr");
+        const corner = document.createElement("th");
+        corner.className = "corner top-head";
+        corner.textContent = "K/T";
+        headerRow.appendChild(corner);
+
+        for (const letra of alfabeto) {
+            const th = document.createElement("th");
+            th.className = "top-head";
+            th.textContent = letra;
+            th.dataset.col = letra;
+            headerRow.appendChild(th);
+        }
+
+        thead.appendChild(headerRow);
+        tabla.appendChild(thead);
+
+        const tbody = document.createElement("tbody");
+        for (let fila = 0; fila < alfabeto.length; fila++) {
+            const tr = document.createElement("tr");
+            const rowHead = document.createElement("th");
+            rowHead.className = "side-head";
+            rowHead.textContent = alfabeto[fila];
+            rowHead.dataset.row = alfabeto[fila];
+            tr.appendChild(rowHead);
+
+            for (let col = 0; col < alfabeto.length; col++) {
+                const td = document.createElement("td");
+                td.textContent = alfabeto[(fila + col) % alfabeto.length];
+                td.dataset.rowIndex = String(fila);
+                td.dataset.colIndex = String(col);
+                tr.appendChild(td);
+            }
+
+            tbody.appendChild(tr);
+        }
+
+        tabla.appendChild(tbody);
+        tableInfo.textContent = `${alfabeto.length} x ${alfabeto.length}`;
+    }
+
+    function obtenerInfoUltimoCaracter(texto, operacion) {
+        const alfabeto = obtenerAlfabeto();
+        const clave = limpiarClave(inputClave.value);
+
+        if (!alfabeto || !clave || !texto) return null;
+
+        let letrasValidas = 0;
+        let ultima = null;
+
+        for (const char of texto) {
+            const upper = char.toUpperCase();
+            const indexTexto = alfabeto.indexOf(upper);
+            if (indexTexto === -1) continue;
+
+            const keyChar = clave[letrasValidas % clave.length];
+            const indexClave = alfabeto.indexOf(keyChar);
+            let indexCol = indexTexto;
+            let indexSalida = (indexTexto + indexClave) % alfabeto.length;
+
+            if (operacion === "DESCIFRAR") {
+                indexSalida = (indexTexto - indexClave + alfabeto.length) % alfabeto.length;
+                indexCol = indexSalida;
+            }
+
+            ultima = {
+                texto: upper,
+                clave: keyChar,
+                salida: alfabeto[indexSalida],
+                rowIndex: indexClave,
+                colIndex: indexCol
+            };
+
+            letrasValidas++;
+        }
+
+        return ultima;
+    }
+
+    function resaltarTabla() {
+        document.querySelectorAll(".active-row, .active-col, .active-cell").forEach(el => {
+            el.classList.remove("active-row", "active-col", "active-cell");
+        });
+
+        const texto = ultimoCampoEditado === "entrada" ? inputTexto.value : outputTexto.value;
+        const operacion = ultimoCampoEditado === "entrada" ? "CIFRAR" : "DESCIFRAR";
+        const info = obtenerInfoUltimoCaracter(texto, operacion);
+
+        if (!info) {
+            charTexto.textContent = "-";
+            charClave.textContent = "-";
+            charResultado.textContent = "-";
+            return;
+        }
+
+        charTexto.textContent = info.texto;
+        charClave.textContent = info.clave;
+        charResultado.textContent = info.salida;
+
+        const rowCells = tabla.querySelectorAll(`td[data-row-index="${info.rowIndex}"]`);
+        const colCells = tabla.querySelectorAll(`td[data-col-index="${info.colIndex}"]`);
+        rowCells.forEach(cell => cell.classList.add("active-row"));
+        colCells.forEach(cell => cell.classList.add("active-col"));
+
+        const activeCell = tabla.querySelector(`td[data-row-index="${info.rowIndex}"][data-col-index="${info.colIndex}"]`);
+        if (activeCell) {
+            activeCell.classList.add("active-cell");
+            activeCell.scrollIntoView({ block: "nearest", inline: "nearest" });
+        }
+    }
 
     function connect() {
-        let socket = new SockJS('/ws-criptografia');
+        const socket = new SockJS("/ws-criptografia");
         stompClient = Stomp.over(socket);
         stompClient.debug = null;
 
-        stompClient.connect({}, function (frame) {
-            console.log('Conectado a STOMP (Vigenère): ' + frame);
-            stompClient.subscribe('/topic/vigenere', function (response) {
-                let data = JSON.parse(response.body);
+        stompClient.connect({}, function () {
+            setConnStatus(true);
+            stompClient.subscribe("/topic/vigenere", function (response) {
+                const data = JSON.parse(response.body);
 
-                if(data.error) {
+                if (data.error) {
                     mostrarError(data.error);
-                    outputTexto.value = "Esperando clave válida...";
-                    outputTexto.classList.replace('text-purple-300', 'text-red-400');
-                } else {
-                    outputTexto.value = data.resultado;
-                    outputTexto.classList.replace('text-red-400', 'text-purple-300');
+                    return;
                 }
+
+                if (ultimoCampoEditado === "entrada") {
+                    outputTexto.value = data.resultado;
+                } else {
+                    inputTexto.value = data.resultado;
+                }
+
+                resaltarTabla();
             });
-        }, function(error) {
-            mostrarError("Conexión perdida. Reconectando...");
+        }, function () {
+            setConnStatus(false);
+            mostrarError("Conexion perdida. Reconectando...");
             setTimeout(connect, 3000);
         });
     }
 
-    function enviarDatos() {
-        if (!stompClient || !stompClient.connected) return;
+    function enviarDatos(origen) {
+        ultimoCampoEditado = origen;
+        const texto = origen === "entrada" ? inputTexto.value : outputTexto.value;
+        const operacion = origen === "entrada" ? "CIFRAR" : "DESCIFRAR";
+        const clave = limpiarClave(inputClave.value);
+        const alfabetoCustom = limpiarLetrasUnicas(inputCustom.value);
 
-        // 1. PRIMERO declaramos la variable
-        const texto = inputTexto.value;
+        resaltarTabla();
 
-        // 2. LUEGO validamos
-        if(!texto) {
-            outputTexto.value = ""; // Al vaciar el value, el navegador renderiza el placeholder
+        if (!texto) {
+            if (origen === "entrada") outputTexto.value = "";
+            else inputTexto.value = "";
             return;
         }
 
-        // 3. Obtenemos el resto de valores
-        const operacion = document.querySelector('input[name="operacion"]:checked').value;
-        const clave = inputClave.value;
-        const idioma = selectIdioma.value;
-        const alfabetoCustom = inputCustom.value;
+        if (selectIdioma.value === "CUSTOM" && !obtenerAlfabeto()) {
+            mostrarError("El alfabeto personalizado necesita al menos 2 letras distintas.");
+            return;
+        }
 
-        // 4. Enviamos
+        if (!clave) {
+            avisarClave();
+            return;
+        }
+
+        if (!stompClient || !stompClient.connected) return;
+
         stompClient.send("/app/vigenere", {}, JSON.stringify({
-            'texto': texto,
-            'operacion': operacion,
-            'clave': clave,
-            'idioma': idioma,
-            'alfabetoCustom': alfabetoCustom
+            texto,
+            operacion,
+            clave,
+            idioma: selectIdioma.value,
+            alfabetoCustom
         }));
     }
 
-    // Eventos
-    inputTexto.addEventListener('input', enviarDatos);
-    inputClave.addEventListener('input', enviarDatos);
-    inputCustom.addEventListener('input', enviarDatos);
-    radiosOperacion.forEach(radio => radio.addEventListener('change', enviarDatos));
+    function avisarClave() {
+        const ahora = Date.now();
+        if (ahora - ultimoToastClave > 1800) {
+            mostrarError("La clave necesita al menos una letra del alfabeto seleccionado.");
+            ultimoToastClave = ahora;
+        }
+    }
 
-    selectIdioma.addEventListener('change', (e) => {
-        if (e.target.value === 'CUSTOM') customContainer.classList.remove('hidden');
-        else customContainer.classList.add('hidden');
-        enviarDatos();
+    inputTexto.addEventListener("input", () => enviarDatos("entrada"));
+    outputTexto.addEventListener("input", () => enviarDatos("salida"));
+
+    inputClave.addEventListener("input", () => {
+        inputClave.value = inputClave.value.toUpperCase();
+        resaltarTabla();
+        enviarDatos(ultimoCampoEditado);
     });
 
-    btnCopiar.addEventListener('click', () => {
-        outputTexto.select();
-        document.execCommand("copy");
+    inputCustom.addEventListener("input", () => {
+        inputCustom.value = limpiarLetrasUnicas(inputCustom.value);
+        construirTabla();
+        enviarDatos(ultimoCampoEditado);
     });
-    // Utilidades UX
-    btnPegar.addEventListener('click', async () => {
+
+    selectIdioma.addEventListener("change", () => {
+        customContainer.classList.toggle("hidden", selectIdioma.value !== "CUSTOM");
+        construirTabla();
+        enviarDatos(ultimoCampoEditado);
+    });
+
+    btnPegar.addEventListener("click", async () => {
         try {
-            // Solicita el texto del portapapeles de forma nativa
             const textoPortapapeles = await navigator.clipboard.readText();
-
             if (textoPortapapeles) {
                 inputTexto.value = textoPortapapeles;
-                enviarDatos(); // Desencadena el cifrado en tiempo real automáticamente
+                enviarDatos("entrada");
                 inputTexto.focus();
             }
-        } catch (err) {
-            // Manejo de UX en caso de que el navegador bloquee los permisos de lectura
+        } catch {
             mostrarError("Permiso denegado. Concede acceso al portapapeles en tu navegador.");
         }
     });
 
-    btnLimpiar.addEventListener('click', () => {
+    btnLimpiar.addEventListener("click", () => {
         inputTexto.value = "";
-        enviarDatos();
+        outputTexto.value = "";
+        resaltarTabla();
         inputTexto.focus();
     });
 
-    function mostrarError(mensaje) {
-        const container = document.getElementById('toast-container');
-        const toast = document.createElement('div');
-        toast.className = 'bg-red-500/90 text-white px-4 py-3 rounded shadow-lg border border-red-700 flex items-center gap-3 backdrop-blur-sm animate-fade-in';
-        toast.innerHTML = `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg> <span class="text-sm font-medium">${mensaje}</span>`;
+    btnCopiar.addEventListener("click", async () => {
+        if (!outputTexto.value) return;
+
+        try {
+            await navigator.clipboard.writeText(outputTexto.value);
+            mostrarExito("Texto copiado al portapapeles");
+        } catch {
+            outputTexto.select();
+            document.execCommand("copy");
+        }
+    });
+
+    function mostrarToast(mensaje, tipo) {
+        const container = document.getElementById("toast-container");
+        const toast = document.createElement("div");
+        const isError = tipo === "error";
+        toast.className = `px-4 py-3 rounded-xl shadow-xl border backdrop-blur-sm text-sm font-medium ${
+            isError
+                ? "bg-red-950/90 text-red-200 border-red-700/50"
+                : "bg-emerald-950/90 text-emerald-200 border-emerald-700/50"
+        }`;
+        toast.textContent = mensaje;
         container.appendChild(toast);
-        setTimeout(() => { toast.style.opacity = '0'; toast.style.transition = 'opacity 0.5s ease'; setTimeout(() => toast.remove(), 500); }, 3000);
+        setTimeout(() => {
+            toast.style.opacity = "0";
+            toast.style.transition = "opacity .35s ease";
+            setTimeout(() => toast.remove(), 350);
+        }, 2800);
     }
 
+    function mostrarError(mensaje) {
+        mostrarToast(mensaje, "error");
+    }
+
+    function mostrarExito(mensaje) {
+        mostrarToast(mensaje, "ok");
+    }
+
+    construirTabla();
+    resaltarTabla();
     connect();
 });

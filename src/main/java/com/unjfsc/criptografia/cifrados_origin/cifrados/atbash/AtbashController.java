@@ -26,7 +26,8 @@ public class AtbashController {
 
         String resultado = atbashService.procesarAtbash(
                 request.getTexto(),
-                idioma
+                idioma,
+                request.getAlfabetoCustom()
         );
 
         return new CifradoResponse(resultado, "ATBASH");
