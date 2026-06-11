@@ -166,20 +166,29 @@
         <div>
             <div class="flex items-center gap-2 mb-1">
                 <h1 class="text-2xl sm:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 via-teal-300 to-amber-300">
-                    Cifrado Vigenere
+                    Cifrado Vigenére
                 </h1>
                 <span class="flex items-center gap-1.5 text-[10px] font-semibold text-slate-500 bg-slate-900 border border-slate-700 px-2 py-0.5 rounded-full">
                     <span class="conn-dot" id="connDot"></span>
                     <span id="connLabel">offline</span>
                 </span>
             </div>
-            <p class="text-slate-400 text-xs sm:text-sm">Cifrado polialfabetico con clave repetida y tablero dinamico.</p>
+            <p class="text-slate-400 text-xs sm:text-sm">Cifrado polialfabetico con clave repetida y tablero dinámico.</p>
         </div>
-        <a th:href="@{/}" class="btn-action btn-util w-full sm:w-auto">Inicio</a>
+        <a th:href="@{/}" class="btn-action btn-util w-full sm:w-auto">Volver al Inicio</a>
     </header>
 
     <main class="grid grid-cols-1 xl:grid-cols-12 gap-5">
         <section class="glass-panel rounded-2xl p-4 sm:p-5 xl:col-span-7">
+            <div class="mt-8 p-4 bg-purple-500/10 border border-purple-500/20 rounded-lg">
+                <h3 class="text-purple-400 font-bold text-sm mb-2 flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    ¿Cómo funciona?
+                </h3>
+                <p class="text-xs text-slate-400 leading-relaxed">
+                    Vigenére es una sustitución polialfabética. Utiliza una palabra clave que se repite a lo largo del texto. La posición de cada letra de la clave en el alfabeto determina el desplazamiento exacto que sufrirá la letra correspondiente de tu texto.
+                </p>
+            </div>
             <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
                 <div>
                     <p class="section-title text-cyan-400">Tabla Vigenere</p>
@@ -199,7 +208,7 @@
                         <label for="idioma" class="section-title block mb-2">Alfabeto</label>
                         <select id="idioma" class="w-full bg-slate-950/70 border border-slate-700 text-slate-100 text-sm rounded-xl px-3 py-2.5 outline-none focus:border-teal-400">
                             <option value="ES">Espa&ntilde;ol (incluye &Ntilde;)</option>
-                            <option value="EN">Ingles</option>
+                            <option value="EN">Inglés</option>
                             <option value="CUSTOM">Personalizado</option>
                         </select>
 

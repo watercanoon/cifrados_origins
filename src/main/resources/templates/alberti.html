@@ -178,26 +178,60 @@
 
           <!-- Idioma -->
           <div>
-            <p class="section-title mb-2">Alfabeto</p>
+            <div class="flex justify-between items-center mb-2">
+              <p class="section-title">Alfabeto</p>
+              <span id="alertaLongitud" class="text-[9px] font-bold text-red-400 hidden">¡Longitud desigual!</span>
+            </div>
             <select id="idiomaSelector" class="lang-select w-full">
               <option value="ES">🇪🇸 Español — 27 letras (con Ñ)</option>
               <option value="EN">🇬🇧 English — 26 letters</option>
+              <option value="CUSTOM">⚙️ Personalizado (Libre)</option>
             </select>
+
+            <div id="customAlphabetContainer" class="hidden mt-3 space-y-2 bg-slate-900/60 p-3 rounded-xl border border-cyan-500/30 shadow-inner">
+              <div>
+                <div class="flex justify-between">
+                  <label class="text-[10px] uppercase font-bold text-slate-500">Disco Exterior (Plano)</label>
+                  <span id="countExt" class="text-[10px] font-bold text-cyan-500">26</span>
+                </div>
+                <input type="text" id="customExt" value="ABCDEFGHIJKLMNOPQRSTUVWXYZ" class="w-full mt-1 bg-slate-950 border border-slate-700 rounded-lg text-slate-300 text-xs p-2 font-mono outline-none focus:border-cyan-500 transition">
+              </div>
+              <div>
+                <div class="flex justify-between">
+                  <label class="text-[10px] uppercase font-bold text-slate-500">Disco Interior (Cifrado)</label>
+                  <span id="countInt" class="text-[10px] font-bold text-cyan-500">26</span>
+                </div>
+                <input type="text" id="customInt" value="cdefghijklmnopqrstuvwxyzab" class="w-full mt-1 bg-slate-950 border border-slate-700 rounded-lg text-cyan-300 text-xs p-2 font-mono outline-none focus:border-cyan-500 transition">
+              </div>
+            </div>
           </div>
 
           <!-- Slider desfase -->
-          <div>
+          <div class="mt-6">
             <div class="flex justify-between items-center mb-3">
               <p class="section-title">Desfase Inicial (Giro)</p>
-              <div class="flex items-center gap-1.5">
-                <span id="claveValueDisplay" class="text-lg font-black text-cyan-400 tabular-nums w-7 text-right">0</span>
-                <span class="text-xs text-slate-500">pos</span>
+              <div class="flex items-center gap-1.5 bg-slate-950/50 px-3 py-1 rounded-lg border border-slate-800">
+                <span id="claveValueDisplay" class="text-lg font-black text-cyan-400 tabular-nums w-6 text-right">0</span>
+                <span class="text-[10px] uppercase font-bold text-slate-500">pos</span>
               </div>
             </div>
-            <input type="range" id="clave" min="0" max="25" value="0" class="w-full" style="--fill: 0%">
-            <div class="flex justify-between mt-1.5">
-              <span class="text-[10px] text-slate-600">0</span>
-              <span class="text-[10px] text-slate-600">25</span>
+
+            <div class="flex items-center gap-3 bg-slate-900/50 p-2 rounded-xl border border-slate-700/50">
+              <button type="button" id="btnRestar" class="w-10 h-10 shrink-0 rounded-lg bg-slate-800 flex items-center justify-center text-slate-400 hover:text-cyan-400 hover:bg-slate-700 transition cursor-pointer active:scale-95 border border-slate-600 shadow-md">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"/></svg>
+              </button>
+
+              <div class="flex-1 px-2">
+                <input type="range" id="clave" min="0" max="26" value="0" class="w-full" style="--fill: 0%">
+                <div class="flex justify-between mt-1.5 px-1">
+                  <span class="text-[10px] font-bold text-slate-600">0</span>
+                  <span class="text-[10px] font-bold text-slate-600" id="maxDisplay">26</span>
+                </div>
+              </div>
+
+              <button type="button" id="btnSumar" class="w-10 h-10 shrink-0 rounded-lg bg-slate-800 flex items-center justify-center text-slate-400 hover:text-cyan-400 hover:bg-slate-700 transition cursor-pointer active:scale-95 border border-slate-600 shadow-md">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+              </button>
             </div>
           </div>
 
@@ -228,22 +262,28 @@
         </div>
 
         <!-- Disco concéntrico -->
-        <div class="relative w-60 h-60 sm:w-72 sm:h-72 rounded-full disk-container flex items-center justify-center">
+        <div class="relative w-64 h-64 sm:w-80 sm:h-80 rounded-full disk-container flex items-center justify-center shadow-[0_0_30px_rgba(6,182,212,0.15)] mt-4">
 
-          <!-- Marcador triangular -->
-          <div class="align-marker"></div>
+          <div class="absolute -top-3 left-1/2 -translate-x-1/2 flex flex-col items-center z-30 pointer-events-none drop-shadow-[0_0_8px_rgba(34,211,238,0.8)]">
+            <div class="bg-cyan-500 text-slate-950 text-[9px] font-black px-2.5 py-0.5 rounded-t-sm uppercase tracking-widest border border-cyan-300">Target</div>
+            <div class="w-0 h-0 border-l-[12px] border-r-[12px] border-t-[16px] border-l-transparent border-r-transparent border-t-cyan-500"></div>
+          </div>
 
-          <!-- Anillo exterior (fijo) -->
+          <div class="absolute top-0 w-8 h-[45%] bg-gradient-to-b from-cyan-500/20 to-transparent z-10 pointer-events-none" style="clip-path: polygon(50% 0%, 100% 0%, 50% 100%, 0% 0%); top: -10px;"></div>
+
           <div id="outerRing" class="absolute w-full h-full rounded-full"></div>
 
-          <!-- Anillo interior (móvil) -->
-          <div id="innerWheel" class="alberti-wheel absolute w-40 h-40 sm:w-48 sm:h-48 rounded-full border-2 border-cyan-500/30 bg-slate-900/90 flex items-center justify-center shadow-inner">
-            <div id="innerLetters" class="absolute w-full h-full"></div>
+          <div id="innerWheel" class="alberti-wheel absolute w-44 h-44 sm:w-56 sm:h-56 rounded-full border border-cyan-500/40 bg-slate-900/95 flex items-center justify-center shadow-[inset_0_15px_30px_rgba(0,0,0,0.8)]">
+            <div id="innerLetters" class="absolute w-full h-full z-10"></div>
 
-            <!-- Display central -->
-            <div class="w-16 h-16 rounded-full bg-slate-950 border border-slate-800/80 flex flex-col items-center justify-center z-20 shadow-lg relative">
-              <span class="text-[9px] text-slate-500 uppercase tracking-tight">Giro</span>
-              <span id="diskAngleDisplay" class="text-sm font-black text-cyan-400 tabular-nums">0</span>
+            <div class="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-slate-950 border-[5px] border-slate-800/80 shadow-[0_10px_20px_rgba(0,0,0,0.6),inset_0_2px_8px_rgba(255,255,255,0.05)] flex flex-col items-center justify-center z-20 relative">
+              <div class="absolute top-1.5 left-1.5 w-1.5 h-1.5 rounded-full bg-slate-900 shadow-inner"></div>
+              <div class="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-slate-900 shadow-inner"></div>
+              <div class="absolute bottom-1.5 left-1.5 w-1.5 h-1.5 rounded-full bg-slate-900 shadow-inner"></div>
+              <div class="absolute bottom-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-slate-900 shadow-inner"></div>
+
+              <span class="text-[9px] text-slate-500 uppercase tracking-tight font-bold mb-1">Giro</span>
+              <span id="diskAngleDisplay" class="text-xl sm:text-2xl font-black text-cyan-400 tabular-nums drop-shadow-[0_0_5px_rgba(34,211,238,0.4)]">0</span>
             </div>
           </div>
         </div>

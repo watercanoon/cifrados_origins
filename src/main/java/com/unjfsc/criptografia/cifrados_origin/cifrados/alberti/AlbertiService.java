@@ -5,41 +5,67 @@ import org.springframework.stereotype.Service;
 @Service
 public class AlbertiService {
 
-    private final String ALFABETO_EXTERIOR = "ABCDEFGHIJKLMNÑOPQRSTUVWXYZ";
-    private final String ALFABETO_INTERIOR = "cdefghijkmnñopqrstuvwxyzab"; // Minúsculas clásicas de Alberti
+    // 1. Alfabetos ES (Longitud exacta: 27) - Se corrigió la 'l' faltante en el interior
+    private static final String ES_EXT = "ABCDEFGHIJKLMNÑOPQRSTUVWXYZ";
+    private static final String ES_INT = "cdefghijklmnñopqrstuvwxyzab";
 
-    public String cifrar(String texto, int giro) {
-        if (texto == null) return "";
-        StringBuilder resultado = new StringBuilder();
-        String txt = texto.toUpperCase();
+    // 2. Alfabetos EN (Longitud exacta: 26)
+    private static final String EN_EXT = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    private static final String EN_INT = "cdefghijklmnopqrstuvwxyzab";
 
-        for (char c : txt.toCharArray()) {
-            int idxExt = ALFABETO_EXTERIOR.indexOf(c);
-            if (idxExt != -1) {
-                // Calcular la posición desplazada en el anillo interior
-                int idxInt = (idxExt + giro) % ALFABETO_INTERIOR.length();
-                resultado.append(ALFABETO_INTERIOR.charAt(idxInt));
-            } else {
-                resultado.append(c); // Pasa intacto espacios y caracteres especiales
-            }
-        }
-        return resultado.toString();
+    public String cifrar(String texto, int giro, String idioma, String alfExtCustom, String alfIntCustom) {
+        return procesar(texto, giro, idioma, true, alfExtCustom, alfIntCustom);
     }
 
-    public String descifrar(String texto, int giro) {
-        if (texto == null) return "";
+    public String descifrar(String texto, int giro, String idioma, String alfExtCustom, String alfIntCustom) {
+        return procesar(texto, giro, idioma, false, alfExtCustom, alfIntCustom);
+    }
+
+    private String procesar(String texto, int giro, String idioma, boolean isCifrar, String alfExtCustom, String alfIntCustom) {
+        if (texto == null || texto.isEmpty()) return "";
+
+        String alfExt = ES_EXT;
+        String alfInt = ES_INT;
+
+        if ("EN".equalsIgnoreCase(idioma)) {
+            alfExt = EN_EXT;
+            alfInt = EN_INT;
+        } else if ("CUSTOM".equalsIgnoreCase(idioma)) {
+            // Validar que no sean nulos y tengan la misma longitud
+            if (alfExtCustom == null || alfIntCustom == null || alfExtCustom.isEmpty()) {
+                throw new IllegalArgumentException("Los alfabetos personalizados no pueden estar vacíos.");
+            }
+            if (alfExtCustom.length() != alfIntCustom.length()) {
+                throw new IllegalArgumentException("Ambos alfabetos deben tener exactamente la misma longitud.");
+            }
+            alfExt = alfExtCustom;
+            alfInt = alfIntCustom;
+        }
+
+        int moduloLen = alfExt.length();
         StringBuilder resultado = new StringBuilder();
-        String txt = texto.toLowerCase();
+
+        // En custom respetamos el case original, sino forzamos mayúsculas/minúsculas
+        String txt = "CUSTOM".equalsIgnoreCase(idioma) ? texto : (isCifrar ? texto.toUpperCase() : texto.toLowerCase());
 
         for (char c : txt.toCharArray()) {
-            int idxInt = ALFABETO_INTERIOR.indexOf(c);
-            if (idxInt != -1) {
-                // Deshacer el giro para buscar el carácter original exterior
-                int idxExt = (idxInt - giro) % ALFABETO_EXTERIOR.length();
-                if (idxExt < 0) idxExt += ALFABETO_EXTERIOR.length();
-                resultado.append(ALFABETO_EXTERIOR.charAt(idxExt));
+            if (isCifrar) {
+                int idxExt = alfExt.indexOf(c);
+                if (idxExt != -1) {
+                    int idxInt = (idxExt + giro) % moduloLen;
+                    resultado.append(alfInt.charAt(idxInt));
+                } else {
+                    resultado.append(c);
+                }
             } else {
-                resultado.append(c);
+                int idxInt = alfInt.indexOf(c);
+                if (idxInt != -1) {
+                    int idxExt = (idxInt - giro) % moduloLen;
+                    if (idxExt < 0) idxExt += moduloLen;
+                    resultado.append(alfExt.charAt(idxExt));
+                } else {
+                    resultado.append(c);
+                }
             }
         }
         return resultado.toString();
