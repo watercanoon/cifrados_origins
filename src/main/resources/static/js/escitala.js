@@ -90,8 +90,8 @@ document.addEventListener("DOMContentLoaded", () => {
     // MOTOR 3D
     // ==========================================
     // ==========================================
-// MOTOR 3D REFACTORIZADO: CILINDRO CONTINUO
-// ==========================================
+    // MOTOR 3D REFACTORIZADO: CILINDRO CONTINUO
+    // ==========================================
     function construirCilindro3D(texto, diametro) {
         cylinder.innerHTML = "";
         // Aseguramos que el contenedor sostenga la profundidad
@@ -178,12 +178,23 @@ document.addEventListener("DOMContentLoaded", () => {
 
             // Estilos: Hemos eliminado los fondos sólidos. Ahora el texto proyecta una luz sobre el cilindro.
             if (vistaActual === 'HORIZONTAL') {
-                face.className = "face-3d flex flex-row items-center justify-center font-mono font-black text-lg tracking-[0.4em] text-cyan-300 drop-shadow-[0_0_8px_rgba(34,211,238,0.7)]";
+                face.className = "face-3d flex flex-row items-center justify-center font-mono font-black text-lg text-cyan-300 gap-x-4 drop-shadow-[0_0_8px_rgba(34,211,238,0.7)]";
                 face.style.width     = "100%";
                 face.style.height    = `${faceSize}px`;
                 face.style.top       = `calc(50% - ${faceSize/2}px)`;
                 face.style.transform = `rotateX(${i * anglePerFace}deg) translateZ(${textRadius}px)`;
-                face.textContent     = textoCara;
+                
+                if (longitudOriginal > 0) {
+                    for (let j = 0; j < caracteresPorVuelta; j++) {
+                        const span = document.createElement('span');
+                        span.textContent = textoCara.charAt(j);
+                        span.className = "baston-char";
+                        span.dataset.index = i * caracteresPorVuelta + j;
+                        face.appendChild(span);
+                    }
+                } else {
+                    face.textContent = textoCara;
+                }
             } else {
                 face.className = "face-3d flex flex-col items-center justify-center font-mono font-black text-lg text-cyan-300 gap-1 py-3 drop-shadow-[0_0_8px_rgba(34,211,238,0.7)]";
                 face.style.width     = `${faceSize}px`;
@@ -191,13 +202,113 @@ document.addEventListener("DOMContentLoaded", () => {
                 face.style.left      = `calc(50% - ${faceSize/2}px)`;
                 face.style.transform = `rotateY(${i * anglePerFace}deg) translateZ(${textRadius}px)`;
 
-                for (let char of textoCara) {
-                    const span = document.createElement('span');
-                    span.textContent = char;
-                    face.appendChild(span);
+                if (longitudOriginal > 0) {
+                    for (let j = 0; j < caracteresPorVuelta; j++) {
+                        const span = document.createElement('span');
+                        span.textContent = textoCara.charAt(j);
+                        span.className = "baston-char";
+                        span.dataset.index = i * caracteresPorVuelta + j;
+                        face.appendChild(span);
+                    }
+                } else {
+                    for (let char of textoCara) {
+                        const span = document.createElement('span');
+                        span.textContent = char;
+                        face.appendChild(span);
+                    }
                 }
             }
             cylinder.appendChild(face);
+        }
+
+        // -------------------------------------------------------------
+        // CAPA 3: SIMULACIÓN DE LA CINTA DESENROLLADA (ORDEN DEL CRIPTOGRAMA)
+        // -------------------------------------------------------------
+        const cintaEl = document.getElementById("cintaDesenrollada");
+        cintaEl.innerHTML = "";
+
+        if (longitudOriginal > 0) {
+            for (let k = 0; k < txt.length; k++) {
+                const charCell = document.createElement("div");
+                charCell.className = "cinta-cell w-9 h-9 rounded-lg flex items-center justify-center font-mono font-black text-sm relative border border-slate-700/60 shadow-md cursor-pointer select-none";
+                
+                // Mapear el índice del criptograma k (leído fila por fila) al índice del texto original (escrito col por col)
+                const c = k % diametro;
+                const f = Math.floor(k / diametro);
+                const originalIdx = c * caracteresPorVuelta + f;
+
+                charCell.dataset.index = originalIdx;
+                charCell.textContent = txt.charAt(originalIdx);
+
+                // Pequeña etiqueta de posición en el criptograma
+                const indexLabel = document.createElement("span");
+                indexLabel.className = "absolute bottom-0.5 right-1 text-[8px] text-slate-500 font-semibold";
+                indexLabel.textContent = k + 1;
+                charCell.appendChild(indexLabel);
+
+                cintaEl.appendChild(charCell);
+            }
+
+            // Registrar eventos hover para interactividad bidireccional
+            const ribbonCells = cintaEl.querySelectorAll(".cinta-cell");
+            const cylinderChars = cylinder.querySelectorAll(".baston-char");
+
+            ribbonCells.forEach(cell => {
+                cell.addEventListener("mouseenter", () => {
+                    const idx = cell.dataset.index;
+                    cell.classList.add("highlighted");
+
+                    const targetChar = cylinder.querySelector(`.baston-char[data-index="${idx}"]`);
+                    if (targetChar) {
+                        targetChar.classList.add("highlighted");
+
+                        // Orientar automáticamente el cilindro para ver la letra de esa cara
+                        const c = Math.floor(idx / caracteresPorVuelta);
+                        const targetAngle = -c * anglePerFace;
+                        if (!autoGiroActivo) {
+                            aplicarGiro(targetAngle);
+                        }
+                    }
+                });
+
+                cell.addEventListener("mouseleave", () => {
+                    const idx = cell.dataset.index;
+                    cell.classList.remove("highlighted");
+
+                    const targetChar = cylinder.querySelector(`.baston-char[data-index="${idx}"]`);
+                    if (targetChar) {
+                        targetChar.classList.remove("highlighted");
+                    }
+                    if (!autoGiroActivo) {
+                        aplicarGiro(currentAngle);
+                    }
+                });
+            });
+
+            cylinderChars.forEach(char => {
+                char.addEventListener("mouseenter", () => {
+                    const idx = char.dataset.index;
+                    char.classList.add("highlighted");
+
+                    const targetCell = cintaEl.querySelector(`.cinta-cell[data-index="${idx}"]`);
+                    if (targetCell) {
+                        targetCell.classList.add("highlighted");
+                        targetCell.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+                    }
+                });
+
+                char.addEventListener("mouseleave", () => {
+                    const idx = char.dataset.index;
+                    char.classList.remove("highlighted");
+
+                    const targetCell = cintaEl.querySelector(`.cinta-cell[data-index="${idx}"]`);
+                    if (targetCell) {
+                        targetCell.classList.remove("highlighted");
+                    }
+                });
+            });
+        } else {
+            cintaEl.innerHTML = `<span class="text-xs text-slate-600 font-mono italic">Esperando entrada...</span>`;
         }
 
         aplicarGiro(currentAngle);

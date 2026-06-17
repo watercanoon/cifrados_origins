@@ -6,56 +6,76 @@ import org.springframework.stereotype.Service;
 public class EscitalaService {
 
     public String procesarEscitala(String texto, int columnas, String operacion) {
-        if (columnas <= 1 || texto.length() <= 1) {
-            return texto; // No hay transposición posible
+        if (columnas <= 1 || texto == null || texto.length() <= 1) {
+            return texto; // No hay transposición posible o entrada inválida
         }
 
-        // Para evitar problemas con los espacios en la transposición, se recomienda mantenerlos
-        // o rellenar la matriz. Optaremos por la transposición matemática directa.
-        int longitud = texto.length();
-        int filas = (int) Math.ceil((double) longitud / columnas);
-        StringBuilder resultado = new StringBuilder();
+        // Limpieza de texto: removemos todos los espacios y pasamos a mayúsculas
+        String txtLimpio = texto.replaceAll("\\s+", "").toUpperCase();
+        if (txtLimpio.isEmpty()) {
+            return "";
+        }
 
         if ("CIFRAR".equalsIgnoreCase(operacion)) {
-            // Cifrar: Leemos por columnas
-            for (int c = 0; c < columnas; c++) {
-                for (int f = 0; f < filas; f++) {
-                    int index = f * columnas + c;
+            // Relleno con 'X' para que la longitud sea múltiplo de las columnas (diámetro)
+            int longitudOriginal = txtLimpio.length();
+            int resto = longitudOriginal % columnas;
+            if (resto != 0) {
+                int relleno = columnas - resto;
+                txtLimpio = txtLimpio + "X".repeat(relleno);
+            }
+
+            int longitud = txtLimpio.length();
+            int filas = longitud / columnas;
+            StringBuilder resultado = new StringBuilder();
+
+            // Cifrado físico: el texto se escribe en el bastón por columnas (longitudinalmente)
+            // y se lee fila por fila (al desenrollar la cinta).
+            for (int f = 0; f < filas; f++) {
+                for (int c = 0; c < columnas; c++) {
+                    // El carácter en la fila f, columna c proviene del índice c * filas + f
+                    // en el texto original que se escribió columna por columna
+                    int index = c * filas + f;
                     if (index < longitud) {
-                        resultado.append(texto.charAt(index));
+                        resultado.append(txtLimpio.charAt(index));
                     }
                 }
             }
+            return resultado.toString();
+
         } else {
-            // Descifrar: Reconstruimos la matriz original
-            // Calculamos cuántas celdas vacías quedarían en la última fila
+            // Descifrado físico: la tira recibida (cifrada, leída por filas)
+            // se enrolla en el bastón (se escribe fila por fila)
+            // y se lee a lo largo de las caras (columna por columna).
+            int longitud = txtLimpio.length();
+            int filas = (int) Math.ceil((double) longitud / columnas);
+            StringBuilder resultado = new StringBuilder();
+
             int celdasVacias = (filas * columnas) - longitud;
             int columnasCompletas = columnas - celdasVacias;
 
-            int index = 0;
             char[][] matriz = new char[filas][columnas];
+            int index = 0;
 
-            for (int c = 0; c < columnas; c++) {
-                // Si la columna actual está en la zona de "celdas vacías", tiene una fila menos
-                int limiteFilas = (c < columnasCompletas) ? filas : filas - 1;
-                for (int f = 0; f < limiteFilas; f++) {
+            // Se escribe la cinta fila por fila
+            for (int f = 0; f < filas; f++) {
+                int limiteColumnas = (f == filas - 1) ? columnasCompletas : columnas;
+                for (int c = 0; c < limiteColumnas; c++) {
                     if (index < longitud) {
-                        matriz[f][c] = texto.charAt(index++);
+                        matriz[f][c] = txtLimpio.charAt(index++);
                     }
                 }
             }
 
-            // Leemos por filas para reconstruir el texto
-            for (int f = 0; f < filas; f++) {
-                for (int c = 0; c < columnas; c++) {
-                    // Evitamos leer posiciones nulas (carácter por defecto '\u0000')
+            // Se lee columna por columna (longitudinalmente)
+            for (int c = 0; c < columnas; c++) {
+                for (int f = 0; f < filas; f++) {
                     if (matriz[f][c] != '\u0000') {
                         resultado.append(matriz[f][c]);
                     }
                 }
             }
+            return resultado.toString();
         }
-
-        return resultado.toString();
     }
 }
