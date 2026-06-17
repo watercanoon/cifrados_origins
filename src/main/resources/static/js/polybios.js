@@ -124,7 +124,7 @@ document.addEventListener("DOMContentLoaded", () => {
             });
         }, function () {
             setConnStatus(false);
-            mostrarError("Conexion perdida. Reconectando...");
+            mostrarError("Conexión perdida. Reconectando...");
             setTimeout(connect, 3000);
         });
     }
@@ -222,8 +222,8 @@ document.addEventListener("DOMContentLoaded", () => {
     function mostrarExito(msg) { mostrarToast(msg, "ok"); }
 
     const tutorialData = [
-        { element: "#panelParametros", title: "Operacion y alfabeto", text: "Elige si quieres cifrar texto o descifrar coordenadas. El cuadrado usa una matriz fija de 5x5." },
-        { element: "#panelSimulador", title: "La cuadricula 5x5", text: "Cada celda tiene coordenadas de fila y columna. Al escribir, se resalta la letra o par actual." },
+        { element: "#panelParametros", title: "Operación y alfabeto", text: "Elige si quieres cifrar texto o descifrar coordenadas. El cuadrado usa una matriz fija de 5x5." },
+        { element: "#panelSimulador", title: "La cuadrícula 5x5", text: "Cada celda tiene coordenadas de fila y columna. Al escribir, se resalta la letra o par actual." },
         { element: "#panelEntrada", title: "El mensaje", text: "Escribe texto para cifrar o coordenadas para descifrar. Los espacios se ignoran al descifrar." },
         { element: "#panelSalida", title: "Las coordenadas", text: "Al cifrar, cada letra se convierte en un par separado por espacios." }
     ];

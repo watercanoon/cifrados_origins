@@ -143,7 +143,7 @@ document.addEventListener("DOMContentLoaded", () => {
             });
         }, function () {
             setConnStatus(false);
-            mostrarError("Conexion interrumpida. Reconectando...");
+            mostrarError("Conexión interrumpida. Reconectando...");
             setTimeout(connect, 3000);
         });
     }

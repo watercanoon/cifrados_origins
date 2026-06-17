@@ -32,7 +32,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
             recalcularDesdeUltimoCampo();
         }, function () {
-            mostrarError("Conexion perdida. Reconectando...");
+            mostrarError("Conexión perdida. Reconectando...");
             setTimeout(connect, 3000);
         });
     }

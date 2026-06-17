@@ -211,7 +211,7 @@ document.addEventListener("DOMContentLoaded", () => {
             });
         }, function () {
             setConnStatus(false);
-            mostrarError("Conexion perdida. Reconectando...");
+            mostrarError("Conexión perdida. Reconectando...");
             setTimeout(connect, 3000);
         });
     }

@@ -8,6 +8,8 @@ public class CifradoRequest {
     private String alfabetoCustom; // NUEVO: Para recibir alfabetos creados por el usuario
     private String alfabetoCustomExt; // Para el disco fijo (Exterior)
     private String alfabetoCustomInt; // Para el disco móvil (Interior)
+    private String tipoColumnas; // NUEVO: Para el modo de transposición por columnas ("SIMPLE" o "CLAVE")
+    private String tipoFilas; // NUEVO: Para el modo de transposición por filas ("SIMPLE" o "CLAVE")
 
     // Genera los Getters y Setters para todos, incluyendo el nuevo:
     public String getAlfabetoCustom() { return alfabetoCustom; }
@@ -27,4 +29,10 @@ public class CifradoRequest {
 
     public String getAlfabetoCustomInt() { return alfabetoCustomInt; }
     public void setAlfabetoCustomInt(String alfabetoCustomInt) { this.alfabetoCustomInt = alfabetoCustomInt; }
-}
+
+    public String getTipoColumnas() { return tipoColumnas; }
+    public void setTipoColumnas(String tipoColumnas) { this.tipoColumnas = tipoColumnas; }
+
+    public String getTipoFilas() { return tipoFilas; }
+    public void setTipoFilas(String tipoFilas) { this.tipoFilas = tipoFilas; }
+}

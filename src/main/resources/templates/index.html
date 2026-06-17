@@ -17,7 +17,7 @@
                 <div class="w-8 h-8 rounded bg-gradient-to-br from-blue-500 to-emerald-500 flex items-center justify-center font-bold text-white shadow-lg shadow-blue-500/20">
                     C
                 </div>
-                <span class="font-bold text-xl tracking-tight text-white">Cripto<span class="text-blue-400">grafia I</span></span>
+                <span class="font-bold text-xl tracking-tight text-white">Cripto<span class="text-blue-400">grafía I</span></span>
             </div>
             <div class="flex items-center gap-4">
                 <div class="hidden md:flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20">
@@ -64,7 +64,7 @@
                 <span class="px-3 py-1 text-xs font-bold uppercase tracking-wider text-purple-400 bg-purple-400/10 border border-purple-400/20 rounded-lg">Módulo 02</span>
                 <svg class="w-6 h-6 text-slate-500 group-hover:text-purple-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
             </div>
-            <h2 class="text-2xl font-bold text-white mb-2 relative z-10 group-hover:text-purple-300 transition-colors">Vigenére</h2>
+            <h2 class="text-2xl font-bold text-white mb-2 relative z-10 group-hover:text-purple-300 transition-colors">Vigenère</h2>
             <p class="text-sm text-slate-400 flex-grow relative z-10">Cifrado polialfabético que utiliza una palabra clave para realizar desplazamientos variables.</p>
             <div class="mt-6 pt-4 border-t border-slate-700/50 flex gap-2 relative z-10">
                 <span class="text-[10px] uppercase font-semibold text-slate-500 bg-slate-800/50 px-2 py-1 rounded">Polialfabético</span>
@@ -151,6 +151,62 @@
             <div class="mt-6 pt-4 border-t border-slate-700/50 flex gap-2 relative z-10">
                 <span class="text-[10px] uppercase font-semibold text-slate-500 bg-slate-800/50 px-2 py-1 rounded">Sust. Inversa</span>
                 <span class="text-[10px] uppercase font-semibold text-slate-500 bg-slate-800/50 px-2 py-1 rounded">Simétrico</span>
+            </div>
+        </a>
+
+        <a th:href="@{/playfair}" class="glass-panel group rounded-2xl p-6 relative overflow-hidden flex flex-col h-full cursor-pointer hover:-translate-y-1">
+            <div class="absolute top-0 right-0 w-32 h-32 bg-orange-500/10 rounded-full blur-2xl -mr-10 -mt-10 transition-all group-hover:bg-orange-500/20"></div>
+            <div class="flex items-center justify-between mb-4 relative z-10">
+                <span class="px-3 py-1 text-xs font-bold uppercase tracking-wider text-orange-400 bg-orange-400/10 border border-orange-400/20 rounded-lg">Módulo 09</span>
+                <svg class="w-6 h-6 text-slate-500 group-hover:text-orange-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+            </div>
+            <h2 class="text-2xl font-bold text-white mb-2 relative z-10 group-hover:text-orange-300 transition-colors">Cifrado Playfair</h2>
+            <p class="text-sm text-slate-400 flex-grow relative z-10">Cifrado polialfabético simétrico basado en una matriz de 5x5. Agrupa las letras en dígrafos para el procesamiento.</p>
+            <div class="mt-6 pt-4 border-t border-slate-700/50 flex gap-2 relative z-10">
+                <span class="text-[10px] uppercase font-semibold text-slate-500 bg-slate-800/50 px-2 py-1 rounded">Matriz 5x5</span>
+                <span class="text-[10px] uppercase font-semibold text-slate-500 bg-slate-800/50 px-2 py-1 rounded">Dígrafos</span>
+            </div>
+        </a>
+
+        <a th:href="@{/hill}" class="glass-panel group rounded-2xl p-6 relative overflow-hidden flex flex-col h-full cursor-pointer hover:-translate-y-1">
+            <div class="absolute top-0 right-0 w-32 h-32 bg-violet-500/10 rounded-full blur-2xl -mr-10 -mt-10 transition-all group-hover:bg-violet-500/20"></div>
+            <div class="flex items-center justify-between mb-4 relative z-10">
+                <span class="px-3 py-1 text-xs font-bold uppercase tracking-wider text-violet-400 bg-violet-400/10 border border-violet-400/20 rounded-lg">Módulo 10</span>
+                <svg class="w-6 h-6 text-slate-500 group-hover:text-violet-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+            </div>
+            <h2 class="text-2xl font-bold text-white mb-2 relative z-10 group-hover:text-violet-300 transition-colors">Cifrado de Hill</h2>
+            <p class="text-sm text-slate-400 flex-grow relative z-10">Sustitución poligrámica por bloques utilizando álgebra lineal modular y matrices invertibles.</p>
+            <div class="mt-6 pt-4 border-t border-slate-700/50 flex gap-2 relative z-10">
+                <span class="text-[10px] uppercase font-semibold text-slate-500 bg-slate-800/50 px-2 py-1 rounded">Álgebra Lineal</span>
+                <span class="text-[10px] uppercase font-semibold text-slate-500 bg-slate-800/50 px-2 py-1 rounded">Módulo N</span>
+            </div>
+        </a>
+
+        <a th:href="@{/columnas}" class="glass-panel group rounded-2xl p-6 relative overflow-hidden flex flex-col h-full cursor-pointer hover:-translate-y-1">
+            <div class="absolute top-0 right-0 w-32 h-32 bg-cyan-500/10 rounded-full blur-2xl -mr-10 -mt-10 transition-all group-hover:bg-cyan-500/20"></div>
+            <div class="flex items-center justify-between mb-4 relative z-10">
+                <span class="px-3 py-1 text-xs font-bold uppercase tracking-wider text-cyan-400 bg-cyan-400/10 border border-cyan-400/20 rounded-lg">Módulo 11</span>
+                <svg class="w-6 h-6 text-slate-500 group-hover:text-cyan-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+            </div>
+            <h2 class="text-2xl font-bold text-white mb-2 relative z-10 group-hover:text-cyan-300 transition-colors">Cifrado por Columnas</h2>
+            <p class="text-sm text-slate-400 flex-grow relative z-10">Transposición matricial secuencial por columnas simples o permutada según clave alfabética.</p>
+            <div class="mt-6 pt-4 border-t border-slate-700/50 flex gap-2 relative z-10">
+                <span class="text-[10px] uppercase font-semibold text-slate-500 bg-slate-800/50 px-2 py-1 rounded">Transposición</span>
+                <span class="text-[10px] uppercase font-semibold text-slate-500 bg-slate-800/50 px-2 py-1 rounded">Permutación</span>
+            </div>
+        </a>
+
+        <a th:href="@{/filas}" class="glass-panel group rounded-2xl p-6 relative overflow-hidden flex flex-col h-full cursor-pointer hover:-translate-y-1">
+            <div class="absolute top-0 right-0 w-32 h-32 bg-fuchsia-500/10 rounded-full blur-2xl -mr-10 -mt-10 transition-all group-hover:bg-fuchsia-500/20"></div>
+            <div class="flex items-center justify-between mb-4 relative z-10">
+                <span class="px-3 py-1 text-xs font-bold uppercase tracking-wider text-fuchsia-400 bg-fuchsia-400/10 border border-fuchsia-400/20 rounded-lg">Módulo 12</span>
+                <svg class="w-6 h-6 text-slate-500 group-hover:text-fuchsia-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+            </div>
+            <h2 class="text-2xl font-bold text-white mb-2 relative z-10 group-hover:text-fuchsia-300 transition-colors">Cifrado por Filas</h2>
+            <p class="text-sm text-slate-400 flex-grow relative z-10">Transposición matricial vertical de filas simples o permutada según clave de ordenación.</p>
+            <div class="mt-6 pt-4 border-t border-slate-700/50 flex gap-2 relative z-10">
+                <span class="text-[10px] uppercase font-semibold text-slate-500 bg-slate-800/50 px-2 py-1 rounded">Transposición</span>
+                <span class="text-[10px] uppercase font-semibold text-slate-500 bg-slate-800/50 px-2 py-1 rounded">Filas</span>
             </div>
         </a>
 

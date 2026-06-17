@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cifrado Hill - Profesional</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.5.1/sockjs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+    <link rel="stylesheet" th:href="@{/css/global.css}">
+    <style>
+        body { background-color: #0f172a; color: #f8fafc; }
+        .glass-panel { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1); }
+    </style>
+</head>
+<body class="min-h-screen p-4 md:p-8 font-sans antialiased">
+
+<div id="toast-container" class="fixed top-5 right-5 z-50 flex flex-col gap-2"></div>
+
+<div class="max-w-7xl mx-auto">
+    <header class="mb-8 flex items-center justify-between">
+        <div>
+            <h1 class="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-indigo-400">Cifrado de Hill</h1>
+            <p class="text-slate-400 text-sm mt-1">Sustitución poligrámica interactiva basada en álgebra de matrices</p>
+        </div>
+        <a th:href="@{/}" class="px-4 py-2 text-sm font-semibold text-slate-300 bg-slate-800 rounded-lg hover:bg-slate-700 transition">Volver al Inicio</a>
+    </header>
+
+    <!-- Tabla de Equivalencias del Alfabeto Activo -->
+    <div class="glass-panel rounded-2xl p-6 mb-8 overflow-x-auto custom-scrollbar">
+        <h2 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4 flex items-center gap-2">
+            <svg class="w-4 h-4 text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
+            Tabla de Equivalencias de Posiciones
+        </h2>
+        <div class="min-w-[800px] bg-slate-950/40 rounded-xl border border-slate-800/80 overflow-hidden">
+            <table class="w-full text-center border-collapse">
+                <thead>
+                    <tr id="alphabetHeadersRow" class="border-b border-slate-800 text-slate-200 font-bold text-xs uppercase bg-slate-900/30">
+                        <th class="px-4 py-3 text-left text-slate-400 font-semibold w-28 border-r border-slate-800">Alfabeto</th>
+                        <!-- Celdas de letras generadas dinámicamente por JS -->
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr id="alphabetPositionsRow" class="font-mono text-xs text-violet-400 font-bold">
+                        <td class="px-4 py-3 text-left text-slate-400 font-semibold w-28 border-r border-slate-800 bg-slate-900/10">Posición i</td>
+                        <!-- Celdas de números generadas dinámicamente por JS -->
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <!-- Panel de Parámetros (Izquierda) -->
+        <div class="lg:col-span-4 glass-panel rounded-2xl p-6 h-fit">
+            <h2 class="text-lg font-bold text-white mb-6 border-b border-slate-700 pb-2">Parámetros</h2>
+
+            <form id="hillForm" class="space-y-6" onsubmit="event.preventDefault();">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Alfabeto / Idioma</label>
+                    <select id="idioma" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2.5 text-sm text-white focus:ring-2 focus:ring-violet-500 outline-none transition">
+                        <option value="ES">Español (27 letras, incluye Ñ)</option>
+                        <option value="EN">Inglés (26 letras)</option>
+                        <option value="CUSTOM">Personalizado...</option>
+                    </select>
+                </div>
+
+                <div id="customAlphabetContainer" class="hidden animate-fade-in">
+                    <label class="block text-xs font-semibold text-emerald-400 uppercase tracking-wider mb-2">Crea tu Alfabeto Base</label>
+                    <input type="text" id="alfabetoCustom" placeholder="Ej: ABCDEFGHIJKLMNOPQRSTUVWXYZ" class="w-full bg-slate-900 border border-emerald-500/50 rounded-lg px-4 py-2.5 text-sm text-white placeholder-slate-600 focus:ring-2 focus:ring-emerald-500 outline-none uppercase transition">
+                    <p class="text-[10px] text-slate-500 mt-1">Ingresa caracteres únicos. La cantidad de caracteres definirá el módulo aritmético.</p>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Clave (Longitud cuadrado perfecto: 4, 9, 16...)</label>
+                    <input type="text" id="clave" value="FORTALEZA" placeholder="Ej: FORTALEZA (3x3)" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2.5 text-sm text-white placeholder-slate-600 focus:ring-2 focus:ring-violet-500 outline-none uppercase transition">
+                    <p class="text-[10px] text-slate-500 mt-1">Debe formar una matriz cuadrada invertible en módulo N.</p>
+                </div>
+            </form>
+
+            <!-- Estado de la Matriz -->
+            <div class="mt-6">
+                <h3 class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Información Matemática</h3>
+                <div class="p-4 bg-slate-950/60 border border-slate-700/50 rounded-xl space-y-3">
+                    <div class="flex justify-between text-xs">
+                        <span class="text-slate-400">Dimensión de Matriz:</span>
+                        <span id="matrixDimDisplay" class="font-bold text-slate-200">3x3</span>
+                    </div>
+                    <div class="flex justify-between text-xs">
+                        <span class="text-slate-400">Determinante (det K):</span>
+                        <span id="detDisplay" class="font-bold text-violet-400">0</span>
+                    </div>
+                    <div class="flex justify-between text-xs">
+                        <span class="text-slate-400">Inverso Modular del Det:</span>
+                        <span id="invDisplay" class="font-bold text-violet-400">0</span>
+                    </div>
+                    <div class="flex justify-between text-xs items-center">
+                        <span class="text-slate-400">Estado:</span>
+                        <span id="matrixStatus" class="px-2 py-0.5 rounded text-[10px] font-bold">CARGANDO...</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Matriz Visual -->
+            <div class="mt-6">
+                <h3 class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Matriz Clave ($K$)</h3>
+                <div class="p-4 bg-slate-950/60 border border-slate-700/50 rounded-xl">
+                    <div id="matrixGrid" class="grid gap-2 text-center text-xs font-bold leading-tight">
+                        <!-- Generado dinámicamente por JS -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Panel de Entradas/Salidas (Derecha) -->
+        <div class="lg:col-span-8 flex flex-col gap-6">
+            <!-- Texto Original -->
+            <div class="glass-panel rounded-2xl p-6 flex-1 flex flex-col relative group min-h-[220px]">
+                <div class="absolute inset-0 bg-gradient-to-r from-violet-500/10 to-transparent opacity-0 group-focus-within:opacity-100 rounded-2xl transition-opacity pointer-events-none"></div>
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-3 w-full relative z-10">
+                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider">Texto Original</label>
+                    <div class="flex gap-2 w-full sm:w-auto">
+                        <button id="btnPegar" type="button" class="flex-1 sm:flex-none justify-center text-xs bg-slate-800 hover:bg-violet-500/20 text-slate-300 hover:text-violet-400 border border-transparent hover:border-violet-500/30 px-3 py-1.5 rounded flex items-center gap-2 transition cursor-pointer">
+                            Pegar
+                        </button>
+                        <button id="btnLimpiar" type="button" class="flex-1 sm:flex-none justify-center text-xs bg-slate-800 hover:bg-red-500/20 text-slate-300 hover:text-red-400 border border-transparent hover:border-red-500/30 px-3 py-1.5 rounded flex items-center gap-2 transition cursor-pointer">
+                            Limpiar
+                        </button>
+                    </div>
+                </div>
+                <textarea id="textoEntrada" placeholder="Escribe texto normal para cifrarlo..." class="w-full flex-1 bg-transparent border-none text-white text-lg placeholder-slate-600 resize-none focus:ring-0 outline-none custom-scrollbar min-h-[100px]"></textarea>
+                
+                <!-- Formación de vectores en tiempo real -->
+                <div class="mt-4 pt-3 border-t border-slate-700/40 flex flex-col gap-1.5 relative z-10">
+                    <span class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider">Formación de Vectores (Bloques)</span>
+                    <div id="vectoresDisplay" class="font-mono text-sm text-violet-400 bg-slate-950/40 px-3 py-2 rounded-lg border border-slate-800 min-h-9 flex items-center break-all">
+                        Esperando texto...
+                    </div>
+                </div>
+            </div>
+
+            <!-- Texto Cifrado -->
+            <div class="glass-panel rounded-2xl p-6 flex-1 flex flex-col border-violet-500/20 relative group min-h-[200px]">
+                <div class="absolute inset-0 bg-gradient-to-r from-violet-500/10 to-transparent opacity-0 group-focus-within:opacity-100 rounded-2xl transition-opacity pointer-events-none"></div>
+                <div class="flex justify-between items-center mb-3 relative z-10">
+                    <label class="block text-xs font-semibold text-violet-400 uppercase tracking-wider">Texto Cifrado</label>
+                    <button id="btnCopiar" type="button" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded flex items-center gap-2 transition">
+                        Copiar
+                    </button>
+                </div>
+                <textarea id="textoSalida" placeholder="Escribe texto cifrado para descifrarlo..." class="w-full flex-1 bg-transparent border-none text-violet-300 text-lg font-mono resize-none outline-none custom-scrollbar min-h-[120px]"></textarea>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script th:src="@{/js/hill.js}"></script>
+</body>
+</html>

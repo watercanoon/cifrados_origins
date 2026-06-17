@@ -166,14 +166,14 @@
         <div>
             <div class="flex items-center gap-2 mb-1">
                 <h1 class="text-2xl sm:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 via-teal-300 to-amber-300">
-                    Cifrado Vigenére
+                    Cifrado Vigenère
                 </h1>
                 <span class="flex items-center gap-1.5 text-[10px] font-semibold text-slate-500 bg-slate-900 border border-slate-700 px-2 py-0.5 rounded-full">
                     <span class="conn-dot" id="connDot"></span>
                     <span id="connLabel">offline</span>
                 </span>
             </div>
-            <p class="text-slate-400 text-xs sm:text-sm">Cifrado polialfabetico con clave repetida y tablero dinámico.</p>
+            <p class="text-slate-400 text-xs sm:text-sm">Cifrado polialfabético con clave repetida y tablero dinámico.</p>
         </div>
         <a th:href="@{/}" class="btn-action btn-util w-full sm:w-auto">Volver al Inicio</a>
     </header>
@@ -186,12 +186,12 @@
                     ¿Cómo funciona?
                 </h3>
                 <p class="text-xs text-slate-400 leading-relaxed">
-                    Vigenére es una sustitución polialfabética. Utiliza una palabra clave que se repite a lo largo del texto. La posición de cada letra de la clave en el alfabeto determina el desplazamiento exacto que sufrirá la letra correspondiente de tu texto.
+                    Vigenère es una sustitución polialfabética. Utiliza una palabra clave que se repite a lo largo del texto. La posición de cada letra de la clave en el alfabeto determina el desplazamiento exacto que sufrirá la letra correspondiente de tu texto.
                 </p>
             </div>
             <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
                 <div>
-                    <p class="section-title text-cyan-400">Tabla Vigenere</p>
+                    <p class="section-title text-cyan-400">Tabla Vigenère</p>
                     <p class="text-[11px] text-slate-500">Columnas: texto. Filas: clave. La celda iluminada muestra la letra resultante.</p>
                 </div>
                 <span id="tableInfo" class="text-[11px] text-slate-500 font-mono"></span>
@@ -216,7 +216,7 @@
                             <label for="alfabetoCustom" class="section-title block mb-2">Alfabeto personalizado</label>
                             <input type="text" id="alfabetoCustom" maxlength="80" placeholder="Ej: ABCDEFGHIJKLMN&Ntilde;OPQRSTUVWXYZ"
                                    class="w-full bg-slate-950/70 border border-slate-700 text-slate-100 text-sm rounded-xl px-3 py-2.5 outline-none focus:border-teal-400 font-mono uppercase">
-                            <p class="text-[10px] text-slate-500 mt-1.5">Se eliminan letras repetidas. Minimo 2 caracteres.</p>
+                            <p class="text-[10px] text-slate-500 mt-1.5">Se eliminan letras repetidas. Mínimo 2 caracteres.</p>
                         </div>
                     </div>
 

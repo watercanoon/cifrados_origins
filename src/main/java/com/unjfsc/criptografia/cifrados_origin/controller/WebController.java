@@ -44,7 +44,15 @@ public class WebController {
     @GetMapping("/escitala")
     public String escitala() { return "escitala"; }
 
-    // Aqui iran agregando las demas rutas
-    // @GetMapping("/escitala")
-    // public String escitala() { return "escitala"; }
+    @GetMapping("/playfair")
+    public String playfair() { return "playfair"; }
+
+    @GetMapping("/hill")
+    public String hill() { return "hill"; }
+
+    @GetMapping("/columnas")
+    public String columnas() { return "columnas"; }
+
+    @GetMapping("/filas")
+    public String filas() { return "filas"; }
 }

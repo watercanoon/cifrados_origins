@@ -21,7 +21,9 @@ public class PlayfairController {
         String resultado = playfairService.procesarPlayfair(
                 request.getTexto(),
                 request.getClave(),
-                request.getOperacion()
+                request.getOperacion(),
+                request.getIdioma(),
+                request.getAlfabetoCustom()
         );
 
         return new CifradoResponse(resultado, "PLAYFAIR");

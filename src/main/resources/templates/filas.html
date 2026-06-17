@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cifrado por Filas - Profesional</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.5.1/sockjs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+    <link rel="stylesheet" th:href="@{/css/global.css}">
+    <style>
+        body { background-color: #0f172a; color: #f8fafc; }
+        .glass-panel { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1); }
+    </style>
+</head>
+<body class="min-h-screen p-4 md:p-8 font-sans antialiased">
+
+<div id="toast-container" class="fixed top-5 right-5 z-50 flex flex-col gap-2"></div>
+
+<div class="max-w-7xl mx-auto">
+    <header class="mb-8 flex items-center justify-between">
+        <div>
+            <h1 class="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-fuchsia-400 to-pink-500">Cifrado por Filas</h1>
+            <p class="text-slate-400 text-sm mt-1">Transposición matricial vertical de filas simples o permutada por clave</p>
+        </div>
+        <a th:href="@{/}" class="px-4 py-2 text-sm font-semibold text-slate-300 bg-slate-800 rounded-lg hover:bg-slate-700 transition">Volver al Inicio</a>
+    </header>
+
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <!-- Panel de Parámetros (Izquierda) -->
+        <div class="lg:col-span-4 glass-panel rounded-2xl p-6 h-fit">
+            <h2 class="text-lg font-bold text-white mb-6 border-b border-slate-700 pb-2">Parámetros</h2>
+
+            <form id="filasForm" class="space-y-6" onsubmit="event.preventDefault();">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Tipo de Transposición</label>
+                    <select id="tipoCifrado" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2.5 text-sm text-white focus:ring-2 focus:ring-fuchsia-500 outline-none transition">
+                        <option value="SIMPLE">Filas Simples (Sin Clave)</option>
+                        <option value="CLAVE">Filas con Clave (Permutada)</option>
+                    </select>
+                </div>
+
+                <!-- Selector de Alfabeto -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Alfabeto</label>
+                    <select id="idioma" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2.5 text-sm text-white focus:ring-2 focus:ring-fuchsia-500 outline-none transition">
+                        <option value="ES">Español (Incluye Ñ)</option>
+                        <option value="EN">Inglés (Sin Ñ)</option>
+                        <option value="CUSTOM">Personalizado...</option>
+                    </select>
+                </div>
+
+                <!-- Input para Alfabeto Personalizado -->
+                <div id="customAlphabetContainer" class="hidden animate-fade-in">
+                    <label class="block text-xs font-semibold text-fuchsia-400 uppercase tracking-wider mb-2">Crea tu Alfabeto</label>
+                    <input type="text" id="alfabetoCustom" placeholder="Ej: QWERTYUIOPASDFGHJKLZXCVBNM" class="w-full bg-slate-900 border border-fuchsia-500/50 rounded-lg px-4 py-2.5 text-sm text-white placeholder-slate-600 focus:ring-2 focus:ring-fuchsia-500 outline-none uppercase transition">
+                    <p class="text-[10px] text-slate-500 mt-1">Ingresa caracteres únicos sin espacios.</p>
+                </div>
+
+                <!-- Control numérico de filas (Modo Simple) -->
+                <div id="simpleRowsContainer">
+                    <div class="flex justify-between mb-2">
+                        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider">Número de Filas (Nf)</label>
+                        <span id="rowsValueDisplay" class="text-xs font-bold text-fuchsia-400 bg-fuchsia-900/30 px-2 rounded">4</span>
+                    </div>
+                    <input type="range" id="numRows" min="2" max="15" value="4" class="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-fuchsia-500">
+                </div>
+
+                <!-- Input para Palabra Clave (Modo Clave) -->
+                <div id="claveKeyContainer" class="hidden animate-fade-in">
+                    <label class="block text-xs font-semibold text-fuchsia-400 uppercase tracking-wider mb-2">Palabra Clave (Kw)</label>
+                    <input type="text" id="clave" value="SALUDO" placeholder="Ej: SALUDO" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2.5 text-sm text-white placeholder-slate-600 focus:ring-2 focus:ring-fuchsia-500 outline-none uppercase transition">
+                    <p class="text-[10px] text-slate-500 mt-1">La longitud define Nf. No debe contener letras repetidas.</p>
+                </div>
+            </form>
+
+            <!-- Información Matemática -->
+            <div class="mt-6">
+                <h3 class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Información de la Matriz</h3>
+                <div class="p-4 bg-slate-950/60 border border-slate-700/50 rounded-xl space-y-3">
+                    <div class="flex justify-between text-xs">
+                        <span class="text-slate-400">Filas (Nf):</span>
+                        <span id="displayNf" class="font-bold text-slate-200">4</span>
+                    </div>
+                    <div class="flex justify-between text-xs">
+                        <span class="text-slate-400">Longitud de Texto (Lc):</span>
+                        <span id="displayLc" class="font-bold text-slate-200">0</span>
+                    </div>
+                    <div class="flex justify-between text-xs">
+                        <span class="text-slate-400">Columnas de la Matriz (Nc):</span>
+                        <span id="displayNc" class="font-bold text-fuchsia-400">0</span>
+                    </div>
+                    <div class="flex justify-between text-xs items-center">
+                        <span class="text-slate-400">Estado de Clave:</span>
+                        <span id="keyStatus" class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/25">VÁLIDA</span>
+                    </div>
+                    <div class="text-xs border-t border-slate-800/80 pt-2 flex flex-col gap-1">
+                        <span class="text-slate-400">Alfabeto Activo:</span>
+                        <span id="displayAlfabeto" class="font-mono text-[10px] text-slate-300 break-all bg-slate-900/50 p-1.5 rounded border border-slate-800/60">ABCDEFGHIJKLMNÑOPQRSTUVWXYZ</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Panel de Entradas/Salidas y Matriz (Derecha) -->
+        <div class="lg:col-span-8 flex flex-col gap-6">
+            <!-- Texto Original -->
+            <div class="glass-panel rounded-2xl p-6 flex-1 flex flex-col relative group min-h-[200px]">
+                <div class="absolute inset-0 bg-gradient-to-r from-fuchsia-500/10 to-transparent opacity-0 group-focus-within:opacity-100 rounded-2xl transition-opacity pointer-events-none"></div>
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-3 w-full relative z-10">
+                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider">Texto Original</label>
+                    <div class="flex gap-2 w-full sm:w-auto">
+                        <button id="btnPegar" type="button" class="flex-1 sm:flex-none justify-center text-xs bg-slate-800 hover:bg-fuchsia-500/20 text-slate-300 hover:text-fuchsia-400 border border-transparent hover:border-fuchsia-500/30 px-3 py-1.5 rounded flex items-center gap-2 transition cursor-pointer">
+                            Pegar
+                        </button>
+                        <button id="btnLimpiar" type="button" class="flex-1 sm:flex-none justify-center text-xs bg-slate-800 hover:bg-red-500/20 text-slate-300 hover:text-red-400 border border-transparent hover:border-red-500/30 px-3 py-1.5 rounded flex items-center gap-2 transition cursor-pointer">
+                            Limpiar
+                        </button>
+                    </div>
+                </div>
+                <textarea id="textoEntrada" placeholder="Escribe tu mensaje aquí..." class="w-full flex-1 bg-transparent border-none text-white text-lg placeholder-slate-600 resize-none focus:ring-0 outline-none custom-scrollbar min-h-[100px]"></textarea>
+            </div>
+
+            <!-- Matriz de Transposición Dinámica -->
+            <div class="glass-panel rounded-2xl p-6 relative">
+                <h3 class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-4 flex items-center gap-2">
+                    <svg class="w-4 h-4 text-fuchsia-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
+                    Matriz de Reacomodo Dinámico
+                </h3>
+                <div class="overflow-x-auto custom-scrollbar bg-slate-950/40 rounded-xl border border-slate-800/80">
+                    <table id="matrixTable" class="w-full text-center border-collapse font-mono text-sm">
+                        <!-- Cabeceras y filas construidas dinámicamente en JS -->
+                    </table>
+                </div>
+            </div>
+
+            <!-- Texto Cifrado -->
+            <div class="glass-panel rounded-2xl p-6 flex-1 flex flex-col border-fuchsia-500/20 relative group min-h-[180px]">
+                <div class="absolute inset-0 bg-gradient-to-r from-fuchsia-500/10 to-transparent opacity-0 group-focus-within:opacity-100 rounded-2xl transition-opacity pointer-events-none"></div>
+                <div class="flex justify-between items-center mb-3 relative z-10">
+                    <label class="block text-xs font-semibold text-fuchsia-400 uppercase tracking-wider">Texto Cifrado</label>
+                    <button id="btnCopiar" type="button" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded flex items-center gap-2 transition">
+                        Copiar
+                    </button>
+                </div>
+                <textarea id="textoSalida" placeholder="Criptograma resultante..." class="w-full flex-1 bg-transparent border-none text-fuchsia-300 text-lg font-mono resize-none outline-none custom-scrollbar min-h-[100px]"></textarea>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script th:src="@{/js/filas.js}"></script>
+</body>
+</html>
