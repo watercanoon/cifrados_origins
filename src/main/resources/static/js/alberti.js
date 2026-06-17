@@ -5,15 +5,9 @@ document.addEventListener("DOMContentLoaded", () => {
     const inputTexto   = document.getElementById('textoEntrada');
     const outputTexto  = document.getElementById('textoSalida');
     const inputClave   = document.getElementById('clave');
-    const displayClave = document.getElementById('claveValueDisplay');
-    const maxDisplay   = document.getElementById('maxDisplay');
     const radiosOperacion = document.querySelectorAll('input[name="operacion"]');
 
-    // Referencias DOM - Controles Táctiles
-    const btnRestar = document.getElementById('btnRestar');
-    const btnSumar  = document.getElementById('btnSumar');
-
-    // Simulador 3D
+    // Simulador
     const idiomaSelector    = document.getElementById('idiomaSelector');
     const outerRing         = document.getElementById('outerRing');
     const innerWheel        = document.getElementById('innerWheel');
@@ -25,13 +19,15 @@ document.addEventListener("DOMContentLoaded", () => {
     const btnCopiar  = document.getElementById('btnCopiar');
     const btnPegar   = document.getElementById('btnPegar');
     const btnLimpiar = document.getElementById('btnLimpiar');
+    const btnAnimar  = document.getElementById('btnAnimar');
 
     // Estado conexión
     const connDot   = document.getElementById('connDot');
     const connLabel = document.getElementById('connLabel');
 
-    // Alfabetos (CORREGIDO: 'l' añadida en ES interior para igualar 27 caracteres)
+    // Alfabetos
     const ALFABETOS = {
+        "LA": { ext: "ABCDEFGILMNOPQRSTVXZ1234", int: "&xysomqihfdbacegklnprtvz" },
         "ES": { ext: "ABCDEFGHIJKLMNÑOPQRSTUVWXYZ", int: "cdefghijklmnñopqrstuvwxyzab" },
         "EN": { ext: "ABCDEFGHIJKLMNOPQRSTUVWXYZ",  int: "cdefghijklmnopqrstuvwxyzab" },
         "CUSTOM": { ext: "ABCDEFGHIJKLMNOPQRSTUVWXYZ", int: "cdefghijklmnopqrstuvwxyzab" }
@@ -44,7 +40,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const countInt  = document.getElementById('countInt');
     const alertaLongitud = document.getElementById('alertaLongitud');
 
-    let currentLang = "ES";
+    let currentLang = "LA";
 
     // ==========================================
     // CONEXIÓN WEBSOCKET
@@ -62,7 +58,7 @@ document.addEventListener("DOMContentLoaded", () => {
     function connect() {
         let socket = new SockJS('/ws-criptografia');
         stompClient = Stomp.over(socket);
-        stompClient.debug = null; // Oculta logs en consola de prod
+        stompClient.debug = null;
 
         stompClient.connect({}, function () {
             setConnStatus(true);
@@ -77,6 +73,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     outputTexto.classList.replace('text-red-400', 'text-cyan-300');
                 }
             });
+            enviarDatos();
         }, function () {
             setConnStatus(false);
             mostrarError("Conexión interrumpida. Reconectando…");
@@ -87,7 +84,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // ==========================================
     // MOTOR GRÁFICO DISCOS
     // ==========================================
-    function dibujarDisco(container, alfabeto, radio, charClass) {
+    function dibujarDisco(container, alfabeto, radio, charClass, reverse = false) {
         container.innerHTML = '';
         const len  = alfabeto.length;
         const step = 360 / len;
@@ -95,42 +92,80 @@ document.addEventListener("DOMContentLoaded", () => {
         for (let i = 0; i < len; i++) {
             const div = document.createElement('div');
             div.innerText = alfabeto[i];
-            div.className = `absolute left-1/2 top-1/2 w-6 h-6 -ml-3 -mt-3 flex items-center justify-center font-mono font-bold ${charClass}`;
-            // Ajuste trigonométrico para rotación
-            div.style.transform = `rotate(${i * step}deg) translateY(-${radio}px)`;
+            div.className = `absolute left-1/2 top-1/2 w-6 h-6 -ml-3 -mt-3 flex items-center justify-center font-mono font-bold transition-all duration-300 ${charClass}`;
+            div.setAttribute('data-index', i);
+            div.setAttribute('data-char', alfabeto[i]);
+            
+            const angle = reverse ? -i * step : i * step;
+            div.style.transform = `rotate(${angle}deg) translateY(-${radio}px)`;
             container.appendChild(div);
         }
     }
 
     function renderizarSimulador() {
         const width = window.innerWidth;
-        const rExt  = width < 640 ? 110 : 135; // Expandido para el nuevo UI
+        const rExt  = width < 640 ? 110 : 135;
         const rInt  = width < 640 ? 70  : 90;
 
-        dibujarDisco(outerRing,    ALFABETOS[currentLang].ext, rExt, 'outer-char');
-        dibujarDisco(innerLetters, ALFABETOS[currentLang].int, rInt, 'inner-char');
-        actualizarRotacion();
+        dibujarDisco(outerRing,    ALFABETOS[currentLang].ext, rExt, 'outer-char', false);
+        dibujarDisco(innerLetters, ALFABETOS[currentLang].int, rInt, 'inner-char', true);
+        actualizarRotacion(0);
     }
 
     window.addEventListener('resize', renderizarSimulador);
 
     // ==========================================
-    // LÓGICA DE ROTACIÓN Y ENVÍO (DTO Actualizado)
+    // LÓGICA DE ROTACIÓN Y ENVÍO
     // ==========================================
-    function actualizarRotacion() {
-        const giro = parseInt(inputClave.value);
-        const len  = ALFABETOS[currentLang].ext.length;
-        const anguloGiro = giro * (360 / len);
+    function parseKeyJS(keyStr) {
+        if (!keyStr) return null;
+        const p = /K\s*\(\s*([A-Z0-9&])([A-Z0-9&])\s*,\s*(\d+)\s*,\s*(\d+)([DI])\s*\)/i;
+        const m = keyStr.trim().match(p);
+        if (!m) return null;
+        return {
+            outerChar: m[1].toUpperCase(),
+            innerChar: m[2],
+            blockSize: parseInt(m[3]),
+            shiftAmount: parseInt(m[4]),
+            direction: m[5].toUpperCase()
+        };
+    }
 
-        innerWheel.style.transform = `rotate(-${anguloGiro}deg)`;
-        diskAngleDisplay.innerText = `${giro}`;
+    function actualizarRotacion(shiftOffset = 0) {
+        const keyInfo = parseKeyJS(inputClave.value);
+        if (!keyInfo) return;
 
-        const letraAlineada = ALFABETOS[currentLang].int[giro % len];
-        alignDisplay.innerText = letraAlineada;
+        const extAlf = ALFABETOS[currentLang].ext;
+        const intAlf = ALFABETOS[currentLang].int;
+
+        let idxO = extAlf.indexOf(keyInfo.outerChar);
+        if (idxO === -1) idxO = extAlf.toUpperCase().indexOf(keyInfo.outerChar.toUpperCase());
+
+        let idxI = intAlf.indexOf(keyInfo.innerChar);
+        if (idxI === -1) {
+            const isLower = keyInfo.innerChar === keyInfo.innerChar.toLowerCase();
+            const opposite = isLower ? keyInfo.innerChar.toUpperCase() : keyInfo.innerChar.toLowerCase();
+            idxI = intAlf.indexOf(opposite);
+        }
+
+        if (idxO === -1 || idxI === -1) return;
+
+        const len = extAlf.length;
+        const step = 360 / len;
+
+        // R = idxI + idxO + shiftOffset
+        // Since we drew inner wheel reversed, rotation angle in degrees clockwise is:
+        const angle = (idxI + idxO + shiftOffset) * step;
+
+        innerWheel.style.transform = `rotate(${angle}deg)`;
+        diskAngleDisplay.innerText = `${shiftOffset}`;
+
+        const letraAlineadaIndex = (idxI + idxO + shiftOffset + len * 100) % len;
+        alignDisplay.innerText = intAlf[letraAlineadaIndex % intAlf.length];
     }
 
     function enviarDatos() {
-        actualizarRotacion();
+        actualizarRotacion(0);
         if (!stompClient || !stompClient.connected) return;
 
         const texto = inputTexto.value;
@@ -138,7 +173,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const operacion = document.querySelector('input[name="operacion"]:checked').value;
 
-        // Enviar con el nuevo parámetro de idioma
         stompClient.send("/app/alberti", {}, JSON.stringify({
             texto: texto,
             operacion: operacion,
@@ -150,42 +184,178 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // ==========================================
+    // ANIMACIÓN PASO A PASO
+    // ==========================================
+    let animationInterval = null;
+    let isAnimating = false;
+
+    function highlightChars(outerChar, innerChar) {
+        document.querySelectorAll('.outer-char, .inner-char').forEach(el => {
+            el.classList.remove('text-amber-400', 'scale-150', 'drop-shadow-[0_0_8px_rgba(251,191,36,0.8)]');
+        });
+
+        const oEl = outerRing.querySelector(`.outer-char[data-char="${outerChar.toUpperCase()}"]`);
+        if (oEl) {
+            oEl.classList.add('text-amber-400', 'scale-150', 'drop-shadow-[0_0_8px_rgba(251,191,36,0.8)]');
+        }
+
+        const iEls = innerLetters.querySelectorAll('.inner-char');
+        for (let iEl of iEls) {
+            if (iEl.getAttribute('data-char') === innerChar) {
+                iEl.classList.add('text-amber-400', 'scale-150', 'drop-shadow-[0_0_8px_rgba(251,191,36,0.8)]');
+                break;
+            }
+        }
+    }
+
+    function stopAnimation() {
+        if (animationInterval) clearTimeout(animationInterval);
+        isAnimating = false;
+        btnAnimar.innerHTML = "⚡ Animar";
+        btnAnimar.classList.replace('text-red-300', 'text-amber-300');
+        document.querySelectorAll('.outer-char, .inner-char').forEach(el => {
+            el.classList.remove('text-amber-400', 'scale-150', 'drop-shadow-[0_0_8px_rgba(251,191,36,0.8)]');
+        });
+    }
+
+    function animarAlberti() {
+        if (isAnimating) {
+            stopAnimation();
+            return;
+        }
+
+        const texto = inputTexto.value;
+        if (!texto) {
+            mostrarError("Por favor, ingrese un texto para animar.");
+            return;
+        }
+
+        const keyInfo = parseKeyJS(inputClave.value);
+        if (!keyInfo) {
+            mostrarError("Clave inválida. Use el formato K(Mb, X, Yd).");
+            return;
+        }
+
+        const extAlf = ALFABETOS[currentLang].ext;
+        const intAlf = ALFABETOS[currentLang].int;
+
+        let idxO = extAlf.indexOf(keyInfo.outerChar);
+        if (idxO === -1) idxO = extAlf.toUpperCase().indexOf(keyInfo.outerChar.toUpperCase());
+        let idxI = intAlf.indexOf(keyInfo.innerChar);
+        if (idxI === -1) {
+            const isLower = keyInfo.innerChar === keyInfo.innerChar.toLowerCase();
+            const opposite = isLower ? keyInfo.innerChar.toUpperCase() : keyInfo.innerChar.toLowerCase();
+            idxI = intAlf.indexOf(opposite);
+        }
+
+        if (idxO === -1 || idxI === -1) {
+            mostrarError("La letra de coincidencia de la clave no existe en el alfabeto.");
+            return;
+        }
+
+        const operacion = document.querySelector('input[name="operacion"]:checked').value;
+        const isCifrar = (operacion === "CIFRAR");
+
+        let txt = texto;
+        let originalIndices = [];
+        
+        if (currentLang === "LA") {
+            let cleaned = "";
+            let upper = texto.toUpperCase()
+                             .replace("U", "V")
+                             .replace("W", "V")
+                             .replace("J", "I")
+                             .replace("Ñ", "N");
+            for (let i = 0; i < upper.length; i++) {
+                const c = upper[i];
+                if (extAlf.indexOf(c) !== -1) {
+                    cleaned += c;
+                    originalIndices.push(i);
+                }
+            }
+            txt = isCifrar ? cleaned : cleaned.toLowerCase();
+        } else {
+            for (let i = 0; i < texto.length; i++) {
+                originalIndices.push(i);
+            }
+            txt = isCifrar ? texto.toUpperCase() : texto.toLowerCase();
+        }
+
+        if (txt.length === 0) {
+            mostrarError("El texto no contiene caracteres válidos para el alfabeto seleccionado.");
+            return;
+        }
+
+        isAnimating = true;
+        btnAnimar.innerHTML = "⏹ Detener";
+        btnAnimar.classList.replace('text-amber-300', 'text-red-300');
+        
+        outputTexto.value = "";
+        let resultado = "";
+        let charIndex = 0;
+
+        const directionSign = (keyInfo.direction === 'D') ? 1 : -1;
+        const moduloLen = extAlf.length;
+
+        actualizarRotacion(0);
+
+        function step() {
+            if (charIndex >= txt.length) {
+                stopAnimation();
+                mostrarExito("Animación completada con éxito.");
+                enviarDatos();
+                return;
+            }
+
+            const c = txt[charIndex];
+            const block = Math.floor(charIndex / keyInfo.blockSize);
+            const shiftOffset = directionSign * block * keyInfo.shiftAmount;
+
+            if (charIndex > 0 && charIndex % keyInfo.blockSize === 0) {
+                actualizarRotacion(shiftOffset);
+                mostrarToast(`Giro del disco: bloque ${block + 1}, offset ${shiftOffset} pos`, 'ok');
+            }
+
+            const origIdx = originalIndices[charIndex];
+            inputTexto.focus({ preventScroll: true });
+            inputTexto.setSelectionRange(origIdx, origIdx + 1);
+
+            let resChar = c;
+            if (isCifrar) {
+                const idxExt = extAlf.indexOf(c);
+                if (idxExt !== -1) {
+                    const idxInt = (idxI + shiftOffset - (idxExt - idxO) + moduloLen * 100) % moduloLen;
+                    resChar = intAlf[idxInt];
+                    highlightChars(c, resChar);
+                }
+            } else {
+                const idxInt = intAlf.indexOf(c);
+                if (idxInt !== -1) {
+                    const idxExt = (idxO + idxI + shiftOffset - idxInt + moduloLen * 100) % moduloLen;
+                    resChar = extAlf[idxExt];
+                    highlightChars(resChar, c);
+                }
+            }
+
+            resultado += resChar;
+            outputTexto.value = resultado;
+            outputTexto.focus({ preventScroll: true });
+            outputTexto.setSelectionRange(resultado.length - 1, resultado.length);
+
+            charIndex++;
+            animationInterval = setTimeout(step, 800);
+        }
+
+        step();
+    }
+
+    // ==========================================
     // CONTROLES DE INTERFAZ Y EVENTOS
     // ==========================================
     inputTexto.addEventListener('input', enviarDatos);
     radiosOperacion.forEach(r => r.addEventListener('change', enviarDatos));
-
-    // Lógica Slider
-    function updateSliderFill(val) {
-        const min = +inputClave.min;
-        const max = +inputClave.max;
-        inputClave.style.setProperty('--fill', ((val - min) / (max - min) * 100) + '%');
-        displayClave.innerText = val;
-    }
-
-    inputClave.addEventListener('input', (e) => {
-        updateSliderFill(e.target.value);
-        enviarDatos();
-    });
-
-    // Lógica Botones +/-
-    btnRestar.addEventListener('click', () => {
-        let val = parseInt(inputClave.value);
-        if (val > parseInt(inputClave.min)) {
-            inputClave.value = val - 1;
-            updateSliderFill(inputClave.value);
-            enviarDatos();
-        }
-    });
-
-    btnSumar.addEventListener('click', () => {
-        let val = parseInt(inputClave.value);
-        if (val < parseInt(inputClave.max)) {
-            inputClave.value = val + 1;
-            updateSliderFill(inputClave.value);
-            enviarDatos();
-        }
-    });
+    inputClave.addEventListener('input', enviarDatos);
+    btnAnimar.addEventListener('click', animarAlberti);
 
     // Cambio de Idioma
     idiomaSelector.addEventListener('change', (e) => {
@@ -198,14 +368,14 @@ document.addEventListener("DOMContentLoaded", () => {
             alertaLongitud.classList.add('hidden');
         }
 
-        const len = ALFABETOS[currentLang].ext.length;
-        inputClave.max = len > 0 ? len - 1 : 0;
-        maxDisplay.innerText = inputClave.max;
-
-        if (parseInt(inputClave.value) > parseInt(inputClave.max)) {
-            inputClave.value = inputClave.max;
+        // Default keys for different languages
+        if (currentLang === "LA") {
+            inputClave.value = "K(Mb, 4, 3d)";
+        } else if (currentLang === "ES") {
+            inputClave.value = "K(Ac, 4, 3d)";
+        } else {
+            inputClave.value = "K(Aa, 4, 3d)";
         }
-        updateSliderFill(inputClave.value);
 
         renderizarSimulador();
         enviarDatos();
@@ -218,7 +388,6 @@ document.addEventListener("DOMContentLoaded", () => {
         countExt.innerText = valExt.length;
         countInt.innerText = valInt.length;
 
-        // Mostrar alerta si las longitudes no coinciden
         if (valExt.length !== valInt.length && currentLang === "CUSTOM") {
             alertaLongitud.classList.remove('hidden');
         } else {
@@ -228,18 +397,9 @@ document.addEventListener("DOMContentLoaded", () => {
         ALFABETOS["CUSTOM"].ext = valExt;
         ALFABETOS["CUSTOM"].int = valInt;
 
-        const len = valExt.length;
-        if (len > 0) {
-            inputClave.max = len - 1;
-            maxDisplay.innerText = len - 1;
-            if (parseInt(inputClave.value) > len - 1) {
-                inputClave.value = len - 1;
-                updateSliderFill(len - 1);
-            }
-            renderizarSimulador();
-            if (valExt.length === valInt.length) {
-                enviarDatos();
-            }
+        renderizarSimulador();
+        if (valExt.length === valInt.length) {
+            enviarDatos();
         }
     }
 
@@ -300,10 +460,10 @@ document.addEventListener("DOMContentLoaded", () => {
     // TUTORIAL DRAWER
     // ==========================================
     const tutorialData = [
-        { element: '#panelParametros', title: 'Configuración Base',     text: 'Usa los controles (+) y (-) o el slider para rotar el disco interior de Alberti con precisión.' },
+        { element: '#panelParametros', title: 'Configuración Base',     text: 'Ingresa la clave en formato K(Mb, X, Yd) para alinear los discos y definir el período de rotación.' },
         { element: '#panelSimulador',  title: 'Eje Mecánico 3D',      text: 'El láser proyecta la alineación exacta. Letras mayúsculas (Exterior) hacia minúsculas (Interior).' },
         { element: '#panelEntrada',    title: 'Input Seguro',           text: 'Pega tu texto aquí. Los WebSockets envían y procesan el cifrado instantáneamente.' },
-        { element: '#panelSalida',     title: 'Mensaje Cifrado',        text: '¡Listo! Tu texto ha sido procesado polialfabéticamente sin recargar la página.' }
+        { element: '#panelSalida',     title: 'Mensaje Cifrado',        text: '¡Listo! Tu texto ha sido procesado polialfabéticamente sin recargar la página. Usa "Animar" para ver el proceso paso a paso.' }
     ];
 
     let currentStep = 0;
@@ -328,7 +488,6 @@ document.addEventListener("DOMContentLoaded", () => {
         target.classList.add('tutorial-focus');
         target.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
-        // Aumentamos a 450ms para asegurar que la animación de scroll termine por completo
         setTimeout(() => {
             const rect = target.getBoundingClientRect();
             bubble.classList.remove('hidden');
@@ -337,25 +496,20 @@ document.addEventListener("DOMContentLoaded", () => {
             let top  = rect.bottom + 15;
             let left = rect.left + (rect.width / 2) - (bubbleRect.width / 2);
 
-            // === LÓGICA DE COLISIÓN MEJORADA (Anti-desbordes) ===
             const padding = 15;
             const screenWidth = document.documentElement.clientWidth;
             const screenHeight = window.innerHeight;
 
-            // 1. Límite derecho
             if (left + bubbleRect.width > screenWidth - padding) {
                 left = screenWidth - bubbleRect.width - padding;
             }
-            // 2. Límite izquierdo (Tiene prioridad para móviles)
             if (left < padding) {
                 left = padding;
             }
 
-            // 3. Límite inferior (Si choca abajo, lo proyectamos arriba del panel)
             if (top + bubbleRect.height > screenHeight - padding) {
                 top = rect.top - bubbleRect.height - 15;
             }
-            // 4. Límite superior
             if (top < padding) {
                 top = padding;
             }
