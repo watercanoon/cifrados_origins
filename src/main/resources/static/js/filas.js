@@ -31,6 +31,17 @@ document.addEventListener("DOMContentLoaded", () => {
     const btnCopiar = document.getElementById("btnCopiar");
     const btnLimpiar = document.getElementById("btnLimpiar");
     const btnPegar = document.getElementById("btnPegar");
+    const btnCopiarOriginal = document.getElementById("btnCopiarOriginal");
+    const btnPegarCifrado = document.getElementById("btnPegarCifrado");
+    const connDot = document.getElementById("connDot");
+    const connLabel = document.getElementById("connLabel");
+
+    function setConnStatus(online) {
+        if (connDot && connLabel) {
+            connDot.classList.toggle("connected", online);
+            connLabel.textContent = online ? "online" : "offline";
+        }
+    }
 
     const ALFABETO_ES = "ABCDEFGHIJKLMNÑOPQRSTUVWXYZ";
     const ALFABETO_EN = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -44,6 +55,7 @@ document.addEventListener("DOMContentLoaded", () => {
         stompClient.debug = null;
 
         stompClient.connect({}, function () {
+            setConnStatus(true);
 
             // 1. SUSCRIPCIÓN A ERRORES GLOBALES
             stompClient.subscribe('/user/queue/errores', function(errorResponse) {
@@ -65,6 +77,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
             recalcularDesdeUltimoCampo();
         }, function () {
+            setConnStatus(false);
             CryptoUX.showToast("Conexión perdida", "Desconectado. Reconectando...", "error");
             setTimeout(connect, 3000);
         });
@@ -392,6 +405,17 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     });
 
+    // UX: Pegar en Texto Cifrado y descifrar
+    btnPegarCifrado.addEventListener("click", async () => {
+        try {
+            const texto = await navigator.clipboard.readText();
+            outputTexto.value = texto;
+            descifrarDesdeCifrado();
+        } catch {
+            CryptoUX.showToast("Error", "No se pudo acceder al portapapeles.", "error");
+        }
+    });
+
     // UX: Pegar
     btnPegar.addEventListener("click", async () => {
         try {
@@ -403,6 +427,20 @@ document.addEventListener("DOMContentLoaded", () => {
         } catch {
             CryptoUX.showToast("Error", "No se pudo acceder al portapapeles.", "error");
         }
+    });
+
+    // UX: Copiar Texto Original
+    btnCopiarOriginal.addEventListener("click", () => {
+        if (!inputTexto.value) {
+            CryptoUX.showToast("Aviso", "No hay texto para copiar.", "info");
+            return;
+        }
+        navigator.clipboard.writeText(inputTexto.value).then(() => {
+            CryptoUX.showToast("¡Copiado!", "Texto original copiado.", "success");
+        }).catch(() => {
+            inputTexto.select();
+            document.execCommand("copy");
+        });
     });
 
     // Limpiar

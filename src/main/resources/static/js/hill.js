@@ -22,6 +22,17 @@ document.addEventListener("DOMContentLoaded", () => {
     const btnCopiar = document.getElementById("btnCopiar");
     const btnLimpiar = document.getElementById("btnLimpiar");
     const btnPegar = document.getElementById("btnPegar");
+    const btnCopiarOriginal = document.getElementById("btnCopiarOriginal");
+    const btnPegarCifrado = document.getElementById("btnPegarCifrado");
+    const connDot = document.getElementById("connDot");
+    const connLabel = document.getElementById("connLabel");
+
+    function setConnStatus(online) {
+        if (connDot && connLabel) {
+            connDot.classList.toggle("connected", online);
+            connLabel.textContent = online ? "online" : "offline";
+        }
+    }
 
     const ALFABETO_ES = "ABCDEFGHIJKLMNÑOPQRSTUVWXYZ"; // 27 letras
     const ALFABETO_EN = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";   // 26 letras
@@ -35,6 +46,7 @@ document.addEventListener("DOMContentLoaded", () => {
         stompClient.debug = null;
 
         stompClient.connect({}, function () {
+            setConnStatus(true);
 
             // 1. SUSCRIPCIÓN GLOBAL DE ERRORES (Atrapa excepciones del backend)
             stompClient.subscribe('/user/queue/errores', function(errorResponse) {
@@ -56,6 +68,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
             recalcularDesdeUltimoCampo();
         }, function () {
+            setConnStatus(false);
             CryptoUX.showToast("Conexión perdida", "Desconectado del servidor. Reconectando...", "error");
             setTimeout(connect, 3000);
         });
@@ -383,6 +396,21 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
+    // UX: Pegar en Texto Cifrado y descifrar
+    btnPegarCifrado.addEventListener("click", async () => {
+        try {
+            const textoPortapapeles = await navigator.clipboard.readText();
+            if (textoPortapapeles) {
+                outputTexto.value = textoPortapapeles;
+                descifrarDesdeCifrado();
+                outputTexto.focus();
+                CryptoUX.showToast("Pegado", "Texto insertado correctamente.", "success");
+            }
+        } catch (err) {
+            CryptoUX.showToast("Permiso denegado", "Concede acceso al portapapeles en tu navegador.", "error");
+        }
+    });
+
     // UX: Pegar desde el portapapeles
     btnPegar.addEventListener("click", async () => {
         try {
@@ -395,6 +423,21 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         } catch (err) {
             CryptoUX.showToast("Permiso denegado", "Concede acceso al portapapeles en tu navegador.", "error");
+        }
+    });
+
+    // UX: Copiar Texto Original
+    btnCopiarOriginal.addEventListener("click", async () => {
+        if (!inputTexto.value) {
+            CryptoUX.showToast("Aviso", "No hay texto para copiar.", "info");
+            return;
+        }
+        try {
+            await navigator.clipboard.writeText(inputTexto.value);
+            CryptoUX.showToast("¡Copiado!", "Texto copiado al portapapeles.", "success");
+        } catch {
+            inputTexto.select();
+            document.execCommand("copy");
         }
     });
 

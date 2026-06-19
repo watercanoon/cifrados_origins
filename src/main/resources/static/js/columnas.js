@@ -31,6 +31,17 @@ document.addEventListener("DOMContentLoaded", () => {
     const btnCopiar = document.getElementById("btnCopiar");
     const btnLimpiar = document.getElementById("btnLimpiar");
     const btnPegar = document.getElementById("btnPegar");
+    const btnCopiarOriginal = document.getElementById("btnCopiarOriginal");
+    const btnPegarCifrado = document.getElementById("btnPegarCifrado");
+    const connDot = document.getElementById("connDot");
+    const connLabel = document.getElementById("connLabel");
+
+    function setConnStatus(online) {
+        if (connDot && connLabel) {
+            connDot.classList.toggle("connected", online);
+            connLabel.textContent = online ? "online" : "offline";
+        }
+    }
 
     const ALFABETO_ES = "ABCDEFGHIJKLMN\u00d1OPQRSTUVWXYZ";
     const ALFABETO_EN = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -42,6 +53,7 @@ document.addEventListener("DOMContentLoaded", () => {
         stompClient.debug = null;
 
         stompClient.connect({}, function () {
+            setConnStatus(true);
 
             // 1. SUSCRIPCIÓN A ERRORES GLOBALES
             stompClient.subscribe('/user/queue/errores', function(errorResponse) {
@@ -63,6 +75,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
             recalcularDesdeUltimoCampo();
         }, function () {
+            setConnStatus(false);
             CryptoUX.showToast("Conexión perdida", "Desconectado. Reconectando...", "error");
             setTimeout(connect, 3000);
         });
@@ -206,7 +219,12 @@ document.addEventListener("DOMContentLoaded", () => {
         const clave = tipo === "SIMPLE" ? inputNumCols.value : limpiarTexto(inputClave.value.toUpperCase(), alfabeto);
 
         if (!texto) {
-            outputTexto.value = ""; return;
+            if (operacion === "CIFRAR") {
+                outputTexto.value = "";
+            } else {
+                inputTexto.value = "";
+            }
+            return;
         }
 
         ultimaOperacion = operacion;
@@ -224,8 +242,18 @@ document.addEventListener("DOMContentLoaded", () => {
     inputNumCols.addEventListener("input", (e) => { colsDisplay.textContent = e.target.value; actualizarMatrizVisual(); recalcularDesdeUltimoCampo(); });
     inputClave.addEventListener("input", (e) => { e.target.value = limpiarTexto(e.target.value, obtenerAlfabetoActivo()); actualizarMatrizVisual(); recalcularDesdeUltimoCampo(); });
     selectTipo.addEventListener("change", (e) => {
+        simpleColsContainer.classList.toggle("toggle", e.target.value !== "SIMPLE");
         simpleColsContainer.classList.toggle("hidden", e.target.value !== "SIMPLE");
         claveKeyContainer.classList.toggle("hidden", e.target.value === "SIMPLE");
+        actualizarMatrizVisual();
+        recalcularDesdeUltimoCampo();
+    });
+    selectAlfabeto.addEventListener("change", (e) => {
+        customAlphabetContainer.classList.toggle("hidden", e.target.value !== "CUSTOM");
+        actualizarMatrizVisual();
+        recalcularDesdeUltimoCampo();
+    });
+    inputCustom.addEventListener("input", () => {
         actualizarMatrizVisual();
         recalcularDesdeUltimoCampo();
     });
@@ -235,9 +263,27 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!outputTexto.value) return;
         navigator.clipboard.writeText(outputTexto.value).then(() => CryptoUX.showToast("¡Copiado!", "Texto cifrado copiado.", "success"));
     });
+    btnPegarCifrado.addEventListener("click", async () => {
+        try {
+            const texto = await navigator.clipboard.readText();
+            outputTexto.value = texto;
+            descifrarDesdeCifrado();
+        } catch {
+            CryptoUX.showToast("Error", "No se pudo acceder al portapapeles.", "error");
+        }
+    });
     btnPegar.addEventListener("click", async () => {
-        try { const texto = await navigator.clipboard.readText(); inputTexto.value = texto; cifrarDesdeOriginal(); }
-        catch { CryptoUX.showToast("Error", "No se pudo acceder al portapapeles.", "error"); }
+        try {
+            const texto = await navigator.clipboard.readText();
+            inputTexto.value = texto;
+            cifrarDesdeOriginal();
+        } catch {
+            CryptoUX.showToast("Error", "No se pudo acceder al portapapeles.", "error");
+        }
+    });
+    btnCopiarOriginal.addEventListener("click", () => {
+        if (!inputTexto.value) return;
+        navigator.clipboard.writeText(inputTexto.value).then(() => CryptoUX.showToast("¡Copiado!", "Texto original copiado.", "success"));
     });
     btnLimpiar.addEventListener("click", () => { inputTexto.value = ""; outputTexto.value = ""; actualizarMatrizVisual(); inputTexto.focus(); });
 

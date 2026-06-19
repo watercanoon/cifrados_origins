@@ -89,11 +89,20 @@
 </nav>
 
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-    <header class="mb-8 flex items-center justify-between">
-        <div>
-            <h1 class="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-violet-600 to-indigo-600 dark:from-violet-400 dark:to-indigo-400 transition-colors">Cifrado de Hill</h1>
-            <p class="text-slate-500 dark:text-slate-400 text-sm mt-1 transition-colors">Sustitución poligrámica interactiva basada en álgebra de matrices</p>
+    <header class="mb-6 flex flex-col md:flex-row md:items-center gap-3 animate-fade-in">
+        <div class="flex items-center gap-2">
+            <h1 class="text-2xl sm:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-violet-600 to-indigo-600 dark:from-violet-400 dark:to-indigo-400 transition-colors whitespace-nowrap">
+                Cifrado de Hill
+            </h1>
+            <span class="flex items-center gap-1.5 text-[10px] font-semibold text-slate-600 dark:text-slate-500 bg-slate-100 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 px-2 py-0.5 rounded-full transition-colors">
+                <span class="conn-dot" id="connDot"></span>
+                <span id="connLabel">offline</span>
+            </span>
         </div>
+        <span class="hidden md:block w-1.5 h-6 bg-slate-300 dark:bg-slate-700 rounded-full flex-shrink-0"></span>
+        <p class="text-slate-500 dark:text-slate-400 text-xs sm:text-sm transition-colors">
+            El Cifrado Hill fue creado en 1929 por Lester S. Hill. Es uno de los primeros métodos que aplicó álgebra lineal a la criptografía.
+        </p>
     </header>
 
     <div class="glass-panel rounded-2xl p-6 mb-8 overflow-x-auto custom-scrollbar transition-colors duration-300">
@@ -173,6 +182,21 @@
                     </div>
                 </div>
             </div>
+
+            <div class="mt-6 p-4 bg-violet-50 dark:bg-violet-500/10 border border-violet-200 dark:border-violet-500/20 rounded-lg transition-colors">
+                <h3 class="text-violet-600 dark:text-violet-400 font-bold text-sm mb-2 flex items-center gap-2 transition-colors">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    ¿Cómo funciona?
+                </h3>
+                <ol class="text-xs text-slate-600 dark:text-slate-400 leading-relaxed list-decimal list-inside space-y-1.5 transition-colors">
+                    <li>Ingresa tu mensaje en <strong class="text-slate-800 dark:text-slate-300">Texto Original</strong>.</li>
+                    <li>El texto se divide en bloques del tamaño de la matriz clave (ej. 3 letras).</li>
+                    <li>Cada bloque se convierte en un vector numérico según la tabla de equivalencias.</li>
+                    <li>El vector se multiplica por la matriz clave en módulo 27.</li>
+                    <li>El resultado se transforma nuevamente en letras, formando el <strong class="text-slate-800 dark:text-slate-300">Texto Cifrado</strong>.</li>
+                    <li>Para descifrar, se utiliza la matriz inversa modular y se reconstruye el mensaje original.</li>
+                </ol>
+            </div>
         </div>
 
         <div class="lg:col-span-8 flex flex-col gap-6">
@@ -181,15 +205,18 @@
                 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-3 w-full relative z-10">
                     <label class="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider transition-colors">Texto Original</label>
                     <div class="flex gap-2 w-full sm:w-auto">
-                        <button id="btnPegar" type="button" class="flex-1 sm:flex-none justify-center text-xs bg-slate-200 dark:bg-slate-800 hover:bg-violet-100 dark:hover:bg-violet-500/20 text-slate-700 dark:text-slate-300 hover:text-violet-700 dark:hover:text-violet-400 border border-transparent hover:border-violet-300 dark:hover:border-violet-500/30 px-3 py-1.5 rounded flex items-center gap-2 transition cursor-pointer">
-                            Pegar
+                        <button id="btnPegar" type="button" class="flex-1 sm:flex-none justify-center text-xs bg-slate-100 hover:bg-violet-50 text-slate-700 hover:text-violet-600 border border-slate-300 hover:border-violet-400 dark:bg-slate-900 dark:hover:bg-violet-950/40 dark:text-slate-300 dark:hover:text-violet-400 dark:border-slate-700 dark:hover:border-violet-800 px-3.5 py-2 rounded-xl font-semibold shadow-sm transition-all duration-200 flex items-center gap-2 cursor-pointer hover:-translate-y-0.5 active:translate-y-0">
+                            <span>📋</span> Pegar
                         </button>
-                        <button id="btnLimpiar" type="button" class="flex-1 sm:flex-none justify-center text-xs bg-slate-200 dark:bg-slate-800 hover:bg-red-100 dark:hover:bg-red-500/20 text-slate-700 dark:text-slate-300 hover:text-red-700 dark:hover:text-red-400 border border-transparent hover:border-red-300 dark:hover:border-red-500/30 px-3 py-1.5 rounded flex items-center gap-2 transition cursor-pointer">
-                            Limpiar
+                        <button id="btnCopiarOriginal" type="button" class="flex-1 sm:flex-none justify-center text-xs bg-slate-100 hover:bg-emerald-50 text-slate-700 hover:text-emerald-600 border border-slate-300 hover:border-emerald-400 dark:bg-slate-900 dark:hover:bg-emerald-950/40 dark:text-slate-300 dark:hover:text-emerald-400 dark:border-slate-700 dark:hover:border-emerald-800 px-3.5 py-2 rounded-xl font-semibold shadow-sm transition-all duration-200 flex items-center gap-2 cursor-pointer hover:-translate-y-0.5 active:translate-y-0">
+                            <span>📄</span> Copiar
+                        </button>
+                        <button id="btnLimpiar" type="button" class="flex-1 sm:flex-none justify-center text-xs bg-slate-100 hover:bg-rose-50 text-slate-700 hover:text-rose-600 border border-slate-300 hover:border-rose-400 dark:bg-slate-900 dark:hover:bg-rose-950/40 dark:text-slate-300 dark:hover:text-rose-400 dark:border-slate-700 dark:hover:border-rose-800 px-3.5 py-2 rounded-xl font-semibold shadow-sm transition-all duration-200 flex items-center gap-2 cursor-pointer hover:-translate-y-0.5 active:translate-y-0">
+                            <span>🧹</span> Limpiar
                         </button>
                     </div>
                 </div>
-                <textarea id="textoEntrada" placeholder="Escribe texto normal para cifrarlo..." class="w-full flex-1 bg-transparent border-none text-base sm:text-lg resize-none focus:ring-0 outline-none custom-scrollbar min-h-[100px] transition-colors"></textarea>
+                <textarea id="textoEntrada" class="premium-textarea w-full flex-1 min-h-[100px] text-base sm:text-lg resize-none outline-none custom-scrollbar p-3 sm:p-4 focus:ring-0 relative z-10 transition-colors text-area-panel" placeholder="Escribe el texto claro para cifrarlo. Ej: hill"></textarea>
 
                 <div class="mt-4 pt-3 border-t border-slate-200 dark:border-slate-700/40 flex flex-col gap-1.5 relative z-10 transition-colors">
                     <span class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider">Formación de Vectores (Bloques)</span>
@@ -201,13 +228,18 @@
 
             <div class="glass-panel rounded-2xl p-6 flex-1 flex flex-col border-violet-300 dark:border-violet-500/20 relative group min-h-[200px] transition-colors duration-300">
                 <div class="absolute inset-0 bg-gradient-to-r from-violet-500/5 dark:from-violet-500/10 to-transparent opacity-0 group-focus-within:opacity-100 rounded-2xl transition-opacity pointer-events-none"></div>
-                <div class="flex justify-between items-center mb-3 relative z-10">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-3 w-full relative z-10">
                     <label class="block text-xs font-semibold text-violet-600 dark:text-violet-400 uppercase tracking-wider transition-colors">Texto Cifrado</label>
-                    <button id="btnCopiar" type="button" class="text-xs bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 px-3 py-1.5 rounded flex items-center gap-2 transition">
-                        Copiar
-                    </button>
+                    <div class="flex gap-2 w-full sm:w-auto">
+                        <button id="btnPegarCifrado" type="button" class="flex-1 sm:flex-none justify-center text-xs bg-slate-100 hover:bg-violet-50 text-slate-700 hover:text-violet-600 border border-slate-300 hover:border-violet-400 dark:bg-slate-900 dark:hover:bg-violet-950/40 dark:text-slate-300 dark:hover:text-violet-400 dark:border-slate-700 dark:hover:border-violet-800 px-3.5 py-2 rounded-xl font-semibold shadow-sm transition-all duration-200 flex items-center gap-2 cursor-pointer hover:-translate-y-0.5 active:translate-y-0">
+                            <span>📋</span> Pegar
+                        </button>
+                        <button id="btnCopiar" type="button" class="flex-1 sm:flex-none justify-center text-xs bg-slate-100 hover:bg-emerald-50 text-slate-700 hover:text-emerald-600 border border-slate-300 hover:border-emerald-400 dark:bg-slate-900 dark:hover:bg-emerald-950/40 dark:text-slate-300 dark:hover:text-emerald-400 dark:border-slate-700 dark:hover:border-emerald-800 px-3.5 py-2 rounded-xl font-semibold shadow-sm transition-all duration-200 flex items-center gap-2 cursor-pointer hover:-translate-y-0.5 active:translate-y-0">
+                            <span>📄</span> Copiar
+                        </button>
+                    </div>
                 </div>
-                <textarea id="textoSalida" placeholder="Escribe texto cifrado para descifrarlo..." class="w-full flex-1 bg-transparent border-none text-base sm:text-lg font-mono resize-none outline-none custom-scrollbar min-h-[120px] transition-colors"></textarea>
+                <textarea id="textoSalida" class="premium-textarea w-full flex-1 min-h-[120px] text-base sm:text-lg font-mono resize-none outline-none custom-scrollbar p-3 sm:p-4 focus:ring-0 relative z-10 transition-colors text-area-panel" placeholder="Escribe el texto cifrado para descifrarlo. Ej: CRT KYT"></textarea>
             </div>
         </div>
     </div>
