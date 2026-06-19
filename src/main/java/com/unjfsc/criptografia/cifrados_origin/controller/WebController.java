@@ -55,4 +55,10 @@ public class WebController {
 
     @GetMapping("/filas")
     public String filas() { return "filas"; }
+
+    @GetMapping("/grupos")
+    public String grupos() { return "grupos"; }
+
+    @GetMapping("/series")
+    public String series() { return "series"; }
 }
