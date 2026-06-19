@@ -113,89 +113,113 @@
 </nav>
 
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-    <header class="mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div>
-            <div class="flex items-center gap-2 mb-1">
-                <h1 class="text-2xl sm:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-600 to-amber-500 dark:from-cyan-300 dark:via-teal-300 dark:to-amber-300 transition-colors">
-                    Cifrado Atbash
-                </h1>
-                <span class="flex items-center gap-1.5 text-[10px] font-semibold text-slate-600 dark:text-slate-500 bg-slate-100 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 px-2 py-0.5 rounded-full transition-colors">
-                    <span class="conn-dot" id="connDot"></span>
-                    <span id="connLabel">offline</span>
-                </span>
-            </div>
-            <p class="text-slate-500 dark:text-slate-400 text-xs sm:text-sm transition-colors">Sustitución por espejo: el primer carácter del alfabeto se cambia por el último.</p>
+    <header class="mb-6 flex flex-col md:flex-row md:items-center gap-3 animate-fade-in">
+        <div class="flex items-center gap-2">
+            <h1 class="text-2xl sm:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-600 to-amber-500 dark:from-cyan-300 dark:via-teal-300 dark:to-amber-300 transition-colors whitespace-nowrap">
+                Cifrado Atbash
+            </h1>
+            <span class="flex items-center gap-1.5 text-[10px] font-semibold text-slate-600 dark:text-slate-500 bg-slate-100 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 px-2 py-0.5 rounded-full transition-colors">
+                <span class="conn-dot" id="connDot"></span>
+                <span id="connLabel">offline</span>
+            </span>
         </div>
+        <span class="hidden md:block w-1.5 h-6 bg-slate-300 dark:bg-slate-700 rounded-full flex-shrink-0"></span>
+        <p class="text-slate-500 dark:text-slate-400 text-xs sm:text-sm transition-colors">
+            El Cifrado Atbash es un método hebreo antiguo de sustitución por espejo, donde cada letra se reemplaza por su opuesta en el alfabeto.
+        </p>
     </header>
 
-    <section class="glass-panel rounded-2xl p-4 sm:p-5 mb-5 transition-colors duration-300">
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
-            <div class="lg:col-span-3">
-                <label for="idioma" class="section-title text-slate-500 dark:text-slate-400 block mb-2 transition-colors">Alfabeto</label>
-                <select id="idioma" class="w-full bg-white dark:bg-slate-950/70 border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-100 text-sm rounded-xl px-3 py-2.5 outline-none focus:border-teal-400 transition-colors">
-                    <option value="ES">Espa&ntilde;ol (incluye &Ntilde;)</option>
-                    <option value="EN">Inglés</option>
-                    <option value="CUSTOM">Personalizado</option>
-                </select>
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 mb-5">
+        <!-- Card: Selección de Alfabeto -->
+        <div class="glass-panel rounded-2xl p-5 sm:p-6 lg:col-span-5 transition-colors duration-300">
+            <label for="idioma" class="section-title text-slate-500 dark:text-slate-400 block mb-2 transition-colors">Alfabeto</label>
+            <select id="idioma" class="w-full bg-white dark:bg-slate-950/70 border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-100 text-sm rounded-xl px-3 py-2.5 outline-none focus:border-teal-400 transition-colors">
+                <option value="ES">Español (incluye Ñ)</option>
+                <option value="EN">Inglés</option>
+                <option value="CUSTOM">Personalizado</option>
+            </select>
 
-                <div id="customAlphabetContainer" class="hidden mt-3">
-                    <label for="alfabetoCustom" class="section-title text-slate-500 dark:text-slate-400 block mb-2 transition-colors">Alfabeto personalizado</label>
-                    <input id="alfabetoCustom" type="text" maxlength="60" placeholder="Ej: ABCDEFGHIJKLMN&Ntilde;OPQRSTUVWXYZ"
-                           class="w-full bg-white dark:bg-slate-950/70 border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-100 text-sm rounded-xl px-3 py-2.5 outline-none focus:border-teal-400 font-mono uppercase transition-colors">
-                    <p class="text-[10px] text-slate-500 mt-1.5">Se eliminan letras repetidas. Mínimo 2 caracteres.</p>
-                </div>
+            <div id="customAlphabetContainer" class="hidden mt-4">
+                <label for="alfabetoCustom" class="section-title text-slate-500 dark:text-slate-400 block mb-2 transition-colors">Alfabeto personalizado</label>
+                <input id="alfabetoCustom" type="text" maxlength="60" placeholder="Ej: ABCDEFGHIJKLMNÑOPQRSTUVWXYZ"
+                       class="w-full bg-white dark:bg-slate-950/70 border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-100 text-sm rounded-xl px-3 py-2.5 outline-none focus:border-teal-400 font-mono uppercase transition-colors">
+                <p class="text-[10px] text-slate-500 mt-1.5">Se eliminan letras repetidas. Mínimo 2 caracteres.</p>
             </div>
+        </div>
 
-            <div class="lg:col-span-9">
-                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
-                    <div>
-                        <p class="section-title text-cyan-600 dark:text-cyan-400 transition-colors">Mapeo horizontal</p>
-                        <p class="text-[11px] text-slate-500">Arriba el alfabeto base; abajo el alfabeto reflejado.</p>
-                    </div>
-                    <div class="flex items-center gap-3 text-xs bg-slate-100 dark:bg-slate-900 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 transition-colors">
-                        <span id="charIn" class="font-mono font-black text-cyan-600 dark:text-cyan-300 transition-colors">-</span>
-                        <span class="text-slate-400 dark:text-slate-600">-&gt;</span>
-                        <span id="charOut" class="font-mono font-black text-amber-500 dark:text-amber-300 transition-colors">-</span>
-                    </div>
-                </div>
+        <!-- Card: ¿Cómo funciona? -->
+        <div class="glass-panel rounded-2xl p-5 sm:p-6 lg:col-span-7 bg-cyan-50 dark:bg-cyan-900/10 border border-cyan-200 dark:border-cyan-800/30 transition-colors duration-300">
+            <h3 class="text-cyan-700 dark:text-cyan-400 font-bold text-xs mb-2 flex items-center gap-2 transition-colors">
+                <svg class="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                ¿Cómo funciona?
+            </h3>
+            <ol class="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed list-decimal list-inside space-y-1.5 transition-colors">
+                <li>Ingresa tu mensaje en <strong class="text-slate-800 dark:text-slate-300">Texto Original</strong>.</li>
+                <li>Cada letra se sustituye por su opuesta en el alfabeto (A ↔ Z, B ↔ Y, C ↔ X...).</li>
+                <li>Obtendrás el resultado en <strong class="text-slate-800 dark:text-slate-300">Texto Cifrado</strong>.</li>
+                <li>Si introduces un Texto Cifrado, se descifrará automáticamente aplicando Atbash de nuevo.</li>
+            </ol>
+        </div>
+    </div>
 
-                <div class="mapping-scroll bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 rounded-xl p-3 transition-colors">
-                    <div class="mapping-row mb-2" id="alfabetoTop"></div>
-                    <div class="mapping-row" id="alfabetoBottom"></div>
-                </div>
+    <!-- Card: Mapeo Horizontal -->
+    <section class="glass-panel rounded-2xl p-5 sm:p-6 mb-5 transition-colors duration-300">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
+            <div>
+                <p class="section-title text-cyan-600 dark:text-cyan-400 transition-colors">Mapeo horizontal</p>
+                <p class="text-[11px] text-slate-500">Arriba el alfabeto base; abajo el alfabeto reflejado.</p>
             </div>
+            <div class="flex items-center gap-3 text-xs bg-slate-100 dark:bg-slate-900 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 transition-colors">
+                <span id="charIn" class="font-mono font-black text-cyan-600 dark:text-cyan-300 transition-colors">-</span>
+                <span class="text-slate-400 dark:text-slate-600">-&gt;</span>
+                <span id="charOut" class="font-mono font-black text-amber-500 dark:text-amber-300 transition-colors">-</span>
+            </div>
+        </div>
+
+        <div class="mapping-scroll bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 rounded-xl p-3 transition-colors">
+            <div class="mapping-row mb-2" id="alfabetoTop"></div>
+            <div class="mapping-row" id="alfabetoBottom"></div>
         </div>
     </section>
 
+    <!-- Text Areas -->
     <main class="grid grid-cols-1 lg:grid-cols-2 gap-5">
-
-        <section class="glass-panel rounded-2xl p-4 sm:p-5 transition-colors duration-300 relative group">
-            <div class="absolute inset-0 bg-gradient-to-r from-blue-500/5 dark:from-blue-500/10 to-transparent opacity-0 group-focus-within:opacity-100 rounded-2xl transition-opacity pointer-events-none"></div>
-            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3 relative z-10">
-                <div>
-                    <p class="section-title text-slate-500 dark:text-slate-400 transition-colors">Texto original</p>
-                    <p class="text-[11px] text-slate-500">Escribe aqui para cifrar.</p>
-                </div>
-                <div class="flex gap-2">
-                    <button id="btnPegar" type="button" class="btn-action btn-util">Pegar</button>
-                    <button id="btnLimpiar" type="button" class="btn-action btn-util btn-danger">Limpiar</button>
+        <!-- Card: Texto Original -->
+        <section class="glass-panel rounded-2xl p-5 sm:p-6 transition-colors duration-300 relative group flex flex-col">
+            <div class="absolute inset-0 bg-gradient-to-r from-cyan-500/5 dark:from-cyan-500/10 to-transparent opacity-0 group-focus-within:opacity-100 rounded-2xl transition-opacity pointer-events-none"></div>
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3 relative z-10 w-full">
+                <label class="block text-xs font-extrabold text-slate-700 dark:text-slate-300 uppercase tracking-wider transition-colors">Texto Original</label>
+                <div class="flex gap-2 w-full sm:w-auto">
+                    <button id="btnPegar" type="button" class="flex-1 sm:flex-none justify-center text-xs bg-slate-100 hover:bg-blue-50 text-slate-700 hover:text-blue-600 border border-slate-300 hover:border-blue-400 dark:bg-slate-900 dark:hover:bg-blue-950/40 dark:text-slate-300 dark:hover:text-blue-400 dark:border-slate-700 dark:hover:border-blue-800 px-3.5 py-2 rounded-xl font-semibold shadow-sm transition-all duration-200 flex items-center gap-2 cursor-pointer hover:-translate-y-0.5 active:translate-y-0">
+                        <span>📋</span> Pegar
+                    </button>
+                    <button id="btnCopiarOriginal" type="button" class="flex-1 sm:flex-none justify-center text-xs bg-slate-100 hover:bg-emerald-50 text-slate-700 hover:text-emerald-600 border border-slate-300 hover:border-emerald-400 dark:bg-slate-900 dark:hover:bg-emerald-950/40 dark:text-slate-300 dark:hover:text-emerald-400 dark:border-slate-700 dark:hover:border-emerald-800 px-3.5 py-2 rounded-xl font-semibold shadow-sm transition-all duration-200 flex items-center gap-2 cursor-pointer hover:-translate-y-0.5 active:translate-y-0">
+                        <span>📄</span> Copiar
+                    </button>
+                    <button id="btnLimpiar" type="button" class="flex-1 sm:flex-none justify-center text-xs bg-slate-100 hover:bg-rose-50 text-slate-700 hover:text-rose-600 border border-slate-300 hover:border-rose-400 dark:bg-slate-900 dark:hover:bg-rose-950/40 dark:text-slate-300 dark:hover:text-rose-400 dark:border-slate-700 dark:hover:border-rose-800 px-3.5 py-2 rounded-xl font-semibold shadow-sm transition-all duration-200 flex items-center gap-2 cursor-pointer hover:-translate-y-0.5 active:translate-y-0">
+                        <span>🧹</span> Limpiar
+                    </button>
                 </div>
             </div>
-            <textarea id="textoEntrada" class="w-full min-h-[230px] bg-transparent border-none text-base sm:text-lg resize-none outline-none custom-scrollbar focus:ring-0 relative z-10 transition-colors" placeholder="Escribe texto original..."></textarea>
+            <textarea id="textoEntrada" class="premium-textarea w-full flex-1 min-h-[200px] text-base sm:text-lg resize-none outline-none custom-scrollbar p-3 sm:p-4 focus:ring-0 relative z-10 transition-colors text-area-panel" placeholder="Escribe tu texto claro para cifrarlo. Ej:atbash"></textarea>
         </section>
 
-        <section class="glass-panel rounded-2xl p-4 sm:p-5 border-cyan-300 dark:border-cyan-500/20 transition-colors duration-300 relative group">
-            <div class="absolute inset-0 bg-gradient-to-r from-emerald-500/5 dark:from-emerald-500/10 to-transparent opacity-0 group-focus-within:opacity-100 rounded-2xl transition-opacity pointer-events-none"></div>
-            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3 relative z-10">
-                <div>
-                    <p class="section-title text-cyan-600 dark:text-cyan-400 transition-colors">Texto cifrado</p>
-                    <p class="text-[11px] text-slate-500">Tambien puedes escribir aqui para descifrar.</p>
+        <!-- Card: Texto Cifrado -->
+        <section class="glass-panel rounded-2xl p-5 sm:p-6 border-cyan-300 dark:border-cyan-500/20 transition-colors duration-300 relative group flex flex-col">
+            <div class="absolute inset-0 bg-gradient-to-r from-cyan-500/5 dark:from-cyan-500/10 to-transparent opacity-0 group-focus-within:opacity-100 rounded-2xl transition-opacity pointer-events-none"></div>
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3 relative z-10 w-full">
+                <label class="block text-xs font-extrabold text-cyan-700 dark:text-cyan-400 uppercase tracking-wider transition-colors">Texto Cifrado</label>
+                <div class="flex gap-2 w-full sm:w-auto">
+                    <button id="btnPegarCifrado" type="button" class="flex-1 sm:flex-none justify-center text-xs bg-slate-100 hover:bg-blue-50 text-slate-700 hover:text-blue-600 border border-slate-300 hover:border-blue-400 dark:bg-slate-900 dark:hover:bg-blue-950/40 dark:text-slate-300 dark:hover:text-blue-400 dark:border-slate-700 dark:hover:border-blue-800 px-3.5 py-2 rounded-xl font-semibold shadow-sm transition-all duration-200 flex items-center gap-2 cursor-pointer hover:-translate-y-0.5 active:translate-y-0">
+                        <span>📋</span> Pegar
+                    </button>
+                    <button id="btnCopiar" type="button" class="flex-1 sm:flex-none justify-center text-xs bg-slate-100 hover:bg-emerald-50 text-slate-700 hover:text-emerald-600 border border-slate-300 hover:border-emerald-400 dark:bg-slate-900 dark:hover:bg-emerald-950/40 dark:text-slate-300 dark:hover:text-emerald-400 dark:border-slate-700 dark:hover:border-emerald-800 px-3.5 py-2 rounded-xl font-semibold shadow-sm transition-all duration-200 flex items-center gap-2 cursor-pointer hover:-translate-y-0.5 active:translate-y-0">
+                        <span>📄</span> Copiar
+                    </button>
                 </div>
-                <button id="btnCopiar" type="button" class="btn-action btn-primary">Copiar</button>
             </div>
-            <textarea id="textoSalida" class="w-full min-h-[230px] bg-transparent border-none text-base sm:text-lg font-mono resize-none outline-none custom-scrollbar focus:ring-0 relative z-10 transition-colors" placeholder="El resultado aparecerá aqui..."></textarea>
+            <textarea id="textoSalida" class="premium-textarea w-full flex-1 min-h-[200px] text-base sm:text-lg font-mono resize-none outline-none custom-scrollbar p-3 sm:p-4 focus:ring-0 relative z-10 transition-colors text-area-panel" placeholder="Escribe el texto cifrado para descifrarlo Ej:zgyzhs"></textarea>
         </section>
-
     </main>
 </div>
 

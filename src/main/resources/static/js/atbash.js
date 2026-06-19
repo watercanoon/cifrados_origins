@@ -20,6 +20,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const btnCopiar = document.getElementById("btnCopiar");
     const btnPegar = document.getElementById("btnPegar");
     const btnLimpiar = document.getElementById("btnLimpiar");
+    const btnCopiarOriginal = document.getElementById("btnCopiarOriginal");
+    const btnPegarCifrado = document.getElementById("btnPegarCifrado");
 
     const ALFABETO_ES = "ABCDEFGHIJKLMN\u00d1OPQRSTUVWXYZ";
     const ALFABETO_EN = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -223,6 +225,21 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
+    btnCopiarOriginal.addEventListener("click", async () => {
+        if (!inputTexto.value) {
+            CryptoUX.showToast("Aviso", "No hay texto para copiar.", "info");
+            return;
+        }
+
+        try {
+            await navigator.clipboard.writeText(inputTexto.value);
+            CryptoUX.showToast("¡Copiado!", "Texto copiado al portapapeles.", "success");
+        } catch {
+            inputTexto.select();
+            document.execCommand("copy");
+        }
+    });
+
     btnLimpiar.addEventListener("click", () => {
         inputTexto.value = "";
         outputTexto.value = "";
@@ -242,6 +259,20 @@ document.addEventListener("DOMContentLoaded", () => {
         } catch {
             outputTexto.select();
             document.execCommand("copy");
+        }
+    });
+
+    btnPegarCifrado.addEventListener("click", async () => {
+        try {
+            const textoPortapapeles = await navigator.clipboard.readText();
+            if (textoPortapapeles) {
+                outputTexto.value = textoPortapapeles;
+                enviarDatos("salida");
+                outputTexto.focus();
+                CryptoUX.showToast("Pegado", "Texto insertado correctamente.", "success");
+            }
+        } catch {
+            CryptoUX.showToast("Acceso denegado", "Permiso de portapapeles denegado.", "error");
         }
     });
 

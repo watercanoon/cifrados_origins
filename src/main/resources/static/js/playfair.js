@@ -12,12 +12,23 @@ document.addEventListener("DOMContentLoaded", () => {
     const btnCopiar = document.getElementById("btnCopiar");
     const btnLimpiar = document.getElementById("btnLimpiar");
     const btnPegar = document.getElementById("btnPegar");
+    const btnCopiarOriginal = document.getElementById("btnCopiarOriginal");
+    const btnPegarCifrado = document.getElementById("btnPegarCifrado");
+    const connDot = document.getElementById("connDot");
+    const connLabel = document.getElementById("connLabel");
     const digrafosDisplay = document.getElementById("digrafosDisplay");
     const selectIdioma = document.getElementById("idioma");
     const customContainer = document.getElementById("customAlphabetContainer");
     const inputCustom = document.getElementById("alfabetoCustom");
 
     const ALFABETO = "ABCDEFGHIKLMNOPQRSTUVWXYZ"; // La 'J' se une a la 'I'
+
+    function setConnStatus(online) {
+        if (connDot && connLabel) {
+            connDot.classList.toggle("connected", online);
+            connLabel.textContent = online ? "online" : "offline";
+        }
+    }
 
     // ==========================================
     // CONEXIÓN WEBSOCKET Y NOTIFICACIONES
@@ -28,6 +39,7 @@ document.addEventListener("DOMContentLoaded", () => {
         stompClient.debug = null; // Desactiva logs excesivos en la consola
 
         stompClient.connect({}, function () {
+            setConnStatus(true);
 
             // 1. SUSCRIPCIÓN GLOBAL DE ERRORES (Atrapa excepciones del backend)
             stompClient.subscribe('/user/queue/errores', function(errorResponse) {
@@ -42,13 +54,14 @@ document.addEventListener("DOMContentLoaded", () => {
                     if (ultimaOperacion === "CIFRAR") {
                         outputTexto.value = data.resultado;
                     } else {
-                        inputTexto.value = data.resultado;
+                        inputTexto.value = data.resultado.toLowerCase();
                     }
                 }
             });
 
             recalcularDesdeUltimoCampo();
         }, function () {
+            setConnStatus(false);
             CryptoUX.showToast("Conexión perdida", "Desconectado del servidor. Reconectando...", "error");
             setTimeout(connect, 3000);
         });
@@ -150,7 +163,7 @@ document.addEventListener("DOMContentLoaded", () => {
         stompClient.send("/app/playfair", {}, JSON.stringify({
             texto: texto,
             operacion: operacion,
-            clave: inputClave.value.toUpperCase() || "KEYWORD",
+            clave: inputClave.value.toUpperCase(),
             idioma: selectIdioma.value,
             alfabetoCustom: inputCustom.value
         }));
@@ -262,7 +275,22 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     });
 
-    // UX: Pegar contenido desde el portapapeles
+    // UX: Pegar contenido en Texto Cifrado y descifrar
+    btnPegarCifrado.addEventListener("click", async () => {
+        try {
+            const textoPortapapeles = await navigator.clipboard.readText();
+            if (textoPortapapeles) {
+                outputTexto.value = textoPortapapeles;
+                descifrarDesdeCifrado();
+                outputTexto.focus();
+                CryptoUX.showToast("Pegado", "Texto insertado correctamente.", "success");
+            }
+        } catch (err) {
+            CryptoUX.showToast("Permiso denegado", "Concede acceso al portapapeles en tu navegador.", "error");
+        }
+    });
+
+    // UX: Pegar contenido desde el portapapeles en Texto Original
     btnPegar.addEventListener("click", async () => {
         try {
             const textoPortapapeles = await navigator.clipboard.readText();
@@ -275,6 +303,20 @@ document.addEventListener("DOMContentLoaded", () => {
         } catch (err) {
             CryptoUX.showToast("Permiso denegado", "Concede acceso al portapapeles en tu navegador.", "error");
         }
+    });
+
+    // UX: Copiar Texto Original al portapapeles
+    btnCopiarOriginal.addEventListener("click", () => {
+        if (!inputTexto.value) {
+            CryptoUX.showToast("Aviso", "No hay texto para copiar.", "info");
+            return;
+        }
+        navigator.clipboard.writeText(inputTexto.value).then(() => {
+            CryptoUX.showToast("¡Copiado!", "Texto original copiado al portapapeles.", "success");
+        }).catch(() => {
+            inputTexto.select();
+            document.execCommand("copy");
+        });
     });
 
     // Limpiar campos

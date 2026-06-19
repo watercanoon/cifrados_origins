@@ -11,7 +11,7 @@ public class PlayfairService {
         if (texto == null || texto.trim().isEmpty()) {
             throw new IllegalArgumentException("El texto a procesar no puede estar vacío.");
         }
-        if (clave == null || clave.isBlank()) clave = "KEYWORD";
+        if (clave == null) clave = "";
         if (idioma == null || idioma.isBlank()) idioma = "ES";
 
         String baseAlphabet = determinarBaseAlphabet(idioma, alfabetoCustom);
@@ -135,7 +135,7 @@ public class PlayfairService {
     private String decrypt(String text, char[][] matrix, String baseAlphabet, String idioma) {
         String preparedText = normalizeString(text, idioma, baseAlphabet);
         if (preparedText.length() % 2 != 0) preparedText += "X";
-        return cipherProcess(preparedText, matrix, 4);
+        return cipherProcess(preparedText, matrix, 4).toLowerCase();
     }
 
     private String cipherProcess(String text, char[][] matrix, int shift) {
