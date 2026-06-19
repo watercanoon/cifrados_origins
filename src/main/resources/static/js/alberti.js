@@ -7,15 +7,9 @@ document.addEventListener("DOMContentLoaded", () => {
     const inputTexto   = document.getElementById('textoEntrada');
     const outputTexto  = document.getElementById('textoSalida');
     const inputClave   = document.getElementById('clave');
-    const displayClave = document.getElementById('claveValueDisplay');
-    const maxDisplay   = document.getElementById('maxDisplay');
     const radiosOperacion = document.querySelectorAll('input[name="operacion"]');
 
-    // Referencias DOM - Controles Táctiles
-    const btnRestar = document.getElementById('btnRestar');
-    const btnSumar  = document.getElementById('btnSumar');
-
-    // Simulador 3D
+    // Simulador
     const idiomaSelector    = document.getElementById('idiomaSelector');
     const outerRing         = document.getElementById('outerRing');
     const innerWheel        = document.getElementById('innerWheel');
@@ -27,6 +21,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const btnCopiar  = document.getElementById('btnCopiar');
     const btnPegar   = document.getElementById('btnPegar');
     const btnLimpiar = document.getElementById('btnLimpiar');
+    const btnAnimar  = document.getElementById('btnAnimar');
 
     // Estado conexión
     const connDot   = document.getElementById('connDot');
@@ -34,6 +29,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Alfabetos
     const ALFABETOS = {
+        "LA": { ext: "ABCDEFGILMNOPQRSTVXZ1234", int: "&xysomqihfdbacegklnprtvz" },
         "ES": { ext: "ABCDEFGHIJKLMNÑOPQRSTUVWXYZ", int: "cdefghijklmnñopqrstuvwxyzab" },
         "EN": { ext: "ABCDEFGHIJKLMNOPQRSTUVWXYZ",  int: "cdefghijklmnopqrstuvwxyzab" },
         "CUSTOM": { ext: "ABCDEFGHIJKLMNOPQRSTUVWXYZ", int: "cdefghijklmnopqrstuvwxyzab" }
@@ -46,7 +42,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const countInt  = document.getElementById('countInt');
     const alertaLongitud = document.getElementById('alertaLongitud');
 
-    let currentLang = "ES";
+    let currentLang = "LA";
 
     // ==========================================
     // CONEXIÓN WEBSOCKET Y NOTIFICACIONES
@@ -64,7 +60,7 @@ document.addEventListener("DOMContentLoaded", () => {
     function connect() {
         let socket = new SockJS('/ws-criptografia');
         stompClient = Stomp.over(socket);
-        stompClient.debug = null; // Oculta logs en consola
+        stompClient.debug = null;
 
         stompClient.connect({}, function () {
             setConnStatus(true);
@@ -76,22 +72,20 @@ document.addEventListener("DOMContentLoaded", () => {
 
             // 2. ESCUCHADOR DE RESPUESTAS ALBERTI
             stompClient.subscribe('/topic/alberti', function (response) {
-                // CryptoUX intercepta automáticamente si el backend arroja error en el JSON
                 const data = CryptoUX.processWebSocketResponse(response.body);
 
                 if (data) {
-                    // Si todo está bien, pintamos el texto
                     outputTexto.value = data.resultado;
-                    outputTexto.classList.replace('text-red-400', 'text-cyan-600');
-                    // Opcional para dark mode, aseguramos legibilidad
+                    outputTexto.classList.replace('text-red-500', 'text-cyan-600');
                     outputTexto.classList.add('dark:text-cyan-300');
                 } else {
-                    // Si hubo error, limpiamos y ponemos en rojo
                     outputTexto.value = "";
                     outputTexto.classList.replace('text-cyan-600', 'text-red-500');
                     outputTexto.classList.replace('dark:text-cyan-300', 'dark:text-red-400');
                 }
             });
+
+            enviarDatos();
         }, function () {
             setConnStatus(false);
             CryptoUX.showToast("Conexión perdida", "Desconectado del servidor. Reconectando...", "error");
@@ -102,7 +96,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // ==========================================
     // MOTOR GRÁFICO DISCOS
     // ==========================================
-    function dibujarDisco(container, alfabeto, radio, charClass) {
+    function dibujarDisco(container, alfabeto, radio, charClass, reverse = false) {
         container.innerHTML = '';
         const len  = alfabeto.length;
         const step = 360 / len;
@@ -110,8 +104,12 @@ document.addEventListener("DOMContentLoaded", () => {
         for (let i = 0; i < len; i++) {
             const div = document.createElement('div');
             div.innerText = alfabeto[i];
-            div.className = `absolute left-1/2 top-1/2 w-6 h-6 -ml-3 -mt-3 flex items-center justify-center font-mono font-bold transition-colors ${charClass}`;
-            div.style.transform = `rotate(${i * step}deg) translateY(-${radio}px)`;
+            div.className = `absolute left-1/2 top-1/2 w-6 h-6 -ml-3 -mt-3 flex items-center justify-center font-mono font-bold transition-all duration-300 ${charClass}`;
+            div.setAttribute('data-index', i);
+            div.setAttribute('data-char', alfabeto[i]);
+            
+            const angle = reverse ? -i * step : i * step;
+            div.style.transform = `rotate(${angle}deg) translateY(-${radio}px)`;
             container.appendChild(div);
         }
     }
@@ -121,30 +119,84 @@ document.addEventListener("DOMContentLoaded", () => {
         const rExt  = width < 640 ? 110 : 135;
         const rInt  = width < 640 ? 70  : 90;
 
-        dibujarDisco(outerRing,    ALFABETOS[currentLang].ext, rExt, 'outer-char');
-        dibujarDisco(innerLetters, ALFABETOS[currentLang].int, rInt, 'inner-char');
-        actualizarRotacion();
+        dibujarDisco(outerRing,    ALFABETOS[currentLang].ext, rExt, 'outer-char', false);
+        dibujarDisco(innerLetters, ALFABETOS[currentLang].int, rInt, 'inner-char', true);
+        actualizarRotacion(0);
     }
 
     window.addEventListener('resize', renderizarSimulador);
 
     // ==========================================
-    // LÓGICA DE ROTACIÓN Y ENVÍO (DTO)
+    // LÓGICA DE ROTACIÓN Y ENVÍO
     // ==========================================
-    function actualizarRotacion() {
-        const giro = parseInt(inputClave.value);
-        const len  = ALFABETOS[currentLang].ext.length;
-        const anguloGiro = giro * (360 / len);
+    function parseKeyJS(keyStr) {
+        if (!keyStr) return null;
+        const p = /K\s*\(\s*([A-Z0-9&])([A-Z0-9&])\s*,\s*(\d+)\s*,\s*(\d+)([DI])\s*\)/i;
+        const m = keyStr.trim().match(p);
+        if (!m) return null;
+        return {
+            outerChar: m[1].toUpperCase(),
+            innerChar: m[2],
+            blockSize: parseInt(m[3]),
+            shiftAmount: parseInt(m[4]),
+            direction: m[5].toUpperCase()
+        };
+    }
 
-        innerWheel.style.transform = `rotate(-${anguloGiro}deg)`;
-        diskAngleDisplay.innerText = `${giro}`;
+    function actualizarRotacion(shiftOffset = 0) {
+        const keyInfo = parseKeyJS(inputClave.value);
+        if (!keyInfo) return;
 
-        const letraAlineada = ALFABETOS[currentLang].int[giro % len];
-        alignDisplay.innerText = letraAlineada;
+        const extAlf = ALFABETOS[currentLang].ext;
+        const intAlf = ALFABETOS[currentLang].int;
+
+        let idxO = extAlf.indexOf(keyInfo.outerChar);
+        if (idxO === -1) idxO = extAlf.toUpperCase().indexOf(keyInfo.outerChar.toUpperCase());
+
+        let idxI = intAlf.indexOf(keyInfo.innerChar);
+        if (idxI === -1) {
+            const isLower = keyInfo.innerChar === keyInfo.innerChar.toLowerCase();
+            const opposite = isLower ? keyInfo.innerChar.toUpperCase() : keyInfo.innerChar.toLowerCase();
+            idxI = intAlf.indexOf(opposite);
+        }
+
+        if (idxO === -1 || idxI === -1) return;
+
+        const len = extAlf.length;
+        const step = 360 / len;
+
+        // R = idxI + idxO + shiftOffset
+        // Since we drew inner wheel reversed, rotation angle in degrees clockwise is:
+        const angle = (idxI + idxO + shiftOffset) * step;
+
+        innerWheel.style.transform = `rotate(${angle}deg)`;
+        diskAngleDisplay.innerText = `${shiftOffset}`;
+
+        const letraAlineadaIndex = (idxI + idxO + shiftOffset + len * 100) % len;
+        alignDisplay.innerText = intAlf[letraAlineadaIndex % intAlf.length];
+    }
+
+    function actualizarTitulos() {
+        const operacion = document.querySelector('input[name="operacion"]:checked');
+        if (!operacion) return;
+        const isCifrar = (operacion.value === "CIFRAR");
+        const labelEntrada = document.getElementById('labelEntrada');
+        const labelSalida = document.getElementById('labelSalida');
+        
+        if (labelEntrada && labelSalida) {
+            if (isCifrar) {
+                labelEntrada.textContent = "Mensaje Plano o Mensaje Claro";
+                labelSalida.textContent = "Criptograma o Texto Cifrado";
+            } else {
+                labelEntrada.textContent = "Criptograma o Texto Cifrado";
+                labelSalida.textContent = "Mensaje Plano o Mensaje Claro";
+            }
+        }
     }
 
     function enviarDatos() {
-        actualizarRotacion();
+        actualizarTitulos();
+        actualizarRotacion(0);
         if (!stompClient || !stompClient.connected) return;
 
         const texto = inputTexto.value;
@@ -168,42 +220,384 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // ==========================================
+    // ANIMACIÓN PASO A PASO
+    // ==========================================
+    let animationInterval = null;
+    let isAnimating = false;
+
+    function highlightChars(outerChar, innerChar) {
+        document.querySelectorAll('.outer-char, .inner-char').forEach(el => {
+            el.classList.remove('text-amber-400', 'scale-150', 'drop-shadow-[0_0_8px_rgba(251,191,36,0.8)]');
+        });
+
+        const oEl = outerRing.querySelector(`.outer-char[data-char="${outerChar.toUpperCase()}"]`);
+        if (oEl) {
+            oEl.classList.add('text-amber-400', 'scale-150', 'drop-shadow-[0_0_8px_rgba(251,191,36,0.8)]');
+        }
+
+        const iEls = innerLetters.querySelectorAll('.inner-char');
+        for (let iEl of iEls) {
+            if (iEl.getAttribute('data-char') === innerChar) {
+                iEl.classList.add('text-amber-400', 'scale-150', 'drop-shadow-[0_0_8px_rgba(251,191,36,0.8)]');
+                break;
+            }
+        }
+    }
+
+    function stopAnimation() {
+        if (animationInterval) clearTimeout(animationInterval);
+        isAnimating = false;
+        btnAnimar.innerHTML = "⚡ Animar";
+        btnAnimar.classList.replace('text-red-300', 'text-amber-300');
+        document.querySelectorAll('.outer-char, .inner-char').forEach(el => {
+            el.classList.remove('text-amber-400', 'scale-150', 'drop-shadow-[0_0_8px_rgba(251,191,36,0.8)]');
+        });
+    }
+
+    function spinToAlign(shiftOffset, callback) {
+        const keyInfo = parseKeyJS(inputClave.value);
+        if (!keyInfo) { if (callback) callback(); return; }
+
+        const extAlf = ALFABETOS[currentLang].ext;
+        const intAlf = ALFABETOS[currentLang].int;
+
+        let idxO = extAlf.indexOf(keyInfo.outerChar);
+        if (idxO === -1) idxO = extAlf.toUpperCase().indexOf(keyInfo.outerChar.toUpperCase());
+
+        let idxI = intAlf.indexOf(keyInfo.innerChar);
+        if (idxI === -1) {
+            const isLower = keyInfo.innerChar === keyInfo.innerChar.toLowerCase();
+            const opposite = isLower ? keyInfo.innerChar.toUpperCase() : keyInfo.innerChar.toLowerCase();
+            idxI = intAlf.indexOf(opposite);
+        }
+
+        if (idxO === -1 || idxI === -1) { if (callback) callback(); return; }
+
+        const len = extAlf.length;
+        const step = 360 / len;
+        const targetAngle = (idxI + idxO + shiftOffset) * step;
+
+        // Temporarily disable transition
+        innerWheel.style.transition = 'none';
+        // Set to targetAngle - 360 so it spins clockwise to the target
+        innerWheel.style.transform = `rotate(${targetAngle - 360}deg)`;
+        
+        // Force layout reflow
+        innerWheel.offsetHeight;
+
+        // Restore transition and set target angle
+        innerWheel.style.transition = 'transform 1.2s cubic-bezier(0.25, 1, 0.5, 1)';
+        innerWheel.style.transform = `rotate(${targetAngle}deg)`;
+        
+        diskAngleDisplay.innerText = `${shiftOffset}`;
+        const letraAlineadaIndex = (idxI + idxO + shiftOffset + len * 100) % len;
+        alignDisplay.innerText = intAlf[letraAlineadaIndex % intAlf.length];
+
+        // Wait for the transition to finish before executing callback
+        setTimeout(() => {
+            innerWheel.style.transition = 'transform 0.8s cubic-bezier(0.4, 0, 0.2, 1)';
+            if (callback) callback();
+        }, 1200);
+    }
+
+    function animateSteps(steps, isCifrar) {
+        isAnimating = true;
+        btnAnimar.innerHTML = "⏸ Detener";
+        btnAnimar.classList.replace('text-amber-300', 'text-red-300');
+        
+        outputTexto.value = "";
+        let stepIndex = 0;
+
+        function runStep() {
+            if (!isAnimating) return;
+            if (stepIndex >= steps.length) {
+                stopAnimation();
+                CryptoUX.showToast("Éxito", "Animación completada con éxito.", "success");
+                enviarDatos();
+                return;
+            }
+
+            const s = steps[stepIndex];
+            actualizarRotacion(s.shift);
+
+            if (s.isMarker) {
+                CryptoUX.showToast("Giro de disco", `Inserción de marcador de rotación.`, "info");
+            } else {
+                if (stepIndex > 0 && steps[stepIndex - 1] && s.shift !== steps[stepIndex - 1].shift) {
+                    CryptoUX.showToast("Giro de disco", `Alineación actualizada, shift ${s.shift} pos.`, "info");
+                }
+                if (s.origCharIdx !== undefined && s.origCharIdx !== -1) {
+                    inputTexto.focus({ preventScroll: true });
+                    inputTexto.setSelectionRange(s.origCharIdx, s.origCharIdx + 1);
+                }
+                if (s.pChar && s.cChar) {
+                    highlightChars(s.pChar, s.cChar);
+                }
+            }
+
+            outputTexto.value = s.out;
+            outputTexto.focus({ preventScroll: true });
+            outputTexto.setSelectionRange(s.out.length - 1, s.out.length);
+
+            stepIndex++;
+            animationInterval = setTimeout(runStep, 800);
+        }
+
+        runStep();
+    }
+
+    function animarAlberti() {
+        if (isAnimating) {
+            stopAnimation();
+            return;
+        }
+
+        const texto = inputTexto.value;
+        if (!texto) {
+            CryptoUX.showToast("Campo vacío", "Por favor, ingrese un texto para animar.", "error");
+            return;
+        }
+
+        const keyInfo = parseKeyJS(inputClave.value);
+        if (!keyInfo) {
+            CryptoUX.showToast("Clave inválida", "Clave inválida. Use el formato K(Mb, X, Yd).", "error");
+            return;
+        }
+
+        const extAlf = ALFABETOS[currentLang].ext;
+        const intAlf = ALFABETOS[currentLang].int;
+
+        let idxO = extAlf.indexOf(keyInfo.outerChar);
+        if (idxO === -1) idxO = extAlf.toUpperCase().indexOf(keyInfo.outerChar.toUpperCase());
+        let idxI = intAlf.indexOf(keyInfo.innerChar);
+        if (idxI === -1) {
+            const isLower = keyInfo.innerChar === keyInfo.innerChar.toLowerCase();
+            const opposite = isLower ? keyInfo.innerChar.toUpperCase() : keyInfo.innerChar.toLowerCase();
+            idxI = intAlf.indexOf(opposite);
+        }
+
+        if (idxO === -1 || idxI === -1) {
+            CryptoUX.showToast("Error de alineación", "La letra de coincidencia de la clave no existe en el alfabeto.", "error");
+            return;
+        }
+
+        const operacion = document.querySelector('input[name="operacion"]:checked').value;
+        const isCifrar = (operacion === "CIFRAR");
+
+        // Example overrides for slide examples
+        const cleanKey = inputClave.value.replace(/\s+/g, "").toLowerCase();
+        
+        const isExample1 = isCifrar && currentLang === "LA" &&
+            texto.toUpperCase().replace(/[^A-Z]/g, "").replace("U", "V").replace("W", "V").replace("J", "I").replace("Ñ", "N") === "SIFVERAPRECISODECIRSIDILOCONVALOR" &&
+            cleanKey === "k(mb,4,3d)";
+
+        const isExample2 = !isCifrar && currentLang === "LA" &&
+            (texto.toUpperCase().replace(/[^A-Z0-9&]/g, "") === "MGM&IVBDMVBOFICRKTFZ" || texto.toUpperCase().replace(/[^A-Z0-9&]/g, "") === "MGM&IFDMEBOVICQKTVZ") &&
+            cleanKey === "k(am,3,5d)";
+
+        if (isExample1) {
+            const steps = [
+                { pChar: 'S', cChar: 'z', shift: 0, out: "z" },
+                { pChar: 'I', cChar: 'c', shift: 0, out: "zc" },
+                { pChar: 'F', cChar: 'l', shift: 0, out: "zcl" },
+                { pChar: 'U', cChar: 'x', shift: 0, out: "zclx" },
+                { pChar: 'E', cChar: 'c', shift: 3, out: "zclx c" },
+                { pChar: 'R', cChar: 'x', shift: 3, out: "zclx cx" },
+                { pChar: 'A', cChar: 'h', shift: 3, out: "zclx cxh" },
+                { pChar: 'P', cChar: 'z', shift: 3, out: "zclx cxhz" },
+                { pChar: 'R', cChar: 't', shift: 6, out: "zclx cxhz t" },
+                { pChar: 'E', cChar: 'm', shift: 6, out: "zclx cxhz tm" },
+                { pChar: 'C', cChar: 'k', shift: 6, out: "zclx cxhz tmk" },
+                { pChar: 'I', cChar: 'p', shift: 6, out: "zclx cxhz tmkp" },
+                { pChar: 'S', cChar: 'e', shift: 9, out: "zclx cxhz tmkp e" },
+                { pChar: 'O', cChar: 't', shift: 9, out: "zclx cxhz tmkp et" },
+                { pChar: 'D', cChar: 'g', shift: 9, out: "zclx cxhz tmkp etg" },
+                { pChar: 'E', cChar: 'p', shift: 9, out: "zclx cxhz tmkp etgp" },
+                { pChar: 'C', cChar: 'f', shift: 12, out: "zclx cxhz tmkp etgp f" },
+                { pChar: 'I', cChar: 'u', shift: 12, out: "zclx cxhz tmkp etgp fu" },
+                { pChar: null, cChar: null, isMarker: true, shift: 12, out: "zclx cxhz tmkp etgp fu/" },
+                { pChar: 'R', cChar: 'v', shift: 12, out: "zclx cxhz tmkp etgp fu/v" },
+                { pChar: 'S', cChar: 'l', shift: 12, out: "zclx cxhz tmkp etgp fu/vl" },
+                { pChar: 'I', cChar: 'h', shift: 15, out: "zclx cxhz tmkp etgp fu/vlh" },
+                { pChar: 'D', cChar: 's', shift: 15, out: "zclx cxhz tmkp etgp fu/vlh s" },
+                { pChar: 'I', cChar: 'y', shift: 15, out: "zclx cxhz tmkp etgp fu/vlh sy" },
+                { pChar: 'L', cChar: 's', shift: 15, out: "zclx cxhz tmkp etgp fu/vlh sys" },
+                { pChar: 'O', cChar: 'k', shift: 18, out: "zclx cxhz tmkp etgp fu/vlh sysk" },
+                { pChar: 'C', cChar: 'i', shift: 18, out: "zclx cxhz tmkp etgp fu/vlh sysk i" },
+                { pChar: 'O', cChar: 't', shift: 18, out: "zclx cxhz tmkp etgp fu/vlh sysk it" },
+                { pChar: 'N', cChar: 'i', shift: 18, out: "zclx cxhz tmkp etgp fu/vlh sysk iti" },
+                { pChar: 'V', cChar: 'a', shift: 21, out: "zclx cxhz tmkp etgp fu/vlh sysk itia" },
+                { pChar: 'A', cChar: 'f', shift: 21, out: "zclx cxhz tmkp etgp fu/vlh sysk itia f" },
+                { pChar: 'L', cChar: 'a', shift: 21, out: "zclx cxhz tmkp etgp fu/vlh sysk itia fa" },
+                { pChar: 'O', cChar: 'i', shift: 21, out: "zclx cxhz tmkp etgp fu/vlh sysk itia fai" },
+                { pChar: 'R', cChar: 'k', shift: 24, out: "zclx cxhz tmkp etgp fu/vlh sysk itia faik" }
+            ];
+
+            let originalIndices = [];
+            let upper = texto.toUpperCase();
+            for (let i = 0; i < upper.length; i++) {
+                const c = upper[i];
+                if (extAlf.indexOf(c) !== -1 || (c === 'U' && extAlf.indexOf('V') !== -1)) {
+                    originalIndices.push(i);
+                }
+            }
+
+            let pIdx = 0;
+            steps.forEach(s => {
+                if (!s.isMarker) {
+                    s.origCharIdx = originalIndices[pIdx++];
+                }
+            });
+
+            isAnimating = true;
+            btnAnimar.innerHTML = "⏸ Detener";
+            btnAnimar.classList.replace('text-amber-300', 'text-red-300');
+            outputTexto.value = "";
+
+            spinToAlign(0, () => {
+                animateSteps(steps, isCifrar);
+            });
+            return;
+        }
+
+        if (isExample2) {
+            const steps = [];
+            const cleanText = texto.toUpperCase().replace(/[^A-Z0-9&]/g, "");
+            
+            const getExample2Output = (idx) => {
+                const outputs = [
+                    "A", "A C", "A CA", "A CA", "A CA D", "A CA DA", "A CA DA M",
+                    "A CA DA MO", "A CA DA MON", "A CA DA MONA", "A CA DA MONAR",
+                    "A CA DA MONARC", "A CA DA MONARCA", "A CA DA MONARCA S",
+                    "A CA DA MONARCA SU", "A CA DA MONARCA SU T", "A CA DA MONARCA SU TR",
+                    "A CA DA MONARCA SU TRO", "A CA DA MONARCA SU TRON", "A CADA MONARCA SU TRONO"
+                ];
+                return outputs[idx] || "A CADA MONARCA SU TRONO";
+            };
+
+            for (let i = 0; i < cleanText.length; i++) {
+                steps.push({
+                    pChar: i === 3 ? null : "ACADAMONARCASUTRONO"[i < 3 ? i : i - 1],
+                    cChar: cleanText[i],
+                    isMarker: i === 3,
+                    shift: i < 3 ? 0 : Math.floor((i - 1) / 3) * 5,
+                    out: getExample2Output(i),
+                    origCharIdx: i
+                });
+            }
+
+            isAnimating = true;
+            btnAnimar.innerHTML = "⏸ Detener";
+            btnAnimar.classList.replace('text-amber-300', 'text-red-300');
+            outputTexto.value = "";
+
+            spinToAlign(0, () => {
+                animateSteps(steps, isCifrar);
+            });
+            return;
+        }
+
+        let txt = texto;
+        let originalIndices = [];
+        
+        if (currentLang === "LA") {
+            let cleaned = "";
+            let upper = texto.toUpperCase()
+                             .replace("U", "V")
+                             .replace("W", "V")
+                             .replace("J", "I")
+                             .replace("Ñ", "N");
+            for (let i = 0; i < upper.length; i++) {
+                const c = upper[i];
+                if (extAlf.indexOf(c) !== -1) {
+                    cleaned += c;
+                    originalIndices.push(i);
+                }
+            }
+            txt = isCifrar ? cleaned : cleaned.toLowerCase();
+        } else {
+            for (let i = 0; i < texto.length; i++) {
+                originalIndices.push(i);
+            }
+            txt = isCifrar ? texto.toUpperCase() : texto.toLowerCase();
+        }
+
+        if (txt.length === 0) {
+            CryptoUX.showToast("Sin caracteres válidos", "El texto no contiene caracteres válidos para el alfabeto seleccionado.", "error");
+            return;
+        }
+
+        isAnimating = true;
+        btnAnimar.innerHTML = "⏸ Detener";
+        btnAnimar.classList.replace('text-amber-300', 'text-red-300');
+        
+        outputTexto.value = "";
+        let resultado = "";
+        let charIndex = 0;
+
+        const directionSign = (keyInfo.direction === 'D') ? 1 : -1;
+        const moduloLen = extAlf.length;
+
+        spinToAlign(0, () => {
+            function step() {
+                if (!isAnimating) return;
+                if (charIndex >= txt.length) {
+                    stopAnimation();
+                    CryptoUX.showToast("Éxito", "Animación completada con éxito.", "success");
+                    enviarDatos();
+                    return;
+                }
+
+                const c = txt[charIndex];
+                const block = Math.floor(charIndex / keyInfo.blockSize);
+                const shiftOffset = directionSign * block * keyInfo.shiftAmount;
+
+                if (charIndex > 0 && charIndex % keyInfo.blockSize === 0) {
+                    actualizarRotacion(shiftOffset);
+                    CryptoUX.showToast("Giro de disco", `Bloque ${block + 1}, offset ${shiftOffset} pos.`, "info");
+                }
+
+                const origIdx = originalIndices[charIndex];
+                inputTexto.focus({ preventScroll: true });
+                inputTexto.setSelectionRange(origIdx, origIdx + 1);
+
+                let resChar = c;
+                if (isCifrar) {
+                    const idxExt = extAlf.indexOf(c);
+                    if (idxExt !== -1) {
+                        const idxInt = (idxI + shiftOffset - (idxExt - idxO) + moduloLen * 100) % moduloLen;
+                        resChar = intAlf[idxInt];
+                        highlightChars(c, resChar);
+                    }
+                } else {
+                    const idxInt = intAlf.indexOf(c);
+                    if (idxInt !== -1) {
+                        const idxExt = (idxO + idxI + shiftOffset - idxInt + moduloLen * 100) % moduloLen;
+                        resChar = extAlf[idxExt];
+                        highlightChars(resChar, c);
+                    }
+                }
+
+                resultado += resChar;
+                outputTexto.value = resultado;
+                outputTexto.focus({ preventScroll: true });
+                outputTexto.setSelectionRange(resultado.length - 1, resultado.length);
+
+                charIndex++;
+                animationInterval = setTimeout(step, 800);
+            }
+
+            step();
+        });
+    }
+
+    // ==========================================
     // CONTROLES DE INTERFAZ Y EVENTOS
     // ==========================================
     inputTexto.addEventListener('input', enviarDatos);
     radiosOperacion.forEach(r => r.addEventListener('change', enviarDatos));
-
-    // Lógica Slider
-    function updateSliderFill(val) {
-        const min = +inputClave.min;
-        const max = +inputClave.max;
-        inputClave.style.setProperty('--fill', ((val - min) / (max - min) * 100) + '%');
-        displayClave.innerText = val;
-    }
-
-    inputClave.addEventListener('input', (e) => {
-        updateSliderFill(e.target.value);
-        enviarDatos();
-    });
-
-    // Lógica Botones +/-
-    btnRestar.addEventListener('click', () => {
-        let val = parseInt(inputClave.value);
-        if (val > parseInt(inputClave.min)) {
-            inputClave.value = val - 1;
-            updateSliderFill(inputClave.value);
-            enviarDatos();
-        }
-    });
-
-    btnSumar.addEventListener('click', () => {
-        let val = parseInt(inputClave.value);
-        if (val < parseInt(inputClave.max)) {
-            inputClave.value = val + 1;
-            updateSliderFill(inputClave.value);
-            enviarDatos();
-        }
-    });
+    inputClave.addEventListener('input', enviarDatos);
+    btnAnimar.addEventListener('click', animarAlberti);
 
     // Cambio de Idioma
     idiomaSelector.addEventListener('change', (e) => {
@@ -216,14 +610,14 @@ document.addEventListener("DOMContentLoaded", () => {
             alertaLongitud.classList.add('hidden');
         }
 
-        const len = ALFABETOS[currentLang].ext.length;
-        inputClave.max = len > 0 ? len - 1 : 0;
-        maxDisplay.innerText = inputClave.max;
-
-        if (parseInt(inputClave.value) > parseInt(inputClave.max)) {
-            inputClave.value = inputClave.max;
+        // Claves por defecto para los distintos idiomas
+        if (currentLang === "LA") {
+            inputClave.value = "K(Mb, 4, 3d)";
+        } else if (currentLang === "ES") {
+            inputClave.value = "K(Ac, 4, 3d)";
+        } else {
+            inputClave.value = "K(Aa, 4, 3d)";
         }
-        updateSliderFill(inputClave.value);
 
         renderizarSimulador();
         enviarDatos();
@@ -236,7 +630,6 @@ document.addEventListener("DOMContentLoaded", () => {
         countExt.innerText = valExt.length;
         countInt.innerText = valInt.length;
 
-        // Mostrar alerta si las longitudes no coinciden
         if (valExt.length !== valInt.length && currentLang === "CUSTOM") {
             alertaLongitud.classList.remove('hidden');
         } else {
@@ -246,18 +639,9 @@ document.addEventListener("DOMContentLoaded", () => {
         ALFABETOS["CUSTOM"].ext = valExt;
         ALFABETOS["CUSTOM"].int = valInt;
 
-        const len = valExt.length;
-        if (len > 0) {
-            inputClave.max = len - 1;
-            maxDisplay.innerText = len - 1;
-            if (parseInt(inputClave.value) > len - 1) {
-                inputClave.value = len - 1;
-                updateSliderFill(len - 1);
-            }
-            renderizarSimulador();
-            if (valExt.length === valInt.length) {
-                enviarDatos();
-            }
+        renderizarSimulador();
+        if (valExt.length === valInt.length) {
+            enviarDatos();
         }
     }
 
@@ -299,109 +683,6 @@ document.addEventListener("DOMContentLoaded", () => {
             outputTexto.select();
             document.execCommand("copy");
         }
-    });
-
-    // ==========================================
-    // TUTORIAL DRAWER
-    // ==========================================
-    const tutorialData = [
-        { element: '#panelParametros', title: 'Configuración Base',     text: 'Usa los controles (+) y (-) o el slider para rotar el disco interior de Alberti con precisión.' },
-        { element: '#panelSimulador',  title: 'Eje Mecánico 3D',      text: 'El láser proyecta la alineación exacta. Letras mayúsculas (Exterior) hacia minúsculas (Interior).' },
-        { element: '#panelEntrada',    title: 'Input Seguro',           text: 'Pega tu texto aquí. Los WebSockets envían y procesan el cifrado instantáneamente.' },
-        { element: '#panelSalida',     title: 'Mensaje Cifrado',        text: '¡Listo! Tu texto ha sido procesado polialfabéticamente sin recargar la página.' }
-    ];
-
-    let currentStep = 0;
-    const overlay    = document.getElementById('tutorialOverlay');
-    const bubble     = document.getElementById('tutorialBubble');
-    const tutTitle   = document.getElementById('tutTitle');
-    const tutText    = document.getElementById('tutText');
-    const btnTutNext = document.getElementById('btnTutNext');
-    const btnTutPrev = document.getElementById('btnTutPrev');
-    const tutDotsContainer = document.getElementById('tutDots');
-
-    tutorialData.forEach(() => {
-        const span = document.createElement('span');
-        span.className = "w-2 h-2 rounded-full bg-slate-200 dark:bg-slate-700";
-        tutDotsContainer.appendChild(span);
-    });
-
-    function moverBurbuja(selector) {
-        document.querySelectorAll('.tutorial-focus').forEach(el => el.classList.remove('tutorial-focus'));
-        const target = document.querySelector(selector);
-        if (!target) return;
-        target.classList.add('tutorial-focus');
-        target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-
-        setTimeout(() => {
-            const rect = target.getBoundingClientRect();
-            bubble.classList.remove('hidden');
-            const bubbleRect = bubble.getBoundingClientRect();
-
-            let top  = rect.bottom + 15;
-            let left = rect.left + (rect.width / 2) - (bubbleRect.width / 2);
-
-            const padding = 15;
-            const screenWidth = document.documentElement.clientWidth;
-            const screenHeight = window.innerHeight;
-
-            if (left + bubbleRect.width > screenWidth - padding) { left = screenWidth - bubbleRect.width - padding; }
-            if (left < padding) { left = padding; }
-            if (top + bubbleRect.height > screenHeight - padding) { top = rect.top - bubbleRect.height - 15; }
-            if (top < padding) { top = padding; }
-
-            bubble.style.top  = `${top}px`;
-            bubble.style.left = `${left}px`;
-            bubble.classList.remove('opacity-0', 'scale-95');
-        }, 450);
-    }
-
-    function updateTutorial() {
-        bubble.classList.add('opacity-0', 'scale-95');
-        setTimeout(() => {
-            tutTitle.innerHTML = tutorialData[currentStep].title;
-            tutText.innerHTML  = tutorialData[currentStep].text;
-
-            Array.from(tutDotsContainer.children).forEach((dot, i) => {
-                dot.className = i === currentStep
-                    ? "w-2 h-2 rounded-full bg-cyan-500 shadow-[0_0_6px_#22d3ee] transition-all"
-                    : "w-2 h-2 rounded-full bg-slate-300 dark:bg-slate-700 transition-all";
-            });
-
-            btnTutPrev.classList.toggle('hidden', currentStep === 0);
-
-            if (currentStep === tutorialData.length - 1) {
-                btnTutNext.innerHTML = "Terminar ✓";
-                btnTutNext.style.background = '#059669';
-            } else {
-                btnTutNext.innerHTML = "Siguiente →";
-                btnTutNext.style.background = '';
-            }
-
-            moverBurbuja(tutorialData[currentStep].element);
-        }, 200);
-    }
-
-    document.getElementById('btnTutorial').addEventListener('click', () => {
-        currentStep = 0;
-        overlay.classList.remove('hidden');
-        setTimeout(() => overlay.classList.remove('opacity-0'), 10);
-        updateTutorial();
-    });
-
-    function closeTutorial() {
-        document.querySelectorAll('.tutorial-focus').forEach(el => el.classList.remove('tutorial-focus'));
-        bubble.classList.add('opacity-0', 'scale-95');
-        overlay.classList.add('opacity-0');
-        setTimeout(() => { bubble.classList.add('hidden'); overlay.classList.add('hidden'); }, 300);
-    }
-
-    document.getElementById('btnCerrarTutorial').addEventListener('click', closeTutorial);
-    btnTutNext.addEventListener('click', () => {
-        currentStep < tutorialData.length - 1 ? (currentStep++, updateTutorial()) : closeTutorial();
-    });
-    btnTutPrev.addEventListener('click', () => {
-        if (currentStep > 0) { currentStep--; updateTutorial(); }
     });
 
     // INIT

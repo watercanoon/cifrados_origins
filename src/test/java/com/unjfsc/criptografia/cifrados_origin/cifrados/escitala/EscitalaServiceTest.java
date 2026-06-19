@@ -32,8 +32,12 @@ class EscitalaServiceTest {
 
     @Test
     void testShortTextOrInvalidColumns() {
-        // Menos de 2 columnas o texto corto no debería transponer
-        assertEquals("H", service.procesarEscitala("H", 4, "CIFRAR"));
-        assertEquals("HOLA", service.procesarEscitala("HOLA", 1, "CIFRAR"));
+        // Un texto corto se rellena con X para completar el diámetro
+        assertEquals("HXXX", service.procesarEscitala("H", 4, "CIFRAR"));
+        
+        // Diámetro menor o igual a 1 debe lanzar una excepción
+        assertThrows(IllegalArgumentException.class, () -> {
+            service.procesarEscitala("HOLA", 1, "CIFRAR");
+        });
     }
 }
