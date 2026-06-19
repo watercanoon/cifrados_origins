@@ -9,11 +9,20 @@ public class VigenereService {
     private static final String ALFABETO_EN = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
     public String procesarVigenere(String texto, String clave, String operacion, String idioma, String alfabetoCustom) {
+        // 🛡️ VALIDACIONES INICIALES
+        if (texto == null || texto.trim().isEmpty()) {
+            throw new IllegalArgumentException("El texto a procesar no puede estar vacío.");
+        }
+        if (clave == null || clave.trim().isEmpty()) {
+            throw new IllegalArgumentException("La palabra clave no puede estar vacía.");
+        }
+
         String alfabetoActual = determinarAlfabeto(idioma, alfabetoCustom);
         String claveLimpia = limpiarClave(clave, alfabetoActual);
 
-        if (texto == null || claveLimpia.isEmpty()) {
-            return "";
+        // 🛡️ VALIDACIÓN DE CLAVE (Evita división por cero si la clave era puros números, ej "123")
+        if (claveLimpia.isEmpty()) {
+            throw new IllegalArgumentException("La clave no contiene caracteres válidos del alfabeto seleccionado.");
         }
 
         int modulo = alfabetoActual.length();
@@ -79,10 +88,6 @@ public class VigenereService {
 
     private String limpiarClave(String clave, String alfabeto) {
         StringBuilder limpia = new StringBuilder();
-
-        if (clave == null) {
-            return "";
-        }
 
         for (char c : clave.toUpperCase().toCharArray()) {
             if (alfabeto.indexOf(c) != -1) {

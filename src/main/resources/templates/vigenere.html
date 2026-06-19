@@ -1,256 +1,196 @@
 <!DOCTYPE html>
-<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<html lang="es" xmlns:th="http://www.thymeleaf.org" class="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vigenere | CriptoSuite</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <title>Vigenére | CriptoSuite</title>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.5.1/sockjs.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = { darkMode: 'class', theme: { extend: {} } }
+        if (localStorage.getItem('color-theme') === 'dark' || (!('color-theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
+    </script>
     <link rel="stylesheet" th:href="@{/css/global.css}">
+
     <style>
-        body { background-color: #0f172a; color: #f8fafc; }
-        .glass-panel {
-            background: rgba(15, 23, 42, .74);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(51, 65, 85, .62);
-        }
-        .cyber-grid {
-            background-image:
-                linear-gradient(rgba(20, 184, 166, .035) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(20, 184, 166, .035) 1px, transparent 1px);
-            background-size: 40px 40px;
-        }
-        .section-title {
-            font-size: 11px;
-            font-weight: 800;
-            text-transform: uppercase;
-            letter-spacing: .08em;
-            color: #94a3b8;
-        }
-        .btn-action {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 6px;
-            padding: 7px 14px;
-            font-size: 11px;
-            font-weight: 800;
-            text-transform: uppercase;
-            letter-spacing: .04em;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all .2s ease;
-            white-space: nowrap;
-        }
-        .btn-util {
-            background: rgba(30, 41, 59, .82);
-            color: #cbd5e1;
-            border: 1px solid rgba(71, 85, 105, .65);
-        }
-        .btn-util:hover {
-            background: rgba(20, 184, 166, .14);
-            color: #5eead4;
-            border-color: rgba(20, 184, 166, .4);
-        }
-        .btn-danger:hover {
-            background: rgba(239, 68, 68, .12);
-            color: #fca5a5;
-            border-color: rgba(239, 68, 68, .35);
-        }
-        .btn-primary {
-            background: rgba(8, 47, 73, .7);
-            color: #67e8f9;
-            border: 1px solid rgba(6, 182, 212, .45);
-        }
-        .btn-primary:hover {
-            background: rgba(6, 182, 212, .24);
-            border-color: rgba(6, 182, 212, .75);
-        }
-        .text-area {
-            width: 100%;
-            min-height: 210px;
-            resize: none;
-            outline: none;
-            border-radius: 12px;
-            border: 1px solid rgba(51, 65, 85, .55);
-            background: rgba(15, 23, 42, .58);
-            padding: 14px;
-            color: #f8fafc;
-            font-size: 16px;
-            line-height: 1.55;
-        }
-        .text-area:focus {
-            border-color: rgba(20, 184, 166, .72);
-            box-shadow: 0 0 0 3px rgba(20, 184, 166, .12);
-        }
-        .table-shell {
-            overflow: auto;
-            max-height: 520px;
-            scrollbar-width: thin;
-            scrollbar-color: #334155 transparent;
-        }
+        .section-title { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; }
+
+        /* Botones de acción */
+        .btn-action { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 7px 14px; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; border-radius: 8px; cursor: pointer; transition: all .2s ease; white-space: nowrap; }
+        .btn-util { background: rgba(241, 245, 249, .8); color: #475569; border: 1px solid rgba(203, 213, 225, .5); }
+        .dark .btn-util { background: rgba(30, 41, 59, .82); color: #cbd5e1; border-color: rgba(71, 85, 105, .65); }
+        .btn-util:hover { background: rgba(20, 184, 166, .12); color: #0d9488; border-color: rgba(20, 184, 166, .3); }
+        .dark .btn-util:hover { background: rgba(20, 184, 166, .14); color: #5eead4; border-color: rgba(20, 184, 166, .4); }
+        .btn-danger:hover { background: rgba(239, 68, 68, .1); color: #dc2626; border-color: rgba(239, 68, 68, .3); }
+        .dark .btn-danger:hover { background: rgba(239, 68, 68, .12); color: #fca5a5; border-color: rgba(239, 68, 68, .35); }
+        .btn-primary { background: rgba(224, 242, 254, .7); color: #0284c7; border: 1px solid rgba(6, 182, 212, .45); }
+        .dark .btn-primary { background: rgba(8, 47, 73, .7); color: #67e8f9; }
+        .btn-primary:hover { background: rgba(6, 182, 212, .2); border-color: rgba(6, 182, 212, .6); }
+        .dark .btn-primary:hover { background: rgba(6, 182, 212, .24); border-color: rgba(6, 182, 212, .75); }
+
+        /* Contenedor de la Tabla */
+        .table-shell { overflow: auto; max-height: 520px; scrollbar-width: thin; scrollbar-color: #cbd5e1 transparent; }
+        .dark .table-shell { scrollbar-color: #334155 transparent; }
         .table-shell::-webkit-scrollbar { width: 8px; height: 8px; }
         .table-shell::-webkit-scrollbar-track { background: transparent; }
-        .table-shell::-webkit-scrollbar-thumb { background: #334155; border-radius: 999px; }
-        .vig-table {
-            border-collapse: separate;
-            border-spacing: 2px;
-            min-width: max-content;
-            margin: 0 auto;
-            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
-        }
-        .vig-table th,
-        .vig-table td {
-            width: 28px;
-            height: 28px;
-            text-align: center;
-            border-radius: 5px;
-            font-size: 12px;
-            font-weight: 800;
-            border: 1px solid rgba(51, 65, 85, .78);
-        }
-        .vig-table th {
-            position: sticky;
-            z-index: 3;
-            background: #020617;
-            color: #67e8f9;
-        }
+        .table-shell::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 999px; }
+        .dark .table-shell::-webkit-scrollbar-thumb { background: #334155; }
+
+        /* Estilos de la Tabla Vigenére */
+        .vig-table { border-collapse: separate; border-spacing: 2px; min-width: max-content; margin: 0 auto; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; }
+        .vig-table th, .vig-table td { width: 28px; height: 28px; text-align: center; border-radius: 5px; font-size: 12px; font-weight: 800; border: 1px solid rgba(203, 213, 225, .8); }
+        .dark .vig-table th, .dark .vig-table td { border: 1px solid rgba(51, 65, 85, .78); }
+
+        .vig-table th { position: sticky; z-index: 3; background: #e0f2fe; color: #0284c7; }
+        .dark .vig-table th { background: #020617; color: #67e8f9; }
         .vig-table .top-head { top: 0; }
-        .vig-table .side-head { left: 0; color: #fde68a; }
-        .vig-table .corner {
-            left: 0;
-            top: 0;
-            z-index: 4;
-            color: #cbd5e1;
-        }
-        .vig-table td {
-            background: rgba(15, 23, 42, .84);
-            color: #cbd5e1;
-            transition: all .12s ease;
-        }
-        .vig-table .active-row,
-        .vig-table .active-col {
-            background: rgba(20, 184, 166, .22);
-            color: #f8fafc;
-        }
-        .vig-table .active-cell {
-            background: rgba(250, 204, 21, .88);
-            color: #111827;
-            border-color: rgba(254, 240, 138, 1);
-            transform: scale(1.08);
-            box-shadow: 0 0 18px rgba(250, 204, 21, .35);
-            z-index: 2;
-            position: relative;
-        }
-        .conn-dot {
-            width: 7px;
-            height: 7px;
-            border-radius: 50%;
-            display: inline-block;
-            background: #f87171;
-            box-shadow: 0 0 7px #f87171;
-        }
-        .conn-dot.connected {
-            background: #34d399;
-            box-shadow: 0 0 7px #34d399;
-        }
+        .vig-table .side-head { left: 0; color: #d97706; background: #fef3c7; }
+        .dark .vig-table .side-head { color: #fde68a; background: #020617; }
+        .vig-table .corner { left: 0; top: 0; z-index: 4; color: #475569; background: #f1f5f9; }
+        .dark .vig-table .corner { color: #cbd5e1; background: #020617; }
+
+        .vig-table td { background: rgba(255, 255, 255, .8); color: #334155; transition: all .12s ease; }
+        .dark .vig-table td { background: rgba(15, 23, 42, .84); color: #cbd5e1; }
+
+        .vig-table .active-row, .vig-table .active-col { background: rgba(20, 184, 166, .15); color: #0f172a; }
+        .dark .vig-table .active-row, .dark .vig-table .active-col { background: rgba(20, 184, 166, .22); color: #f8fafc; }
+
+        .vig-table .active-cell { background: rgba(250, 204, 21, .5); color: #111827; border-color: #eab308; transform: scale(1.08); box-shadow: 0 0 12px rgba(250, 204, 21, .3); z-index: 2; position: relative; }
+        .dark .vig-table .active-cell { background: rgba(250, 204, 21, .88); border-color: rgba(254, 240, 138, 1); box-shadow: 0 0 18px rgba(250, 204, 21, .35); }
+
+        .conn-dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; background: #ef4444; box-shadow: 0 0 7px #ef4444; }
+        .conn-dot.connected { background: #10b981; box-shadow: 0 0 7px #10b981; }
     </style>
 </head>
-<body class="min-h-screen p-3 sm:p-5 md:p-8 font-sans antialiased cyber-grid">
+<body class="text-slate-800 dark:text-slate-100 min-h-screen font-sans cyber-grid antialiased transition-colors duration-300">
 
-<div id="toast-container" class="fixed top-4 right-4 z-50 flex flex-col gap-2 max-w-xs w-full"></div>
+<div id="toast-container" class="fixed top-20 right-5 z-50 flex flex-col gap-2 max-w-xs w-full"></div>
 
-<div class="max-w-7xl mx-auto">
-    <header class="mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+<nav class="border-b border-slate-200 dark:border-slate-800/60 bg-white/70 dark:bg-slate-950/70 backdrop-blur-md sticky top-0 z-50 transition-colors duration-300">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex items-center justify-between h-16">
+
+            <a th:href="@{/}" class="flex items-center gap-2 px-3 py-2 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800 hover:text-cyan-600 dark:hover:text-cyan-400 transition-all font-medium">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+                Volver al Menú
+            </a>
+
+            <div class="flex items-center gap-4">
+                <div class="hidden md:flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-100 dark:bg-emerald-500/10 border border-emerald-300 dark:border-emerald-500/20">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <span class="text-xs font-medium text-emerald-700 dark:text-emerald-400">WebSockets Activos</span>
+                </div>
+
+                <button id="theme-toggle" class="p-2 ml-2 rounded-lg bg-slate-200 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-300 dark:hover:bg-slate-700 transition-colors" aria-label="Cambiar tema">
+                    <svg id="theme-toggle-light-icon" class="hidden w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4.22 2.32a1 1 0 011.415 0l.707.707a1 1 0 01-1.414 1.415l-.707-.708a1 1 0 010-1.414zm3.78 4.68a1 1 0 110 2h-1a1 1 0 110-2h1zm-2.32 4.22a1 1 0 010 1.415l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.415 0zM10 16a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zm-4.22-2.32a1 1 0 010 1.415l-.707.708a1 1 0 01-1.415-1.414l.707-.707a1 1 0 011.415 0zM2 10a1 1 0 110-2h1a1 1 0 110 2H2zm2.32-4.22a1 1 0 011.415 0l.707.707a1 1 0 01-1.415 1.415l-.707-.707a1 1 0 010-1.415zM10 5a5 5 0 100 10 5 5 0 000-10z"></path>
+                    </svg>
+                    <svg id="theme-toggle-dark-icon" class="hidden w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"></path>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+</nav>
+
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <header class="mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 animate-fade-in">
         <div>
             <div class="flex items-center gap-2 mb-1">
-                <h1 class="text-2xl sm:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 via-teal-300 to-amber-300">
-                    Cifrado Vigenère
+                <h1 class="text-2xl sm:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-600 via-teal-600 to-amber-500 dark:from-cyan-300 dark:via-teal-300 dark:to-amber-300 transition-colors">
+                    Cifrado Vigenére
                 </h1>
-                <span class="flex items-center gap-1.5 text-[10px] font-semibold text-slate-500 bg-slate-900 border border-slate-700 px-2 py-0.5 rounded-full">
+                <span class="flex items-center gap-1.5 text-[10px] font-semibold text-slate-500 bg-slate-100 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 px-2 py-0.5 rounded-full transition-colors">
                     <span class="conn-dot" id="connDot"></span>
                     <span id="connLabel">offline</span>
                 </span>
             </div>
-            <p class="text-slate-400 text-xs sm:text-sm">Cifrado polialfabético con clave repetida y tablero dinámico.</p>
+            <p class="text-slate-500 dark:text-slate-400 text-xs sm:text-sm transition-colors">Cifrado polialfabético con clave repetida y tablero dinámico.</p>
         </div>
-        <a th:href="@{/}" class="btn-action btn-util w-full sm:w-auto">Volver al Inicio</a>
     </header>
 
-    <main class="grid grid-cols-1 xl:grid-cols-12 gap-5">
-        <section class="glass-panel rounded-2xl p-4 sm:p-5 xl:col-span-7">
-            <div class="mt-8 p-4 bg-purple-500/10 border border-purple-500/20 rounded-lg">
-                <h3 class="text-purple-400 font-bold text-sm mb-2 flex items-center gap-2">
+    <main class="grid grid-cols-1 xl:grid-cols-12 gap-5 animate-fade-in-delay">
+        <section class="glass-panel rounded-2xl p-4 sm:p-5 xl:col-span-7 transition-colors duration-300">
+            <div class="mb-4 p-4 bg-purple-50 dark:bg-purple-500/10 border border-purple-200 dark:border-purple-500/20 rounded-lg transition-colors">
+                <h3 class="text-purple-600 dark:text-purple-400 font-bold text-sm mb-2 flex items-center gap-2 transition-colors">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                     ¿Cómo funciona?
                 </h3>
-                <p class="text-xs text-slate-400 leading-relaxed">
-                    Vigenère es una sustitución polialfabética. Utiliza una palabra clave que se repite a lo largo del texto. La posición de cada letra de la clave en el alfabeto determina el desplazamiento exacto que sufrirá la letra correspondiente de tu texto.
+                <p class="text-xs text-slate-600 dark:text-slate-400 leading-relaxed transition-colors">
+                    Vigenére es una sustitución polialfabética. Utiliza una palabra clave que se repite a lo largo del texto. La posición de cada letra de la clave en el alfabeto determina el desplazamiento exacto que sufrirá la letra correspondiente de tu texto.
                 </p>
             </div>
             <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
                 <div>
-                    <p class="section-title text-cyan-400">Tabla Vigenère</p>
+                    <p class="section-title text-cyan-600 dark:text-cyan-400 transition-colors">Tabla Vigenére</p>
                     <p class="text-[11px] text-slate-500">Columnas: texto. Filas: clave. La celda iluminada muestra la letra resultante.</p>
                 </div>
                 <span id="tableInfo" class="text-[11px] text-slate-500 font-mono"></span>
             </div>
-            <div class="table-shell bg-slate-950/55 border border-slate-800 rounded-xl p-3">
-                <table id="vigenereTable" class="vig-table"></table>
+            <div class="table-shell bg-slate-50 dark:bg-slate-950/55 border border-slate-200 dark:border-slate-800 rounded-xl p-3 transition-colors">
+                <table id="vigenereTable" class="vig-table transition-colors"></table>
             </div>
         </section>
 
         <section class="xl:col-span-5 flex flex-col gap-5">
-            <div class="glass-panel rounded-2xl p-4 sm:p-5">
+            <div class="glass-panel rounded-2xl p-4 sm:p-5 transition-colors duration-300">
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                        <label for="idioma" class="section-title block mb-2">Alfabeto</label>
-                        <select id="idioma" class="w-full bg-slate-950/70 border border-slate-700 text-slate-100 text-sm rounded-xl px-3 py-2.5 outline-none focus:border-teal-400">
+                        <label for="idioma" class="section-title text-slate-500 dark:text-slate-400 block mb-2 transition-colors">Alfabeto</label>
+                        <select id="idioma" class="w-full bg-white dark:bg-slate-950/70 border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-100 text-sm rounded-xl px-3 py-2.5 outline-none focus:border-teal-400 transition-colors">
                             <option value="ES">Espa&ntilde;ol (incluye &Ntilde;)</option>
                             <option value="EN">Inglés</option>
                             <option value="CUSTOM">Personalizado</option>
                         </select>
 
-                        <div id="customAlphabetContainer" class="hidden mt-3">
-                            <label for="alfabetoCustom" class="section-title block mb-2">Alfabeto personalizado</label>
+                        <div id="customAlphabetContainer" class="hidden mt-3 animate-fade-in">
+                            <label for="alfabetoCustom" class="section-title text-slate-500 dark:text-slate-400 block mb-2 transition-colors">Alfabeto personalizado</label>
                             <input type="text" id="alfabetoCustom" maxlength="80" placeholder="Ej: ABCDEFGHIJKLMN&Ntilde;OPQRSTUVWXYZ"
-                                   class="w-full bg-slate-950/70 border border-slate-700 text-slate-100 text-sm rounded-xl px-3 py-2.5 outline-none focus:border-teal-400 font-mono uppercase">
+                                   class="w-full bg-transparent dark:bg-slate-950/70 border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-100 text-sm rounded-xl px-3 py-2.5 outline-none focus:border-teal-400 font-mono uppercase transition-colors">
                             <p class="text-[10px] text-slate-500 mt-1.5">Se eliminan letras repetidas. Mínimo 2 caracteres.</p>
                         </div>
                     </div>
 
                     <div>
-                        <label for="clave" class="section-title block mb-2">Palabra clave</label>
+                        <label for="clave" class="section-title text-slate-500 dark:text-slate-400 block mb-2 transition-colors">Palabra clave</label>
                         <input type="text" id="clave" value="SECRETO" placeholder="Escribe una palabra clave"
-                               class="w-full bg-slate-950/70 border border-slate-700 text-slate-100 text-sm rounded-xl px-3 py-2.5 outline-none focus:border-teal-400 font-mono uppercase">
+                               class="w-full bg-transparent dark:bg-slate-950/70 border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-100 text-sm rounded-xl px-3 py-2.5 outline-none focus:border-teal-400 font-mono uppercase transition-colors">
                         <p class="text-[10px] text-slate-500 mt-1.5">La clave avanza solo cuando el texto usa letras del alfabeto.</p>
                     </div>
                 </div>
 
                 <div class="mt-4">
-                    <p class="section-title text-cyan-400 mb-2">Lectura actual</p>
+                    <p class="section-title text-cyan-600 dark:text-cyan-400 mb-2 transition-colors">Lectura actual</p>
                     <div class="grid grid-cols-3 gap-2">
-                        <div class="bg-slate-950/60 border border-slate-800 rounded-xl p-3">
+                        <div class="bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 rounded-xl p-3 transition-colors">
                             <span class="block text-[10px] text-slate-500 uppercase font-bold mb-1">Texto</span>
-                            <span id="charTexto" class="font-mono text-xl font-black text-cyan-300">-</span>
+                            <span id="charTexto" class="font-mono text-xl font-black text-cyan-600 dark:text-cyan-300 transition-colors">-</span>
                         </div>
-                        <div class="bg-slate-950/60 border border-slate-800 rounded-xl p-3">
+                        <div class="bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 rounded-xl p-3 transition-colors">
                             <span class="block text-[10px] text-slate-500 uppercase font-bold mb-1">Clave</span>
-                            <span id="charClave" class="font-mono text-xl font-black text-amber-300">-</span>
+                            <span id="charClave" class="font-mono text-xl font-black text-amber-600 dark:text-amber-300 transition-colors">-</span>
                         </div>
-                        <div class="bg-slate-950/60 border border-slate-800 rounded-xl p-3">
+                        <div class="bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 rounded-xl p-3 transition-colors">
                             <span class="block text-[10px] text-slate-500 uppercase font-bold mb-1">Salida</span>
-                            <span id="charResultado" class="font-mono text-xl font-black text-emerald-300">-</span>
+                            <span id="charResultado" class="font-mono text-xl font-black text-emerald-600 dark:text-emerald-300 transition-colors">-</span>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <section class="glass-panel rounded-2xl p-4 sm:p-5">
-                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
+            <section class="glass-panel rounded-2xl p-4 sm:p-5 transition-colors duration-300 relative group">
+                <div class="absolute inset-0 bg-gradient-to-r from-cyan-500/5 dark:from-cyan-500/10 to-transparent opacity-0 group-focus-within:opacity-100 rounded-2xl transition-opacity pointer-events-none"></div>
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3 relative z-10">
                     <div>
-                        <p class="section-title">Texto original</p>
+                        <p class="section-title text-slate-500 dark:text-slate-400 transition-colors">Texto original</p>
                         <p class="text-[11px] text-slate-500">Escribe aqui para cifrar.</p>
                     </div>
                     <div class="flex gap-2">
@@ -258,23 +198,26 @@
                         <button id="btnLimpiar" type="button" class="btn-action btn-util btn-danger">Limpiar</button>
                     </div>
                 </div>
-                <textarea id="textoEntrada" class="text-area" placeholder="Escribe texto original..."></textarea>
+                <textarea id="textoEntrada" class="w-full min-h-[140px] bg-transparent border-none text-base sm:text-lg resize-none outline-none custom-scrollbar focus:ring-0 relative z-10 transition-colors" placeholder="Escribe texto original..."></textarea>
             </section>
 
-            <section class="glass-panel rounded-2xl p-4 sm:p-5 border-cyan-500/20">
-                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
+            <section class="glass-panel rounded-2xl p-4 sm:p-5 border-cyan-300 dark:border-cyan-500/20 transition-colors duration-300 relative group">
+                <div class="absolute inset-0 bg-gradient-to-r from-emerald-500/5 dark:from-emerald-500/10 to-transparent opacity-0 group-focus-within:opacity-100 rounded-2xl transition-opacity pointer-events-none"></div>
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3 relative z-10">
                     <div>
-                        <p class="section-title text-cyan-400">Texto cifrado</p>
+                        <p class="section-title text-cyan-600 dark:text-cyan-400 transition-colors">Texto cifrado</p>
                         <p class="text-[11px] text-slate-500">Tambien puedes escribir aqui para descifrar.</p>
                     </div>
                     <button id="btnCopiar" type="button" class="btn-action btn-primary">Copiar</button>
                 </div>
-                <textarea id="textoSalida" class="text-area text-cyan-200 font-mono" placeholder="El resultado aparecera aqui..."></textarea>
+                <textarea id="textoSalida" class="w-full min-h-[140px] bg-transparent border-none text-base sm:text-lg font-mono resize-none outline-none custom-scrollbar focus:ring-0 relative z-10 text-cyan-700 dark:text-cyan-300 transition-colors" placeholder="El resultado aparecera aqui..."></textarea>
             </section>
         </section>
     </main>
 </div>
 
 <script th:src="@{/js/vigenere.js}"></script>
+<script th:src="@{/js/theme.js}"></script>
+<script th:src="@{/js/crypto-utils.js}"></script>
 </body>
 </html>

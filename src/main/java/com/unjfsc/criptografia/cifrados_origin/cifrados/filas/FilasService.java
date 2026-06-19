@@ -12,10 +12,12 @@ public class FilasService {
     private static final String ALFABETO_EN = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
     public String procesarFilas(String texto, String clave, String operacion, String tipo, String idioma, String alfabetoCustom) {
-        if (texto == null || texto.isBlank()) return "";
+        // 🛡️ VALIDACIÓN
+        if (texto == null || texto.trim().isEmpty()) {
+            throw new IllegalArgumentException("El texto a procesar no puede estar vacío.");
+        }
         if (tipo == null || tipo.isBlank()) tipo = "SIMPLE";
 
-        // 1. Obtener alfabeto
         String alfabeto = obtenerAlfabeto(idioma, alfabetoCustom);
 
         // 2. Determinar número de filas y validar clave

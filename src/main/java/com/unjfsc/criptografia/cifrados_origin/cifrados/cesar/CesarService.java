@@ -5,14 +5,25 @@ import org.springframework.stereotype.Service;
 @Service
 public class CesarService {
 
-    // Alfabetos base por defecto
     private static final String ALFABETO_ES = "ABCDEFGHIJKLMNÑOPQRSTUVWXYZ";
     private static final String ALFABETO_EN = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
     public String procesarCesar(String texto, int desplazamiento, String operacion, String idioma, String alfabetoCustom) {
+
+        // =========================================
+        // VALIDACIONES DE ROBUSTEZ (Esto lo atrapa el ExceptionHandler)
+        // =========================================
+        if (texto == null || texto.trim().isEmpty()) {
+            throw new IllegalArgumentException("El texto a procesar no puede estar vacío.");
+        }
+
         // 1. Determinar el alfabeto a usar
         String alfabetoActual = determinarAlfabeto(idioma, alfabetoCustom);
         int modulo = alfabetoActual.length();
+
+        if (modulo == 0) {
+            throw new IllegalArgumentException("El alfabeto personalizado no puede estar vacío.");
+        }
 
         // 2. Normalizar el desplazamiento
         int desp = desplazamiento % modulo;

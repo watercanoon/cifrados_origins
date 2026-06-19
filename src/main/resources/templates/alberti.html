@@ -145,82 +145,114 @@
       <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
       Inicio
     </a>
-  </header>  <!-- CONFIGURACIÓN (SUPERIOR) -->
-  <div id="panelParametros" class="glass-panel rounded-2xl p-5 sm:p-6 mb-6 sm:mb-8 animate-fade-in-delay">
-    <h2 class="text-sm font-bold text-white mb-4 border-b border-slate-700/60 pb-3 flex items-center gap-2">
-      <svg class="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/></svg>
-      Configuración del Cifrado
-    </h2>
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
-
-      <!-- Operación -->
-      <div>
-        <p class="section-title mb-2">Operación</p>
-        <div class="grid grid-cols-2 gap-2 p-1 bg-slate-900/80 rounded-xl border border-slate-700/60">
-          <label class="radio-toggle cursor-pointer">
-            <input type="radio" name="operacion" value="CIFRAR" class="sr-only" checked>
-            <div class="radio-label-cifrar text-center px-4 py-2.5 text-xs font-bold rounded-lg text-slate-400 hover:text-white transition select-none">🔒 Cifrar</div>
-          </label>
-          <label class="radio-toggle cursor-pointer">
-            <input type="radio" name="operacion" value="DESCIFRAR" class="sr-only">
-            <div class="radio-label-descifrar text-center px-4 py-2.5 text-xs font-bold rounded-lg text-slate-400 hover:text-white transition select-none">🔓 Descifrar</div>
-          </label>
-        </div>
-      </div>
-
-      <!-- Idioma -->
-      <div>
-        <div class="flex justify-between items-center mb-2">
-          <p class="section-title">Alfabeto</p>
-          <span id="alertaLongitud" class="text-[9px] font-bold text-red-400 hidden">¡Longitud desigual!</span>
-        </div>
-        <select id="idiomaSelector" class="lang-select w-full">
-          <option value="LA">🏛️ Latín (Original Alberti) — 24 caracteres</option>
-          <option value="ES">🇪🇸 Español — 27 letras (con Ñ)</option>
-          <option value="EN">🇬🇧 English — 26 letters</option>
-          <option value="CUSTOM">⚙️ Personalizado (Libre)</option>
-        </select>
-
-        <div id="customAlphabetContainer" class="hidden mt-3 space-y-2 bg-slate-900/60 p-3 rounded-xl border border-cyan-500/30 shadow-inner">
-          <div>
-            <div class="flex justify-between">
-              <label class="text-[10px] uppercase font-bold text-slate-500">Disco Exterior (Plano)</label>
-              <span id="countExt" class="text-[10px] font-bold text-cyan-500">26</span>
-            </div>
-            <input type="text" id="customExt" value="ABCDEFGHIJKLMNOPQRSTUVWXYZ" class="w-full mt-1 bg-slate-950 border border-slate-700 rounded-lg text-slate-300 text-xs p-2 font-mono outline-none focus:border-cyan-500 transition">
-          </div>
-          <div>
-            <div class="flex justify-between">
-              <label class="text-[10px] uppercase font-bold text-slate-500">Disco Interior (Cifrado)</label>
-              <span id="countInt" class="text-[10px] font-bold text-cyan-500">26</span>
-            </div>
-            <input type="text" id="customInt" value="cdefghijklmnopqrstuvwxyzab" class="w-full mt-1 bg-slate-950 border border-slate-700 rounded-lg text-cyan-300 text-xs p-2 font-mono outline-none focus:border-cyan-500 transition">
-          </div>
-        </div>
-      </div>
-
-      <!-- Clave en formato Alberti -->
-      <div>
-        <div class="flex justify-between items-center mb-2">
-          <p class="section-title">Clave de Cifrado (Formato K(Mb, X, Yd))</p>
-        </div>
-        <input type="text" id="clave" value="K(Mb, 4, 3d)" 
-               placeholder="Ej: K(Mb, 4, 3d)" 
-               class="w-full bg-slate-900 border border-slate-700 rounded-lg text-cyan-300 text-sm p-3 font-mono outline-none focus:border-cyan-500/80 transition">
-        <p class="text-[10px] text-slate-500 mt-1.5 leading-relaxed">
-          Formato: <strong class="text-cyan-400">K(Coincidencia, Bloque, Giro)</strong>.<br>
-          Ejemplo: <code class="text-amber-400 font-mono">K(Mb, 4, 3d)</code> alinea M con b, cifra bloques de 4, y gira 3 posiciones a la derecha después de cada bloque.
-        </p>
-      </div>
-
-    </div>
-  </div>
+  </header>
 
   <!-- MAIN GRID -->
   <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6 animate-fade-in-delay">
 
     <!-- COLUMNA IZQUIERDA -->
     <div class="lg:col-span-5 flex flex-col gap-4 sm:gap-6">
+
+      <!-- PARÁMETROS -->
+      <div id="panelParametros" class="glass-panel rounded-2xl p-5 sm:p-6">
+        <h2 class="text-sm font-bold text-white mb-5 border-b border-slate-700/60 pb-3 flex items-center gap-2">
+          <svg class="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/></svg>
+          Configuración
+        </h2>
+        <div class="space-y-6">
+
+          <!-- Operación -->
+          <div>
+            <p class="section-title mb-2">Operación</p>
+            <div class="grid grid-cols-2 gap-2 p-1 bg-slate-900/80 rounded-xl border border-slate-700/60">
+              <label class="radio-toggle cursor-pointer">
+                <input type="radio" name="operacion" value="CIFRAR" class="sr-only" checked>
+                <div class="radio-label-cifrar text-center px-4 py-2.5 text-xs font-bold rounded-lg text-slate-400 hover:text-white transition select-none">🔒 Cifrar</div>
+              </label>
+              <label class="radio-toggle cursor-pointer">
+                <input type="radio" name="operacion" value="DESCIFRAR" class="sr-only">
+                <div class="radio-label-descifrar text-center px-4 py-2.5 text-xs font-bold rounded-lg text-slate-400 hover:text-white transition select-none">🔓 Descifrar</div>
+              </label>
+            </div>
+          </div>
+
+          <!-- Idioma -->
+          <div>
+            <div class="flex justify-between items-center mb-2">
+              <p class="section-title">Alfabeto</p>
+              <span id="alertaLongitud" class="text-[9px] font-bold text-red-400 hidden">¡Longitud desigual!</span>
+            </div>
+            <select id="idiomaSelector" class="lang-select w-full">
+              <option value="ES">🇪🇸 Español — 27 letras (con Ñ)</option>
+              <option value="EN">🇬🇧 English — 26 letters</option>
+              <option value="CUSTOM">⚙️ Personalizado (Libre)</option>
+            </select>
+
+            <div id="customAlphabetContainer" class="hidden mt-3 space-y-2 bg-slate-900/60 p-3 rounded-xl border border-cyan-500/30 shadow-inner">
+              <div>
+                <div class="flex justify-between">
+                  <label class="text-[10px] uppercase font-bold text-slate-500">Disco Exterior (Plano)</label>
+                  <span id="countExt" class="text-[10px] font-bold text-cyan-500">26</span>
+                </div>
+                <input type="text" id="customExt" value="ABCDEFGHIJKLMNOPQRSTUVWXYZ" class="w-full mt-1 bg-slate-950 border border-slate-700 rounded-lg text-slate-300 text-xs p-2 font-mono outline-none focus:border-cyan-500 transition">
+              </div>
+              <div>
+                <div class="flex justify-between">
+                  <label class="text-[10px] uppercase font-bold text-slate-500">Disco Interior (Cifrado)</label>
+                  <span id="countInt" class="text-[10px] font-bold text-cyan-500">26</span>
+                </div>
+                <input type="text" id="customInt" value="cdefghijklmnopqrstuvwxyzab" class="w-full mt-1 bg-slate-950 border border-slate-700 rounded-lg text-cyan-300 text-xs p-2 font-mono outline-none focus:border-cyan-500 transition">
+              </div>
+            </div>
+          </div>
+
+          <!-- Slider desfase -->
+          <div class="mt-6">
+            <div class="flex justify-between items-center mb-3">
+              <p class="section-title">Desfase Inicial (Giro)</p>
+              <div class="flex items-center gap-1.5 bg-slate-950/50 px-3 py-1 rounded-lg border border-slate-800">
+                <span id="claveValueDisplay" class="text-lg font-black text-cyan-400 tabular-nums w-6 text-right">0</span>
+                <span class="text-[10px] uppercase font-bold text-slate-500">pos</span>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-3 bg-slate-900/50 p-2 rounded-xl border border-slate-700/50">
+              <button type="button" id="btnRestar" class="w-10 h-10 shrink-0 rounded-lg bg-slate-800 flex items-center justify-center text-slate-400 hover:text-cyan-400 hover:bg-slate-700 transition cursor-pointer active:scale-95 border border-slate-600 shadow-md">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"/></svg>
+              </button>
+
+              <div class="flex-1 px-2">
+                <input type="range" id="clave" min="0" max="26" value="0" class="w-full" style="--fill: 0%">
+                <div class="flex justify-between mt-1.5 px-1">
+                  <span class="text-[10px] font-bold text-slate-600">0</span>
+                  <span class="text-[10px] font-bold text-slate-600" id="maxDisplay">26</span>
+                </div>
+              </div>
+
+              <button type="button" id="btnSumar" class="w-10 h-10 shrink-0 rounded-lg bg-slate-800 flex items-center justify-center text-slate-400 hover:text-cyan-400 hover:bg-slate-700 transition cursor-pointer active:scale-95 border border-slate-600 shadow-md">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+              </button>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Info -->
+        <div class="mt-6 info-box p-4">
+          <h3 class="text-cyan-400 font-bold text-xs mb-2 flex items-center gap-2">
+            <svg class="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            ¿Cómo funciona?
+          </h3>
+          <p class="text-[11px] text-slate-400 leading-relaxed mb-1.5">
+            El cifrado de Alberti es el primer sistema <strong class="text-slate-300">polialfabético</strong>.
+            Utiliza dos discos concéntricos: el exterior fijo (texto plano) y el interior móvil (texto cifrado).
+          </p>
+          <p class="text-[11px] text-slate-400 leading-relaxed">
+            La clave define la <strong class="text-slate-300">alineación inicial</strong>. El disco gira periódicamente,
+            cambiando el alfabeto equivalente y resistiendo el análisis de frecuencias.
+          </p>
+        </div>
+      </div>
 
       <!-- SIMULADOR DISCOS -->
       <div id="panelSimulador" class="glass-panel rounded-2xl p-5 sm:p-6 flex flex-col items-center">
@@ -262,23 +294,6 @@
           <p class="text-xl font-mono font-bold text-cyan-400 mt-0.5">A ➔ <span id="alignDisplay" class="text-amber-400">c</span></p>
         </div>
       </div>
-
-      <!-- Info Box -->
-      <div class="info-box p-4 rounded-2xl glass-panel border border-slate-700/60">
-        <h3 class="text-cyan-400 font-bold text-xs mb-2 flex items-center gap-2">
-          <svg class="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-          ¿Cómo funciona?
-        </h3>
-        <p class="text-[11px] text-slate-400 leading-relaxed mb-1.5">
-          El cifrado de Alberti es el primer sistema <strong class="text-slate-300">polialfabético</strong>.
-          Utiliza dos discos concéntricos: el exterior fijo (texto plano) y el interior móvil (texto cifrado).
-        </p>
-        <p class="text-[11px] text-slate-400 leading-relaxed">
-          La clave define la <strong class="text-slate-300">alineación inicial</strong>. El disco gira periódicamente,
-          cambiando el alfabeto equivalente y resistiendo el análisis de frecuencias.
-        </p>
-      </div>
-
     </div>
 
     <!-- COLUMNA DERECHA -->
@@ -316,16 +331,10 @@
             <p class="section-title text-cyan-500 mb-0.5">Resultado Polialfabético</p>
             <p class="text-[10px] text-slate-600">Salida procesada por los anillos Alberti</p>
           </div>
-          <div class="flex gap-2 w-full sm:w-auto">
-            <button id="btnAnimar" type="button" class="btn-action btn-primary w-full sm:w-auto justify-center bg-gradient-to-r from-amber-500/20 to-yellow-500/20 text-amber-300 border-amber-500/40 hover:from-amber-500/30 hover:to-yellow-500/30">
-              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/></svg>
-              ⚡ Animar
-            </button>
-            <button id="btnCopiar" class="btn-action btn-primary w-full sm:w-auto justify-center">
-              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
-              Copiar resultado
-            </button>
-          </div>
+          <button id="btnCopiar" class="btn-action btn-primary w-full sm:w-auto justify-center">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+            Copiar resultado
+          </button>
         </div>
         <textarea id="textoSalida"
                   placeholder="Esperando alineación de anillos…"

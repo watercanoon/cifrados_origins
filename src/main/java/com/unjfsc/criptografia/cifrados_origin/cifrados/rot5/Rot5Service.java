@@ -8,8 +8,8 @@ public class Rot5Service {
     private static final int DESPLAZAMIENTO_ROT5 = 5;
 
     public String procesarRot5(String texto) {
-        if (texto == null || texto.isBlank()) {
-            return "";
+        if (texto == null || texto.trim().isEmpty()) {
+            throw new IllegalArgumentException("El texto a procesar no puede estar vacío.");
         }
 
         StringBuilder resultado = new StringBuilder();

@@ -7,12 +7,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const inputTexto = document.getElementById("textoEntrada");
     const outputTexto = document.getElementById("textoSalida");
-    
+
     const selectTipo = document.getElementById("tipoCifrado");
     const inputClave = document.getElementById("clave");
     const inputNumRows = document.getElementById("numRows");
     const rowsDisplay = document.getElementById("rowsValueDisplay");
-    
+
     const selectAlfabeto = document.getElementById("idioma");
     const inputCustom = document.getElementById("alfabetoCustom");
     const customAlphabetContainer = document.getElementById("customAlphabetContainer");
@@ -20,12 +20,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const simpleRowsContainer = document.getElementById("simpleRowsContainer");
     const claveKeyContainer = document.getElementById("claveKeyContainer");
-    
+
     const displayNf = document.getElementById("displayNf");
     const displayLc = document.getElementById("displayLc");
     const displayNc = document.getElementById("displayNc");
     const keyStatus = document.getElementById("keyStatus");
-    
+
     const matrixTable = document.getElementById("matrixTable");
 
     const btnCopiar = document.getElementById("btnCopiar");
@@ -35,31 +35,37 @@ document.addEventListener("DOMContentLoaded", () => {
     const ALFABETO_ES = "ABCDEFGHIJKLMNÑOPQRSTUVWXYZ";
     const ALFABETO_EN = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
-    // Conectar WebSocket
+    // ==========================================
+    // CONEXIÓN WEBSOCKET Y NOTIFICACIONES
+    // ==========================================
     function connect() {
         const socket = new SockJS("/ws-criptografia");
         stompClient = Stomp.over(socket);
         stompClient.debug = null;
 
         stompClient.connect({}, function () {
+
+            // 1. SUSCRIPCIÓN A ERRORES GLOBALES
+            stompClient.subscribe('/user/queue/errores', function(errorResponse) {
+                CryptoUX.processWebSocketResponse(errorResponse.body);
+            });
+
+            // 2. SUSCRIPCIÓN AL RESULTADO DE FILAS
             stompClient.subscribe("/topic/filas", function (response) {
-                const data = JSON.parse(response.body);
+                const data = CryptoUX.processWebSocketResponse(response.body);
 
-                if (data.error) {
-                    mostrarError(data.error);
-                    return;
-                }
-
-                if (ultimaOperacion === "CIFRAR") {
-                    outputTexto.value = data.resultado;
-                } else {
-                    inputTexto.value = data.resultado;
+                if (data) {
+                    if (ultimaOperacion === "CIFRAR") {
+                        outputTexto.value = data.resultado;
+                    } else {
+                        inputTexto.value = data.resultado;
+                    }
                 }
             });
 
             recalcularDesdeUltimoCampo();
         }, function () {
-            mostrarError("Desconectado del servidor. Reconectando...");
+            CryptoUX.showToast("Conexión perdida", "Desconectado. Reconectando...", "error");
             setTimeout(connect, 3000);
         });
     }
@@ -90,14 +96,14 @@ document.addEventListener("DOMContentLoaded", () => {
     function limpiarTexto(text, alfabeto) {
         if (!text) return "";
         let normalized = text.toUpperCase();
-        
+
         normalized = normalized.replace(/Á/g, "A")
-                               .replace(/É/g, "E")
-                               .replace(/Í/g, "I")
-                               .replace(/Ó/g, "O")
-                               .replace(/Ú/g, "U")
-                               .replace(/Ü/g, "U");
-                               
+            .replace(/É/g, "E")
+            .replace(/Í/g, "I")
+            .replace(/Ó/g, "O")
+            .replace(/Ú/g, "U")
+            .replace(/Ü/g, "U");
+
         if (alfabeto.indexOf("Ñ") === -1 && alfabeto.indexOf("N") !== -1) {
             normalized = normalized.replace(/Ñ/g, "N");
         }
@@ -144,14 +150,14 @@ document.addEventListener("DOMContentLoaded", () => {
     function actualizarMatrizVisual() {
         const tipo = selectTipo.value;
         const texto = inputTexto.value;
-        
+
         const alfabeto = obtenerAlfabetoActivo();
         if (displayAlfabeto) {
             displayAlfabeto.textContent = alfabeto;
         }
 
         const cleanedText = limpiarTexto(texto, alfabeto);
-        
+
         let nf = 4;
         let claveLimpia = "";
         let priorities = [];
@@ -167,7 +173,7 @@ document.addEventListener("DOMContentLoaded", () => {
             claveLimpia = limpiarTexto(rawKey, alfabeto);
             nf = claveLimpia.length;
             displayNf.textContent = nf > 0 ? nf : "-";
-            
+
             if (nf < 2) {
                 marcarClaveInvalida("Clave muy corta");
                 keyIsValid = false;
@@ -199,7 +205,7 @@ document.addEventListener("DOMContentLoaded", () => {
         // 1. Cabecera (Cols C1, C2...)
         const headerRow = document.createElement("tr");
         headerRow.className = "border-b border-slate-800 font-bold bg-slate-900/30 text-slate-200 text-xs";
-        
+
         const firstHeader = document.createElement("th");
         firstHeader.textContent = tipo === "SIMPLE" ? "Filas" : "Clave";
         firstHeader.className = "px-3 py-2 border-r border-slate-800 text-slate-400 font-semibold w-24";
@@ -233,7 +239,7 @@ document.addEventListener("DOMContentLoaded", () => {
         for (let r = 0; r < nf; r++) {
             const row = document.createElement("tr");
             row.className = "border-b border-slate-800/50 hover:bg-slate-900/20 transition-colors";
-            
+
             const rowLabel = document.createElement("td");
             rowLabel.className = "px-3 py-2 border-r border-slate-800 text-xs font-semibold bg-slate-900/5";
             if (tipo === "SIMPLE") {
@@ -260,7 +266,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 } else {
                     td.className += " text-slate-200";
                 }
-                
+
                 row.appendChild(td);
             }
             matrixTable.appendChild(row);
@@ -372,34 +378,30 @@ document.addEventListener("DOMContentLoaded", () => {
         recalcularDesdeUltimoCampo();
     });
 
-    // Copiar
+    // UX: Copiar
     btnCopiar.addEventListener("click", () => {
-        if (!outputTexto.value) return;
-        outputTexto.select();
-        document.execCommand("copy");
-        
-        const originalText = btnCopiar.innerHTML;
-        btnCopiar.innerHTML = `Copiado!`;
-        btnCopiar.classList.add("bg-fuchsia-500", "text-white");
-        btnCopiar.classList.remove("bg-slate-800", "text-slate-300");
-        setTimeout(() => {
-            btnCopiar.innerHTML = originalText;
-            btnCopiar.classList.remove("bg-fuchsia-500", "text-white");
-            btnCopiar.classList.add("bg-slate-800", "text-slate-300");
-        }, 1500);
+        if (!outputTexto.value) {
+            CryptoUX.showToast("Aviso", "No hay texto para copiar.", "info");
+            return;
+        }
+        navigator.clipboard.writeText(outputTexto.value).then(() => {
+            CryptoUX.showToast("¡Copiado!", "Texto cifrado copiado.", "success");
+        }).catch(() => {
+            outputTexto.select();
+            document.execCommand("copy");
+        });
     });
 
-    // Pegar
+    // UX: Pegar
     btnPegar.addEventListener("click", async () => {
         try {
-            const textoPortapapeles = await navigator.clipboard.readText();
-            if (textoPortapapeles) {
-                inputTexto.value = textoPortapapeles;
-                cifrarDesdeOriginal();
-                inputTexto.focus();
-            }
-        } catch (err) {
-            mostrarError("Permiso denegado. Concede acceso al portapapeles en tu navegador.");
+            const texto = await navigator.clipboard.readText();
+            inputTexto.value = texto;
+            cifrarDesdeOriginal();
+            inputTexto.focus();
+            CryptoUX.showToast("Pegado", "Texto insertado correctamente.", "success");
+        } catch {
+            CryptoUX.showToast("Error", "No se pudo acceder al portapapeles.", "error");
         }
     });
 
@@ -411,21 +413,6 @@ document.addEventListener("DOMContentLoaded", () => {
         actualizarMatrizVisual();
         inputTexto.focus();
     });
-
-    // Mostrar errores tipo Toast
-    function mostrarError(mensaje) {
-        const container = document.getElementById("toast-container");
-        const toast = document.createElement("div");
-        toast.className = "bg-red-500/90 text-white px-4 py-3 rounded shadow-lg border border-red-700 flex items-center gap-3 backdrop-blur-sm animate-fade-in";
-        toast.innerHTML = `<span class="text-sm font-medium">${mensaje}</span>`;
-
-        container.appendChild(toast);
-        setTimeout(() => {
-            toast.style.opacity = "0";
-            toast.style.transition = "opacity 0.5s ease";
-            setTimeout(() => toast.remove(), 500);
-        }, 3000);
-    }
 
     // Inicializar
     actualizarMatrizVisual();

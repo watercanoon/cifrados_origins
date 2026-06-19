@@ -6,14 +6,17 @@ import org.springframework.stereotype.Service;
 public class EscitalaService {
 
     public String procesarEscitala(String texto, int columnas, String operacion) {
-        if (columnas <= 1 || texto == null || texto.length() <= 1) {
-            return texto; // No hay transposición posible o entrada inválida
+        // 🛡️ VALIDACIONES
+        if (texto == null || texto.trim().isEmpty()) {
+            throw new IllegalArgumentException("El texto a procesar no puede estar vacío.");
+        }
+        if (columnas <= 1) {
+            throw new IllegalArgumentException("El diámetro (número de caras) debe ser mayor a 1.");
         }
 
-        // Limpieza de texto: removemos todos los espacios y pasamos a mayúsculas
         String txtLimpio = texto.replaceAll("\\s+", "").toUpperCase();
         if (txtLimpio.isEmpty()) {
-            return "";
+            throw new IllegalArgumentException("El texto no contiene caracteres válidos.");
         }
 
         if ("CIFRAR".equalsIgnoreCase(operacion)) {

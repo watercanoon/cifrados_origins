@@ -1,3 +1,5 @@
+// src/main/resources/static/js/atbash.js
+
 document.addEventListener("DOMContentLoaded", () => {
     let stompClient = null;
     let ultimoCampoEditado = "entrada";
@@ -63,7 +65,7 @@ document.addEventListener("DOMContentLoaded", () => {
         gridBottom.innerHTML = "";
 
         if (!alfabeto) {
-            gridTop.innerHTML = '<div class="text-xs text-slate-500 px-2 py-1">Ingresa un alfabeto personalizado valido.</div>';
+            gridTop.innerHTML = '<div class="text-xs text-slate-500 px-2 py-1">Ingresa un alfabeto personalizado válido.</div>';
             gridBottom.innerHTML = "";
             charIn.textContent = "-";
             charOut.textContent = "-";
@@ -120,6 +122,9 @@ document.addEventListener("DOMContentLoaded", () => {
         charOut.textContent = salida;
     }
 
+    // ==========================================
+    // CONEXIÓN WEBSOCKET Y NOTIFICACIONES
+    // ==========================================
     function connect() {
         const socket = new SockJS("/ws-criptografia");
         stompClient = Stomp.over(socket);
@@ -127,23 +132,29 @@ document.addEventListener("DOMContentLoaded", () => {
 
         stompClient.connect({}, function () {
             setConnStatus(true);
+
+            // 1. ESCUCHADOR DE ERRORES GLOBALES
+            stompClient.subscribe('/user/queue/errores', function(errorResponse) {
+                CryptoUX.processWebSocketResponse(errorResponse.body);
+            });
+
+            // 2. ESCUCHADOR DE ATBASH
             stompClient.subscribe("/topic/atbash", function (response) {
-                const data = JSON.parse(response.body);
+                // CryptoUX verifica la respuesta
+                const data = CryptoUX.processWebSocketResponse(response.body);
 
-                if (data.error) {
-                    mostrarError(data.error);
-                    return;
-                }
-
-                if (ultimoCampoEditado === "entrada") {
-                    outputTexto.value = data.resultado;
-                } else {
-                    inputTexto.value = data.resultado;
+                // Si data existe, se procesa exitosamente
+                if (data) {
+                    if (ultimoCampoEditado === "entrada") {
+                        outputTexto.value = data.resultado;
+                    } else {
+                        inputTexto.value = data.resultado;
+                    }
                 }
             });
         }, function () {
             setConnStatus(false);
-            mostrarError("Conexión interrumpida. Reconectando...");
+            CryptoUX.showToast("Conexión perdida", "Desconectado del servidor. Reconectando...", "error");
             setTimeout(connect, 3000);
         });
     }
@@ -165,7 +176,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         if (idiomaSelect.value === "CUSTOM" && !obtenerAlfabeto()) {
-            mostrarError("El alfabeto personalizado necesita al menos 2 letras distintas.");
+            CryptoUX.showToast("Alfabeto Inválido", "El alfabeto personalizado necesita al menos 2 letras distintas.", "error");
             return;
         }
 
@@ -179,6 +190,9 @@ document.addEventListener("DOMContentLoaded", () => {
         }));
     }
 
+    // ==========================================
+    // EVENT LISTENERS
+    // ==========================================
     inputTexto.addEventListener("input", () => enviarDatos("entrada"));
     outputTexto.addEventListener("input", () => enviarDatos("salida"));
 
@@ -194,6 +208,7 @@ document.addEventListener("DOMContentLoaded", () => {
         enviarDatos(ultimoCampoEditado);
     });
 
+    // UX PORTAPAPELES
     btnPegar.addEventListener("click", async () => {
         try {
             const textoPortapapeles = await navigator.clipboard.readText();
@@ -201,9 +216,10 @@ document.addEventListener("DOMContentLoaded", () => {
                 inputTexto.value = textoPortapapeles;
                 enviarDatos("entrada");
                 inputTexto.focus();
+                CryptoUX.showToast("Pegado", "Texto insertado correctamente.", "success");
             }
         } catch {
-            mostrarError("Permiso de portapapeles denegado.");
+            CryptoUX.showToast("Acceso denegado", "Permiso de portapapeles denegado.", "error");
         }
     });
 
@@ -215,44 +231,21 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     btnCopiar.addEventListener("click", async () => {
-        if (!outputTexto.value) return;
+        if (!outputTexto.value) {
+            CryptoUX.showToast("Aviso", "No hay texto para copiar.", "info");
+            return;
+        }
 
         try {
             await navigator.clipboard.writeText(outputTexto.value);
-            mostrarExito("Texto copiado al portapapeles");
+            CryptoUX.showToast("¡Copiado!", "Texto copiado al portapapeles.", "success");
         } catch {
             outputTexto.select();
             document.execCommand("copy");
         }
     });
 
-    function mostrarToast(mensaje, tipo) {
-        const container = document.getElementById("toast-container");
-        const toast = document.createElement("div");
-        const isError = tipo === "error";
-        toast.className = `px-4 py-3 rounded-xl shadow-xl border backdrop-blur-sm text-sm font-medium ${
-            isError
-                ? "bg-red-950/90 text-red-200 border-red-700/50"
-                : "bg-emerald-950/90 text-emerald-200 border-emerald-700/50"
-        }`;
-        toast.textContent = mensaje;
-        container.appendChild(toast);
-
-        setTimeout(() => {
-            toast.style.opacity = "0";
-            toast.style.transition = "opacity .35s ease";
-            setTimeout(() => toast.remove(), 350);
-        }, 2800);
-    }
-
-    function mostrarError(mensaje) {
-        mostrarToast(mensaje, "error");
-    }
-
-    function mostrarExito(mensaje) {
-        mostrarToast(mensaje, "ok");
-    }
-
+    // Inicialización
     actualizarMapa();
     connect();
 });

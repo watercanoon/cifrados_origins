@@ -1,3 +1,5 @@
+// src/main/resources/static/js/rot13.js
+
 document.addEventListener("DOMContentLoaded", () => {
     let stompClient = null;
     let ultimoCampoEditado = "original";
@@ -17,30 +19,37 @@ document.addEventListener("DOMContentLoaded", () => {
     const ALFABETO_ES = "ABCDEFGHIJKLMN\u00d1OPQRSTUVWXYZ";
     const ALFABETO_EN = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
+    // ==========================================
+    // CONEXIÓN WEBSOCKET Y NOTIFICACIONES
+    // ==========================================
     function connect() {
         const socket = new SockJS("/ws-criptografia");
         stompClient = Stomp.over(socket);
         stompClient.debug = null;
 
         stompClient.connect({}, function () {
+
+            // 1. SUSCRIPCIÓN GLOBAL DE ERRORES (Atrapa excepciones del backend)
+            stompClient.subscribe('/user/queue/errores', function(errorResponse) {
+                CryptoUX.processWebSocketResponse(errorResponse.body);
+            });
+
+            // 2. SUSCRIPCIÓN A LA RESPUESTA DE ROT13
             stompClient.subscribe("/topic/rot13", function (response) {
-                const data = JSON.parse(response.body);
+                const data = CryptoUX.processWebSocketResponse(response.body);
 
-                if (data.error) {
-                    mostrarError(data.error);
-                    return;
-                }
-
-                if (ultimaOperacion === "CIFRAR") {
-                    outputTexto.value = data.resultado;
-                } else {
-                    inputTexto.value = data.resultado;
+                if (data) {
+                    if (ultimaOperacion === "CIFRAR") {
+                        outputTexto.value = data.resultado;
+                    } else {
+                        inputTexto.value = data.resultado;
+                    }
                 }
             });
 
             recalcularDesdeUltimoCampo();
         }, function () {
-            mostrarError("Conexión perdida. Reconectando...");
+            CryptoUX.showToast("Conexión perdida", "Desconectado del servidor. Reconectando...", "error");
             setTimeout(connect, 3000);
         });
     }
@@ -84,7 +93,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         if (selectIdioma.value === "CUSTOM" && !inputCustom.value.trim()) {
-            mostrarError("Ingresa un alfabeto personalizado para procesar el texto.");
+            CryptoUX.showToast("Alfabeto Vacío", "Ingresa un alfabeto personalizado para procesar el texto.", "error");
             return;
         }
 
@@ -116,8 +125,12 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
+    // ==========================================
+    // EVENT LISTENERS
+    // ==========================================
     inputTexto.addEventListener("input", cifrarDesdeOriginal);
     outputTexto.addEventListener("input", descifrarDesdeCifrado);
+
     inputCustom.addEventListener("input", () => {
         actualizarAlfabetos();
         recalcularDesdeUltimoCampo();
@@ -134,11 +147,21 @@ document.addEventListener("DOMContentLoaded", () => {
         recalcularDesdeUltimoCampo();
     });
 
+    // UX: Copiar al portapapeles moderno
     btnCopiar.addEventListener("click", () => {
-        outputTexto.select();
-        document.execCommand("copy");
+        if (!outputTexto.value) {
+            CryptoUX.showToast("Aviso", "No hay texto para copiar.", "info");
+            return;
+        }
+        navigator.clipboard.writeText(outputTexto.value).then(() => {
+            CryptoUX.showToast("¡Copiado!", "Texto copiado al portapapeles.", "success");
+        }).catch(() => {
+            outputTexto.select();
+            document.execCommand("copy");
+        });
     });
 
+    // UX: Pegar desde el portapapeles
     btnPegar.addEventListener("click", async () => {
         try {
             const textoPortapapeles = await navigator.clipboard.readText();
@@ -147,9 +170,10 @@ document.addEventListener("DOMContentLoaded", () => {
                 inputTexto.value = textoPortapapeles;
                 cifrarDesdeOriginal();
                 inputTexto.focus();
+                CryptoUX.showToast("Pegado", "Texto insertado correctamente.", "success");
             }
         } catch (err) {
-            mostrarError("Permiso denegado. Concede acceso al portapapeles en tu navegador.");
+            CryptoUX.showToast("Permiso denegado", "Concede acceso al portapapeles en tu navegador.", "error");
         }
     });
 
@@ -160,19 +184,7 @@ document.addEventListener("DOMContentLoaded", () => {
         inputTexto.focus();
     });
 
-    function mostrarError(mensaje) {
-        const container = document.getElementById("toast-container");
-        const toast = document.createElement("div");
-        toast.className = "bg-red-500/90 text-white px-4 py-3 rounded shadow-lg border border-red-700 flex items-center gap-3 backdrop-blur-sm animate-fade-in";
-        toast.innerHTML = `<span class="text-sm font-medium">${mensaje}</span>`;
-        container.appendChild(toast);
-        setTimeout(() => {
-            toast.style.opacity = "0";
-            toast.style.transition = "opacity 0.5s ease";
-            setTimeout(() => toast.remove(), 500);
-        }, 3000);
-    }
-
+    // Inicialización
     actualizarAlfabetos();
     connect();
 });

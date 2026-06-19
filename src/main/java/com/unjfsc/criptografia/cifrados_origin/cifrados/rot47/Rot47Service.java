@@ -6,6 +6,11 @@ import org.springframework.stereotype.Service;
 public class Rot47Service {
 
     public String procesarRot47(String texto) {
+        // 🛡️ VALIDACIÓN DE ENTRADA
+        if (texto == null || texto.trim().isEmpty()) {
+            throw new IllegalArgumentException("El texto a procesar no puede estar vacío.");
+        }
+
         StringBuilder resultado = new StringBuilder();
 
         for (int i = 0; i < texto.length(); i++) {

@@ -8,8 +8,8 @@ public class PolybiosService {
     private static final String ALFABETO_BASE = "ABCDEFGHIKLMNOPQRSTUVWXYZ";
 
     public String procesarPolybios(String texto, String operacion, String idioma) {
-        if (texto == null || texto.isBlank()) {
-            return "";
+        if (texto == null || texto.trim().isEmpty()) {
+            throw new IllegalArgumentException("El texto a procesar no puede estar vacío.");
         }
 
         String matrizPolybios = generarMatriz();

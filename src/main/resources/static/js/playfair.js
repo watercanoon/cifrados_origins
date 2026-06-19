@@ -19,31 +19,37 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const ALFABETO = "ABCDEFGHIKLMNOPQRSTUVWXYZ"; // La 'J' se une a la 'I'
 
-    // Establecer conexión WebSocket
+    // ==========================================
+    // CONEXIÓN WEBSOCKET Y NOTIFICACIONES
+    // ==========================================
     function connect() {
         const socket = new SockJS("/ws-criptografia");
         stompClient = Stomp.over(socket);
         stompClient.debug = null; // Desactiva logs excesivos en la consola
 
         stompClient.connect({}, function () {
+
+            // 1. SUSCRIPCIÓN GLOBAL DE ERRORES (Atrapa excepciones del backend)
+            stompClient.subscribe('/user/queue/errores', function(errorResponse) {
+                CryptoUX.processWebSocketResponse(errorResponse.body);
+            });
+
+            // 2. SUSCRIPCIÓN A LA RESPUESTA DE PLAYFAIR
             stompClient.subscribe("/topic/playfair", function (response) {
-                const data = JSON.parse(response.body);
+                const data = CryptoUX.processWebSocketResponse(response.body);
 
-                if (data.error) {
-                    mostrarError(data.error);
-                    return;
-                }
-
-                if (ultimaOperacion === "CIFRAR") {
-                    outputTexto.value = data.resultado;
-                } else {
-                    inputTexto.value = data.resultado;
+                if (data) {
+                    if (ultimaOperacion === "CIFRAR") {
+                        outputTexto.value = data.resultado;
+                    } else {
+                        inputTexto.value = data.resultado;
+                    }
                 }
             });
 
             recalcularDesdeUltimoCampo();
         }, function () {
-            mostrarError("Desconectado del servidor. Reconectando...");
+            CryptoUX.showToast("Conexión perdida", "Desconectado del servidor. Reconectando...", "error");
             setTimeout(connect, 3000);
         });
     }
@@ -108,7 +114,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const isFromKey = claveLimpia.indexOf(char) !== -1;
 
             const cell = document.createElement("div");
-            
+
             if (char === 'I') {
                 cell.textContent = 'I/J';
             } else if (char === 'N' && idioma === "ES") {
@@ -118,8 +124,8 @@ document.addEventListener("DOMContentLoaded", () => {
             }
 
             cell.className = `h-10 flex items-center justify-center rounded-lg text-sm transition-all border font-mono ` +
-                (isFromKey 
-                    ? "bg-orange-500/20 text-orange-400 border-orange-500/40 shadow-sm shadow-orange-500/5" 
+                (isFromKey
+                    ? "bg-orange-500/20 text-orange-400 border-orange-500/40 shadow-sm shadow-orange-500/5"
                     : "bg-slate-900 text-slate-400 border-slate-800");
 
             matrixGrid.appendChild(cell);
@@ -155,7 +161,7 @@ document.addEventListener("DOMContentLoaded", () => {
             digrafosDisplay.textContent = "Esperando texto...";
             return;
         }
-        
+
         const idioma = selectIdioma.value;
         const alfabetoBase = obtenerAlfabetoBase();
 
@@ -242,25 +248,21 @@ document.addEventListener("DOMContentLoaded", () => {
         recalcularDesdeUltimoCampo();
     });
 
-    // Copiar resultado al portapapeles
+    // UX: Copiar resultado al portapapeles
     btnCopiar.addEventListener("click", () => {
-        if (!outputTexto.value) return;
-        outputTexto.select();
-        document.execCommand("copy");
-        
-        // Efecto visual temporal en el botón
-        const originalText = btnCopiar.innerHTML;
-        btnCopiar.innerHTML = `Copiado!`;
-        btnCopiar.classList.add("bg-orange-500", "text-white");
-        btnCopiar.classList.remove("bg-slate-800", "text-slate-300");
-        setTimeout(() => {
-            btnCopiar.innerHTML = originalText;
-            btnCopiar.classList.remove("bg-orange-500", "text-white");
-            btnCopiar.classList.add("bg-slate-800", "text-slate-300");
-        }, 1500);
+        if (!outputTexto.value) {
+            CryptoUX.showToast("Aviso", "No hay texto para copiar.", "info");
+            return;
+        }
+        navigator.clipboard.writeText(outputTexto.value).then(() => {
+            CryptoUX.showToast("¡Copiado!", "Texto cifrado copiado al portapapeles.", "success");
+        }).catch(() => {
+            outputTexto.select();
+            document.execCommand("copy");
+        });
     });
 
-    // Pegar contenido desde el portapapeles
+    // UX: Pegar contenido desde el portapapeles
     btnPegar.addEventListener("click", async () => {
         try {
             const textoPortapapeles = await navigator.clipboard.readText();
@@ -268,9 +270,10 @@ document.addEventListener("DOMContentLoaded", () => {
                 inputTexto.value = textoPortapapeles;
                 cifrarDesdeOriginal();
                 inputTexto.focus();
+                CryptoUX.showToast("Pegado", "Texto insertado correctamente.", "success");
             }
         } catch (err) {
-            mostrarError("Permiso denegado. Concede acceso al portapapeles en tu navegador.");
+            CryptoUX.showToast("Permiso denegado", "Concede acceso al portapapeles en tu navegador.", "error");
         }
     });
 
@@ -282,21 +285,6 @@ document.addEventListener("DOMContentLoaded", () => {
         mostrarDigrafos("");
         inputTexto.focus();
     });
-
-    // Mostrar errores tipo Toast
-    function mostrarError(mensaje) {
-        const container = document.getElementById("toast-container");
-        const toast = document.createElement("div");
-        toast.className = "bg-red-500/90 text-white px-4 py-3 rounded shadow-lg border border-red-700 flex items-center gap-3 backdrop-blur-sm animate-fade-in";
-        toast.innerHTML = `<span class="text-sm font-medium">${mensaje}</span>`;
-
-        container.appendChild(toast);
-        setTimeout(() => {
-            toast.style.opacity = "0";
-            toast.style.transition = "opacity 0.5s ease";
-            setTimeout(() => toast.remove(), 500);
-        }, 3000);
-    }
 
     // Inicializar interfaz
     actualizarMatrizVisual();

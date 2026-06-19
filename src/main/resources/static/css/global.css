@@ -1,58 +1,102 @@
 /* src/main/resources/static/css/global.css */
 
-/* =========================================
-   SISTEMA DE SCROLLBAR PROFESIONAL
-   ========================================= */
-::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
-}
-::-webkit-scrollbar-track {
-    background: #0f172a; /* bg-slate-900 */
-}
-::-webkit-scrollbar-thumb {
-    background: #3b82f6; /* bg-blue-500 */
-    border-radius: 4px;
-}
-::-webkit-scrollbar-thumb:hover {
-    background: #2563eb; /* bg-blue-600 */
-}
+/* SCROLLBAR PROFESIONAL */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 4px; }
+.dark ::-webkit-scrollbar-thumb { background: #3b82f6; }
+::-webkit-scrollbar-thumb:hover { background: #64748b; }
+.dark ::-webkit-scrollbar-thumb:hover { background: #2563eb; }
 
 /* =========================================
-   UTILIDADES UI/UX (GLASSMORPHISM)
+   PANELES GLOBALES (Aplica a todos los HTML)
    ========================================= */
 .glass-panel {
-    background: rgba(30, 41, 59, 0.6);
+    background: rgba(255, 255, 255, 0.7);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-}
-
-.glass-panel:hover {
-    border-color: rgba(59, 130, 246, 0.3); /* Borde azul sutil en hover */
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
     transition: all 0.3s ease;
 }
 
+.dark .glass-panel {
+    background: rgba(30, 41, 59, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.glass-panel:hover {
+    border-color: rgba(59, 130, 246, 0.4);
+    transform: translateY(-4px);
+}
+
 /* =========================================
-   ANIMACIONES GLOBALES
+   FONDOS CIBERNÉTICOS
    ========================================= */
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-
-.animate-fade-in {
-    animation: fadeIn 0.4s ease-out forwards;
-}
-
-/* Patrón de fondo cibernético para el body (usado en index) */
 .cyber-grid {
+    background:
+            linear-gradient(rgba(14, 165, 233, 0.08) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(14, 165, 233, 0.08) 1px, transparent 1px),
+            radial-gradient(circle at top center, rgba(34, 211, 238, 0.2), transparent 40rem),
+            #f8fafc;
+    background-size: 40px 40px, 40px 40px, auto;
+    background-attachment: fixed;
+}
+
+.dark .cyber-grid {
     background:
             linear-gradient(rgba(14, 165, 233, 0.04) 1px, transparent 1px),
             linear-gradient(90deg, rgba(14, 165, 233, 0.04) 1px, transparent 1px),
             radial-gradient(circle at top center, rgba(34, 211, 238, 0.1), transparent 40rem),
-            #020617; /* slate-950 */
-    background-size: 40px 40px, 40px 40px, auto;
-    background-attachment: fixed;
+            #020617;
 }
+
+/* ANIMACIONES */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in { animation: fadeIn 0.4s ease-out forwards; }
+/* =========================================
+   FORZAR MODO CLARO/OSCURO EN INPUTS Y TEXTAREAS
+   (Evita tener que reescribir los 12 HTMLs)
+   ========================================= */
+
+/* Para el Modo Claro */
+.glass-panel textarea,
+.glass-panel input,
+.glass-panel select {
+    background-color: rgba(255, 255, 255, 0.8) !important;
+    color: #1e293b !important; /* Texto oscuro */
+    border-color: #cbd5e1 !important;
+    transition: all 0.3s ease;
+}
+
+/* Color de las etiquetas (Labels) en Modo Claro */
+.glass-panel label {
+    color: #334155 !important;
+}
+
+/* Para el Modo Oscuro */
+.dark .glass-panel textarea,
+.dark .glass-panel input,
+.dark .glass-panel select {
+    background-color: rgba(15, 23, 42, 0.7) !important;
+    color: #f8fafc !important; /* Texto blanco */
+    border-color: #334155 !important;
+}
+
+/* Color de las etiquetas (Labels) en Modo Oscuro */
+.dark .glass-panel label {
+    color: #94a3b8 !important;
+}
+
+/* Ajuste sutil para los Placeholders */
+.glass-panel textarea::placeholder, .glass-panel input::placeholder {
+    color: #94a3b8 !important;
+}
+.dark .glass-panel textarea::placeholder, .dark .glass-panel input::placeholder {
+    color: #475569 !important;
+}
+
