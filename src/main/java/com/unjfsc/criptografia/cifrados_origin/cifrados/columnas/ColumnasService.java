@@ -79,23 +79,23 @@ public class ColumnasService {
 
     private String cleanAndNormalize(String text, String alfabeto) {
         if (text == null) return "";
-        
+
         // 1. Convertir a mayúsculas
         String upper = text.toUpperCase();
-        
+
         // 2. Reemplazar vocales acentuadas por vocales sin acento para no afectar la Ñ
         upper = upper.replace('Á', 'A')
-                     .replace('É', 'E')
-                     .replace('Í', 'I')
-                     .replace('Ó', 'O')
-                     .replace('Ú', 'U')
-                     .replace('Ü', 'U');
-        
+                .replace('É', 'E')
+                .replace('Í', 'I')
+                .replace('Ó', 'O')
+                .replace('Ú', 'U')
+                .replace('Ü', 'U');
+
         // 3. Si el alfabeto no incluye la Ñ pero sí incluye la N, reemplazar la Ñ por N
         if (alfabeto.indexOf('Ñ') == -1 && alfabeto.indexOf('N') != -1) {
             upper = upper.replace('Ñ', 'N');
         }
-        
+
         // 4. Filtrar manteniendo únicamente caracteres presentes en el alfabeto activo
         StringBuilder sb = new StringBuilder();
         for (char c : upper.toCharArray()) {

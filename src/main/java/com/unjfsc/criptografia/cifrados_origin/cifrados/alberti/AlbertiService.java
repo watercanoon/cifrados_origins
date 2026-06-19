@@ -22,7 +22,10 @@ public class AlbertiService {
     }
 
     private String procesar(String texto, int giro, String idioma, boolean isCifrar, String alfExtCustom, String alfIntCustom) {
-        if (texto == null || texto.isEmpty()) return "";
+        // 🛡️ VALIDACIÓN
+        if (texto == null || texto.trim().isEmpty()) {
+            throw new IllegalArgumentException("El texto a procesar no puede estar vacío.");
+        }
 
         String alfExt = ES_EXT;
         String alfInt = ES_INT;
@@ -31,8 +34,7 @@ public class AlbertiService {
             alfExt = EN_EXT;
             alfInt = EN_INT;
         } else if ("CUSTOM".equalsIgnoreCase(idioma)) {
-            // Validar que no sean nulos y tengan la misma longitud
-            if (alfExtCustom == null || alfIntCustom == null || alfExtCustom.isEmpty()) {
+            if (alfExtCustom == null || alfIntCustom == null || alfExtCustom.trim().isEmpty()) {
                 throw new IllegalArgumentException("Los alfabetos personalizados no pueden estar vacíos.");
             }
             if (alfExtCustom.length() != alfIntCustom.length()) {
