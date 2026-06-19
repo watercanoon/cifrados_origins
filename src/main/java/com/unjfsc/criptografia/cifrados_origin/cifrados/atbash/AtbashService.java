@@ -9,11 +9,17 @@ public class AtbashService {
     private static final String ALFABETO_EN = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
     public String procesarAtbash(String texto, String idioma, String alfabetoCustom) {
-        if (texto == null) {
-            return "";
+        // 🛡️ VALIDACIÓN
+        if (texto == null || texto.trim().isEmpty()) {
+            throw new IllegalArgumentException("El texto a procesar no puede estar vacío.");
         }
 
         String alfabeto = obtenerAlfabeto(idioma, alfabetoCustom);
+        if (alfabeto.length() < 2) {
+            throw new IllegalArgumentException("El alfabeto debe tener al menos 2 caracteres válidos.");
+        }
+
+        // ... resto de tu código intacto (StringBuilder resultado = new StringBuilder(); ...)
         StringBuilder resultado = new StringBuilder();
 
         for (char c : texto.toCharArray()) {

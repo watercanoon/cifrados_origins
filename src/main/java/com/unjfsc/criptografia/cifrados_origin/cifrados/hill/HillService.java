@@ -9,7 +9,9 @@ public class HillService {
     private static final String ALFABETO_EN = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";   // 26 letras
 
     public String procesarHill(String texto, String clave, String operacion, String idioma, String alfabetoCustom) {
-        if (texto == null || texto.isBlank()) return "";
+        if (texto == null || texto.trim().isEmpty()) {
+            throw new IllegalArgumentException("El texto a procesar no puede estar vacío.");
+        }
         if (clave == null || clave.isBlank()) clave = "FORTALEZA"; // Clave por defecto de la guía (9 letras)
         if (idioma == null || idioma.isBlank()) idioma = "ES";
 

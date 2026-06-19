@@ -8,7 +8,9 @@ public class PlayfairService {
     private static final String DEFAULT_ALPHABET = "ABCDEFGHIKLMNOPQRSTUVWXYZ";
 
     public String procesarPlayfair(String texto, String clave, String operacion, String idioma, String alfabetoCustom) {
-        if (texto == null || texto.isBlank()) return "";
+        if (texto == null || texto.trim().isEmpty()) {
+            throw new IllegalArgumentException("El texto a procesar no puede estar vacío.");
+        }
         if (clave == null || clave.isBlank()) clave = "KEYWORD";
         if (idioma == null || idioma.isBlank()) idioma = "ES";
 

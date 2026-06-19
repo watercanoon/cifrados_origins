@@ -9,6 +9,11 @@ public class Rot13Service {
     private static final String ALFABETO_EN = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
     public String procesarRot13(String texto, String operacion, String idioma, String alfabetoCustom) {
+        // 🛡️ VALIDACIÓN DE ENTRADA
+        if (texto == null || texto.trim().isEmpty()) {
+            throw new IllegalArgumentException("El texto a procesar no puede estar vacío.");
+        }
+
         String alfabetoActual = determinarAlfabeto(idioma, alfabetoCustom);
         int modulo = alfabetoActual.length();
         int desp = 13; // ROT13 siempre es 13
