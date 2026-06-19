@@ -1,3 +1,5 @@
+// src/main/resources/static/js/vigenere.js
+
 document.addEventListener("DOMContentLoaded", () => {
     let stompClient = null;
     let ultimoCampoEditado = "entrada";
@@ -186,6 +188,9 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
+    // ==========================================
+    // CONEXIÓN WEBSOCKET Y NOTIFICACIONES
+    // ==========================================
     function connect() {
         const socket = new SockJS("/ws-criptografia");
         stompClient = Stomp.over(socket);
@@ -193,25 +198,29 @@ document.addEventListener("DOMContentLoaded", () => {
 
         stompClient.connect({}, function () {
             setConnStatus(true);
+
+            // 1. SUSCRIPCIÓN GLOBAL DE ERRORES (Atrapa excepciones del backend)
+            stompClient.subscribe('/user/queue/errores', function(errorResponse) {
+                CryptoUX.processWebSocketResponse(errorResponse.body);
+            });
+
+            // 2. SUSCRIPCIÓN A LA RESPUESTA DE VIGENERE
             stompClient.subscribe("/topic/vigenere", function (response) {
-                const data = JSON.parse(response.body);
+                const data = CryptoUX.processWebSocketResponse(response.body);
 
-                if (data.error) {
-                    mostrarError(data.error);
-                    return;
+                if (data) {
+                    if (ultimoCampoEditado === "entrada") {
+                        outputTexto.value = data.resultado;
+                    } else {
+                        inputTexto.value = data.resultado;
+                    }
+
+                    resaltarTabla();
                 }
-
-                if (ultimoCampoEditado === "entrada") {
-                    outputTexto.value = data.resultado;
-                } else {
-                    inputTexto.value = data.resultado;
-                }
-
-                resaltarTabla();
             });
         }, function () {
             setConnStatus(false);
-            mostrarError("Conexión perdida. Reconectando...");
+            CryptoUX.showToast("Conexión perdida", "Desconectado del servidor. Reconectando...", "error");
             setTimeout(connect, 3000);
         });
     }
@@ -232,7 +241,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         if (selectIdioma.value === "CUSTOM" && !obtenerAlfabeto()) {
-            mostrarError("El alfabeto personalizado necesita al menos 2 letras distintas.");
+            CryptoUX.showToast("Alfabeto Inválido", "El alfabeto personalizado necesita al menos 2 letras distintas.", "error");
             return;
         }
 
@@ -255,7 +264,7 @@ document.addEventListener("DOMContentLoaded", () => {
     function avisarClave() {
         const ahora = Date.now();
         if (ahora - ultimoToastClave > 1800) {
-            mostrarError("La clave necesita al menos una letra del alfabeto seleccionado.");
+            CryptoUX.showToast("Clave Requerida", "La clave necesita al menos una letra del alfabeto seleccionado.", "error");
             ultimoToastClave = ahora;
         }
     }
@@ -281,6 +290,7 @@ document.addEventListener("DOMContentLoaded", () => {
         enviarDatos(ultimoCampoEditado);
     });
 
+    // UX: Pegar desde el portapapeles
     btnPegar.addEventListener("click", async () => {
         try {
             const textoPortapapeles = await navigator.clipboard.readText();
@@ -288,9 +298,10 @@ document.addEventListener("DOMContentLoaded", () => {
                 inputTexto.value = textoPortapapeles;
                 enviarDatos("entrada");
                 inputTexto.focus();
+                CryptoUX.showToast("Pegado", "Texto insertado correctamente.", "success");
             }
         } catch {
-            mostrarError("Permiso denegado. Concede acceso al portapapeles en tu navegador.");
+            CryptoUX.showToast("Acceso denegado", "Permiso denegado. Concede acceso al portapapeles en tu navegador.", "error");
         }
     });
 
@@ -301,44 +312,23 @@ document.addEventListener("DOMContentLoaded", () => {
         inputTexto.focus();
     });
 
+    // UX: Copiar al portapapeles moderno
     btnCopiar.addEventListener("click", async () => {
-        if (!outputTexto.value) return;
+        if (!outputTexto.value) {
+            CryptoUX.showToast("Aviso", "No hay texto para copiar.", "info");
+            return;
+        }
 
         try {
             await navigator.clipboard.writeText(outputTexto.value);
-            mostrarExito("Texto copiado al portapapeles");
+            CryptoUX.showToast("¡Copiado!", "Texto copiado al portapapeles.", "success");
         } catch {
             outputTexto.select();
             document.execCommand("copy");
         }
     });
 
-    function mostrarToast(mensaje, tipo) {
-        const container = document.getElementById("toast-container");
-        const toast = document.createElement("div");
-        const isError = tipo === "error";
-        toast.className = `px-4 py-3 rounded-xl shadow-xl border backdrop-blur-sm text-sm font-medium ${
-            isError
-                ? "bg-red-950/90 text-red-200 border-red-700/50"
-                : "bg-emerald-950/90 text-emerald-200 border-emerald-700/50"
-        }`;
-        toast.textContent = mensaje;
-        container.appendChild(toast);
-        setTimeout(() => {
-            toast.style.opacity = "0";
-            toast.style.transition = "opacity .35s ease";
-            setTimeout(() => toast.remove(), 350);
-        }, 2800);
-    }
-
-    function mostrarError(mensaje) {
-        mostrarToast(mensaje, "error");
-    }
-
-    function mostrarExito(mensaje) {
-        mostrarToast(mensaje, "ok");
-    }
-
+    // Inicialización
     construirTabla();
     resaltarTabla();
     connect();

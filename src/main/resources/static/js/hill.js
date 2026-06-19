@@ -11,7 +11,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const selectIdioma = document.getElementById("idioma");
     const customContainer = document.getElementById("customAlphabetContainer");
     const inputCustom = document.getElementById("alfabetoCustom");
-    
+
     const displayDim = document.getElementById("matrixDimDisplay");
     const displayDet = document.getElementById("detDisplay");
     const displayInv = document.getElementById("invDisplay");
@@ -26,31 +26,37 @@ document.addEventListener("DOMContentLoaded", () => {
     const ALFABETO_ES = "ABCDEFGHIJKLMNÑOPQRSTUVWXYZ"; // 27 letras
     const ALFABETO_EN = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";   // 26 letras
 
-    // Conectar por WebSocket
+    // ==========================================
+    // CONEXIÓN WEBSOCKET Y NOTIFICACIONES
+    // ==========================================
     function connect() {
         const socket = new SockJS("/ws-criptografia");
         stompClient = Stomp.over(socket);
         stompClient.debug = null;
 
         stompClient.connect({}, function () {
+
+            // 1. SUSCRIPCIÓN GLOBAL DE ERRORES (Atrapa excepciones del backend)
+            stompClient.subscribe('/user/queue/errores', function(errorResponse) {
+                CryptoUX.processWebSocketResponse(errorResponse.body);
+            });
+
+            // 2. SUSCRIPCIÓN A LA RESPUESTA DE HILL
             stompClient.subscribe("/topic/hill", function (response) {
-                const data = JSON.parse(response.body);
+                const data = CryptoUX.processWebSocketResponse(response.body);
 
-                if (data.error) {
-                    mostrarError(data.error);
-                    return;
-                }
-
-                if (ultimaOperacion === "CIFRAR") {
-                    outputTexto.value = data.resultado;
-                } else {
-                    inputTexto.value = data.resultado;
+                if (data) {
+                    if (ultimaOperacion === "CIFRAR") {
+                        outputTexto.value = data.resultado;
+                    } else {
+                        inputTexto.value = data.resultado;
+                    }
                 }
             });
 
             recalcularDesdeUltimoCampo();
         }, function () {
-            mostrarError("Desconectado del servidor. Reconectando...");
+            CryptoUX.showToast("Conexión perdida", "Desconectado del servidor. Reconectando...", "error");
             setTimeout(connect, 3000);
         });
     }
@@ -77,22 +83,22 @@ document.addEventListener("DOMContentLoaded", () => {
     function actualizarTablaEquivalencias(alfabeto) {
         const headersRow = document.getElementById("alphabetHeadersRow");
         const positionsRow = document.getElementById("alphabetPositionsRow");
-        
+
         while (headersRow.cells.length > 1) {
             headersRow.deleteCell(1);
         }
         while (positionsRow.cells.length > 1) {
             positionsRow.deleteCell(1);
         }
-        
+
         for (let i = 0; i < alfabeto.length; i++) {
             const char = alfabeto[i];
-            
+
             const th = document.createElement("th");
             th.textContent = char;
             th.className = "px-2 py-2 border-b border-slate-850 text-slate-200 font-bold text-xs";
             headersRow.appendChild(th);
-            
+
             const td = document.createElement("td");
             td.textContent = i;
             td.className = "px-2 py-3 text-violet-400 font-bold text-xs";
@@ -213,12 +219,12 @@ document.addEventListener("DOMContentLoaded", () => {
         // 5. Renderizar grid de matriz
         matrixGrid.style.gridTemplateColumns = `repeat(${dim}, minmax(0, 1fr))`;
         matrixGrid.innerHTML = "";
-        
+
         for (let r = 0; r < dim; r++) {
             for (let c = 0; c < dim; c++) {
                 const valNum = matrix[r][c];
                 const charVal = cleanedKey[r * dim + c] || alfabeto[0];
-                
+
                 const cell = document.createElement("div");
                 cell.className = "bg-slate-900 border border-slate-800 rounded-lg p-2 flex flex-col items-center justify-center font-mono";
                 cell.innerHTML = `<span class="text-slate-300 font-bold text-sm">${charVal}</span><span class="text-violet-400 text-[10px]">${valNum}</span>`;
@@ -362,24 +368,22 @@ document.addEventListener("DOMContentLoaded", () => {
         recalcularDesdeUltimoCampo();
     });
 
-    // Copiar
-    btnCopiar.addEventListener("click", () => {
-        if (!outputTexto.value) return;
-        outputTexto.select();
-        document.execCommand("copy");
-        
-        const originalText = btnCopiar.innerHTML;
-        btnCopiar.innerHTML = `Copiado!`;
-        btnCopiar.classList.add("bg-violet-500", "text-white");
-        btnCopiar.classList.remove("bg-slate-800", "text-slate-300");
-        setTimeout(() => {
-            btnCopiar.innerHTML = originalText;
-            btnCopiar.classList.remove("bg-violet-500", "text-white");
-            btnCopiar.classList.add("bg-slate-800", "text-slate-300");
-        }, 1500);
+    // UX: Copiar al portapapeles moderno
+    btnCopiar.addEventListener("click", async () => {
+        if (!outputTexto.value) {
+            CryptoUX.showToast("Aviso", "No hay texto para copiar.", "info");
+            return;
+        }
+        try {
+            await navigator.clipboard.writeText(outputTexto.value);
+            CryptoUX.showToast("¡Copiado!", "Texto copiado al portapapeles.", "success");
+        } catch {
+            outputTexto.select();
+            document.execCommand("copy");
+        }
     });
 
-    // Pegar
+    // UX: Pegar desde el portapapeles
     btnPegar.addEventListener("click", async () => {
         try {
             const textoPortapapeles = await navigator.clipboard.readText();
@@ -387,9 +391,10 @@ document.addEventListener("DOMContentLoaded", () => {
                 inputTexto.value = textoPortapapeles;
                 cifrarDesdeOriginal();
                 inputTexto.focus();
+                CryptoUX.showToast("Pegado", "Texto insertado correctamente.", "success");
             }
         } catch (err) {
-            mostrarError("Permiso denegado. Concede acceso al portapapeles en tu navegador.");
+            CryptoUX.showToast("Permiso denegado", "Concede acceso al portapapeles en tu navegador.", "error");
         }
     });
 
@@ -401,21 +406,6 @@ document.addEventListener("DOMContentLoaded", () => {
         actualizarVisualizacionDeVectores();
         inputTexto.focus();
     });
-
-    // Toast de errores
-    function mostrarError(mensaje) {
-        const container = document.getElementById("toast-container");
-        const toast = document.createElement("div");
-        toast.className = "bg-red-500/90 text-white px-4 py-3 rounded shadow-lg border border-red-700 flex items-center gap-3 backdrop-blur-sm animate-fade-in";
-        toast.innerHTML = `<span class="text-sm font-medium">${mensaje}</span>`;
-
-        container.appendChild(toast);
-        setTimeout(() => {
-            toast.style.opacity = "0";
-            toast.style.transition = "opacity 0.5s ease";
-            setTimeout(() => toast.remove(), 500);
-        }, 3000);
-    }
 
     // Inicialización
     actualizarMatrizYMatematicas();

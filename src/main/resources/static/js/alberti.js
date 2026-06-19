@@ -1,3 +1,5 @@
+// src/main/resources/static/js/alberti.js
+
 document.addEventListener("DOMContentLoaded", () => {
     let stompClient = null;
 
@@ -30,7 +32,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const connDot   = document.getElementById('connDot');
     const connLabel = document.getElementById('connLabel');
 
-    // Alfabetos (CORREGIDO: 'l' añadida en ES interior para igualar 27 caracteres)
+    // Alfabetos
     const ALFABETOS = {
         "ES": { ext: "ABCDEFGHIJKLMNÑOPQRSTUVWXYZ", int: "cdefghijklmnñopqrstuvwxyzab" },
         "EN": { ext: "ABCDEFGHIJKLMNOPQRSTUVWXYZ",  int: "cdefghijklmnopqrstuvwxyzab" },
@@ -47,7 +49,7 @@ document.addEventListener("DOMContentLoaded", () => {
     let currentLang = "ES";
 
     // ==========================================
-    // CONEXIÓN WEBSOCKET
+    // CONEXIÓN WEBSOCKET Y NOTIFICACIONES
     // ==========================================
     function setConnStatus(online) {
         if (online) {
@@ -62,24 +64,37 @@ document.addEventListener("DOMContentLoaded", () => {
     function connect() {
         let socket = new SockJS('/ws-criptografia');
         stompClient = Stomp.over(socket);
-        stompClient.debug = null; // Oculta logs en consola de prod
+        stompClient.debug = null; // Oculta logs en consola
 
         stompClient.connect({}, function () {
             setConnStatus(true);
+
+            // 1. ESCUCHADOR DE ERRORES GLOBALES
+            stompClient.subscribe('/user/queue/errores', function(errorResponse) {
+                CryptoUX.processWebSocketResponse(errorResponse.body);
+            });
+
+            // 2. ESCUCHADOR DE RESPUESTAS ALBERTI
             stompClient.subscribe('/topic/alberti', function (response) {
-                let data = JSON.parse(response.body);
-                if (data.error) {
-                    mostrarError(data.error);
-                    outputTexto.value = "";
-                    outputTexto.classList.replace('text-cyan-300', 'text-red-400');
-                } else {
+                // CryptoUX intercepta automáticamente si el backend arroja error en el JSON
+                const data = CryptoUX.processWebSocketResponse(response.body);
+
+                if (data) {
+                    // Si todo está bien, pintamos el texto
                     outputTexto.value = data.resultado;
-                    outputTexto.classList.replace('text-red-400', 'text-cyan-300');
+                    outputTexto.classList.replace('text-red-400', 'text-cyan-600');
+                    // Opcional para dark mode, aseguramos legibilidad
+                    outputTexto.classList.add('dark:text-cyan-300');
+                } else {
+                    // Si hubo error, limpiamos y ponemos en rojo
+                    outputTexto.value = "";
+                    outputTexto.classList.replace('text-cyan-600', 'text-red-500');
+                    outputTexto.classList.replace('dark:text-cyan-300', 'dark:text-red-400');
                 }
             });
         }, function () {
             setConnStatus(false);
-            mostrarError("Conexión interrumpida. Reconectando…");
+            CryptoUX.showToast("Conexión perdida", "Desconectado del servidor. Reconectando...", "error");
             setTimeout(connect, 3000);
         });
     }
@@ -95,8 +110,7 @@ document.addEventListener("DOMContentLoaded", () => {
         for (let i = 0; i < len; i++) {
             const div = document.createElement('div');
             div.innerText = alfabeto[i];
-            div.className = `absolute left-1/2 top-1/2 w-6 h-6 -ml-3 -mt-3 flex items-center justify-center font-mono font-bold ${charClass}`;
-            // Ajuste trigonométrico para rotación
+            div.className = `absolute left-1/2 top-1/2 w-6 h-6 -ml-3 -mt-3 flex items-center justify-center font-mono font-bold transition-colors ${charClass}`;
             div.style.transform = `rotate(${i * step}deg) translateY(-${radio}px)`;
             container.appendChild(div);
         }
@@ -104,7 +118,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function renderizarSimulador() {
         const width = window.innerWidth;
-        const rExt  = width < 640 ? 110 : 135; // Expandido para el nuevo UI
+        const rExt  = width < 640 ? 110 : 135;
         const rInt  = width < 640 ? 70  : 90;
 
         dibujarDisco(outerRing,    ALFABETOS[currentLang].ext, rExt, 'outer-char');
@@ -115,7 +129,7 @@ document.addEventListener("DOMContentLoaded", () => {
     window.addEventListener('resize', renderizarSimulador);
 
     // ==========================================
-    // LÓGICA DE ROTACIÓN Y ENVÍO (DTO Actualizado)
+    // LÓGICA DE ROTACIÓN Y ENVÍO (DTO)
     // ==========================================
     function actualizarRotacion() {
         const giro = parseInt(inputClave.value);
@@ -136,9 +150,13 @@ document.addEventListener("DOMContentLoaded", () => {
         const texto = inputTexto.value;
         if (!texto) { outputTexto.value = ""; return; }
 
+        if (currentLang === "CUSTOM" && (!customExt.value.trim() || !customInt.value.trim())) {
+            CryptoUX.showToast("Alfabeto incompleto", "Debes rellenar los alfabetos personalizados.", "error");
+            return;
+        }
+
         const operacion = document.querySelector('input[name="operacion"]:checked').value;
 
-        // Enviar con el nuevo parámetro de idioma
         stompClient.send("/app/alberti", {}, JSON.stringify({
             texto: texto,
             operacion: operacion,
@@ -247,54 +265,41 @@ document.addEventListener("DOMContentLoaded", () => {
     customInt.addEventListener('input', actualizarCustom);
 
     // ==========================================
-    // PORTAPAPELES Y UTILIDADES
+    // PORTAPAPELES Y UX
     // ==========================================
     btnPegar.addEventListener('click', async () => {
         try {
             const texto = await navigator.clipboard.readText();
-            if (texto) { inputTexto.value = texto; enviarDatos(); inputTexto.focus(); }
-        } catch { mostrarError("Permiso de portapapeles denegado."); }
+            if (texto) {
+                inputTexto.value = texto;
+                enviarDatos();
+                inputTexto.focus();
+                CryptoUX.showToast("Pegado", "Texto insertado correctamente.", "success");
+            }
+        } catch {
+            CryptoUX.showToast("Acceso denegado", "No se pudo acceder al portapapeles.", "error");
+        }
     });
 
     btnLimpiar.addEventListener('click', () => {
-        inputTexto.value = ""; enviarDatos(); inputTexto.focus();
+        inputTexto.value = "";
+        enviarDatos();
+        inputTexto.focus();
     });
 
     btnCopiar.addEventListener('click', async () => {
-        if (!outputTexto.value) return;
+        if (!outputTexto.value) {
+            CryptoUX.showToast("Aviso", "No hay texto para copiar.", "info");
+            return;
+        }
         try {
             await navigator.clipboard.writeText(outputTexto.value);
-            mostrarExito("Resultado copiado al portapapeles");
+            CryptoUX.showToast("¡Copiado!", "Resultado copiado al portapapeles.", "success");
         } catch {
             outputTexto.select();
             document.execCommand("copy");
         }
     });
-
-    // ==========================================
-    // TOASTS
-    // ==========================================
-    function mostrarToast(mensaje, tipo) {
-        const container = document.getElementById('toast-container');
-        const toast = document.createElement('div');
-        const isError = tipo === 'error';
-        toast.className = `flex items-start gap-3 px-4 py-3 rounded-xl shadow-xl border backdrop-blur-sm text-sm font-medium animate-fade-in ${
-            isError
-                ? 'bg-red-950/90 text-red-200 border-red-700/50'
-                : 'bg-emerald-950/90 text-emerald-200 border-emerald-700/50'
-        }`;
-        toast.innerHTML = isError
-            ? `<svg class="w-4 h-4 mt-0.5 flex-shrink-0 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg><span>${mensaje}</span>`
-            : `<svg class="w-4 h-4 mt-0.5 flex-shrink-0 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg><span>${mensaje}</span>`;
-        container.appendChild(toast);
-        setTimeout(() => {
-            toast.style.opacity = '0';
-            toast.style.transition = 'opacity .4s ease';
-            setTimeout(() => toast.remove(), 400);
-        }, 3000);
-    }
-    function mostrarError(msg) { mostrarToast(msg, 'error'); }
-    function mostrarExito(msg) { mostrarToast(msg, 'ok'); }
 
     // ==========================================
     // TUTORIAL DRAWER
@@ -317,7 +322,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     tutorialData.forEach(() => {
         const span = document.createElement('span');
-        span.className = "w-2 h-2 rounded-full bg-slate-700";
+        span.className = "w-2 h-2 rounded-full bg-slate-200 dark:bg-slate-700";
         tutDotsContainer.appendChild(span);
     });
 
@@ -328,7 +333,6 @@ document.addEventListener("DOMContentLoaded", () => {
         target.classList.add('tutorial-focus');
         target.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
-        // Aumentamos a 450ms para asegurar que la animación de scroll termine por completo
         setTimeout(() => {
             const rect = target.getBoundingClientRect();
             bubble.classList.remove('hidden');
@@ -337,28 +341,14 @@ document.addEventListener("DOMContentLoaded", () => {
             let top  = rect.bottom + 15;
             let left = rect.left + (rect.width / 2) - (bubbleRect.width / 2);
 
-            // === LÓGICA DE COLISIÓN MEJORADA (Anti-desbordes) ===
             const padding = 15;
             const screenWidth = document.documentElement.clientWidth;
             const screenHeight = window.innerHeight;
 
-            // 1. Límite derecho
-            if (left + bubbleRect.width > screenWidth - padding) {
-                left = screenWidth - bubbleRect.width - padding;
-            }
-            // 2. Límite izquierdo (Tiene prioridad para móviles)
-            if (left < padding) {
-                left = padding;
-            }
-
-            // 3. Límite inferior (Si choca abajo, lo proyectamos arriba del panel)
-            if (top + bubbleRect.height > screenHeight - padding) {
-                top = rect.top - bubbleRect.height - 15;
-            }
-            // 4. Límite superior
-            if (top < padding) {
-                top = padding;
-            }
+            if (left + bubbleRect.width > screenWidth - padding) { left = screenWidth - bubbleRect.width - padding; }
+            if (left < padding) { left = padding; }
+            if (top + bubbleRect.height > screenHeight - padding) { top = rect.top - bubbleRect.height - 15; }
+            if (top < padding) { top = padding; }
 
             bubble.style.top  = `${top}px`;
             bubble.style.left = `${left}px`;
@@ -374,8 +364,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
             Array.from(tutDotsContainer.children).forEach((dot, i) => {
                 dot.className = i === currentStep
-                    ? "w-2 h-2 rounded-full bg-cyan-400 shadow-[0_0_6px_#22d3ee] transition-all"
-                    : "w-2 h-2 rounded-full bg-slate-700 transition-all";
+                    ? "w-2 h-2 rounded-full bg-cyan-500 shadow-[0_0_6px_#22d3ee] transition-all"
+                    : "w-2 h-2 rounded-full bg-slate-300 dark:bg-slate-700 transition-all";
             });
 
             btnTutPrev.classList.toggle('hidden', currentStep === 0);

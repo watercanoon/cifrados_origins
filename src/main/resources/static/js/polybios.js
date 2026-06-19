@@ -1,3 +1,5 @@
+// src/main/resources/static/js/polybios.js
+
 document.addEventListener("DOMContentLoaded", () => {
     let stompClient = null;
 
@@ -104,6 +106,9 @@ document.addEventListener("DOMContentLoaded", () => {
         connLabel.textContent = online ? "online" : "offline";
     }
 
+    // ==========================================
+    // CONEXIÓN WEBSOCKET Y NOTIFICACIONES
+    // ==========================================
     function connect() {
         const socket = new SockJS("/ws-criptografia");
         stompClient = Stomp.over(socket);
@@ -111,20 +116,27 @@ document.addEventListener("DOMContentLoaded", () => {
 
         stompClient.connect({}, function () {
             setConnStatus(true);
+
+            // 1. SUSCRIPCIÓN GLOBAL DE ERRORES (Atrapa excepciones del backend)
+            stompClient.subscribe('/user/queue/errores', function(errorResponse) {
+                CryptoUX.processWebSocketResponse(errorResponse.body);
+            });
+
+            // 2. SUSCRIPCIÓN A LA RESPUESTA DE POLYBIOS
             stompClient.subscribe("/topic/polybios", function (response) {
-                const data = JSON.parse(response.body);
-                if (data.error) {
-                    mostrarError(data.error);
-                    outputTexto.value = "";
-                    outputTexto.classList.replace("text-cyan-300", "text-red-400");
-                } else {
+                const data = CryptoUX.processWebSocketResponse(response.body);
+
+                if (data) {
                     outputTexto.value = data.resultado;
                     outputTexto.classList.replace("text-red-400", "text-cyan-300");
+                } else {
+                    outputTexto.value = "";
+                    outputTexto.classList.replace("text-cyan-300", "text-red-400");
                 }
             });
         }, function () {
             setConnStatus(false);
-            mostrarError("Conexión perdida. Reconectando...");
+            CryptoUX.showToast("Conexión perdida", "Desconectado del servidor. Reconectando...", "error");
             setTimeout(connect, 3000);
         });
     }
@@ -169,6 +181,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
+    // UX: Pegar desde el portapapeles
     btnPegar.addEventListener("click", async () => {
         try {
             const texto = await navigator.clipboard.readText();
@@ -176,9 +189,10 @@ document.addEventListener("DOMContentLoaded", () => {
                 inputTexto.value = texto;
                 enviarDatos();
                 inputTexto.focus();
+                CryptoUX.showToast("Pegado", "Texto insertado correctamente.", "success");
             }
         } catch {
-            mostrarError("Permiso de portapapeles denegado.");
+            CryptoUX.showToast("Acceso denegado", "Permiso de portapapeles denegado.", "error");
         }
     });
 
@@ -189,38 +203,24 @@ document.addEventListener("DOMContentLoaded", () => {
         inputTexto.focus();
     });
 
+    // UX: Copiar al portapapeles moderno
     btnCopiar.addEventListener("click", async () => {
-        if (!outputTexto.value) return;
+        if (!outputTexto.value) {
+            CryptoUX.showToast("Aviso", "No hay texto para copiar.", "info");
+            return;
+        }
         try {
             await navigator.clipboard.writeText(outputTexto.value);
-            mostrarExito("Resultado copiado al portapapeles");
+            CryptoUX.showToast("¡Copiado!", "Resultado copiado al portapapeles.", "success");
         } catch {
             outputTexto.select();
             document.execCommand("copy");
         }
     });
 
-    function mostrarToast(mensaje, tipo) {
-        const container = document.getElementById("toast-container");
-        const toast = document.createElement("div");
-        const isError = tipo === "error";
-        toast.className = `flex items-start gap-3 px-4 py-3 rounded-xl shadow-xl border backdrop-blur-sm text-sm font-medium animate-fade-in ${
-            isError
-                ? "bg-red-950/90 text-red-200 border-red-700/50"
-                : "bg-emerald-950/90 text-emerald-200 border-emerald-700/50"
-        }`;
-        toast.innerHTML = `<span>${mensaje}</span>`;
-        container.appendChild(toast);
-        setTimeout(() => {
-            toast.style.opacity = "0";
-            toast.style.transition = "opacity .4s ease";
-            setTimeout(() => toast.remove(), 400);
-        }, 3000);
-    }
-
-    function mostrarError(msg) { mostrarToast(msg, "error"); }
-    function mostrarExito(msg) { mostrarToast(msg, "ok"); }
-
+    // ==========================================
+    // TUTORIAL
+    // ==========================================
     const tutorialData = [
         { element: "#panelParametros", title: "Operación y alfabeto", text: "Elige si quieres cifrar texto o descifrar coordenadas. El cuadrado usa una matriz fija de 5x5." },
         { element: "#panelSimulador", title: "La cuadrícula 5x5", text: "Cada celda tiene coordenadas de fila y columna. Al escribir, se resalta la letra o par actual." },

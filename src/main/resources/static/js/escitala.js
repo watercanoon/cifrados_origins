@@ -50,20 +50,26 @@ document.addEventListener("DOMContentLoaded", () => {
 
         stompClient.connect({}, function () {
             setConnStatus(true);
+
+            // 1. SUSCRIPCIÓN GLOBAL DE ERRORES (Atrapa excepciones del backend)
+            stompClient.subscribe('/user/queue/errores', function(errorResponse) {
+                CryptoUX.processWebSocketResponse(errorResponse.body);
+            });
+
+            // 2. SUSCRIPCIÓN A LA RESPUESTA DE ESCÍTALA
             stompClient.subscribe('/topic/escitala', function (response) {
-                let data = JSON.parse(response.body);
-                if (data.error) {
-                    mostrarError(data.error);
-                    outputTexto.value = "";
-                    outputTexto.classList.replace('text-cyan-300', 'text-red-400');
-                } else {
+                const data = CryptoUX.processWebSocketResponse(response.body);
+                if (data) {
                     outputTexto.value = data.resultado;
                     outputTexto.classList.replace('text-red-400', 'text-cyan-300');
+                } else {
+                    outputTexto.value = "";
+                    outputTexto.classList.replace('text-cyan-300', 'text-red-400');
                 }
             });
         }, function () {
             setConnStatus(false);
-            mostrarError("Conexión perdida. Reconectando…");
+            CryptoUX.showToast("Conexión perdida", "Desconectado del servidor. Reconectando...", "error");
             setTimeout(connect, 3000);
         });
     }
@@ -183,7 +189,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 face.style.height    = `${faceSize}px`;
                 face.style.top       = `calc(50% - ${faceSize/2}px)`;
                 face.style.transform = `rotateX(${i * anglePerFace}deg) translateZ(${textRadius}px)`;
-                
+
                 if (longitudOriginal > 0) {
                     for (let j = 0; j < caracteresPorVuelta; j++) {
                         const span = document.createElement('span');
@@ -231,7 +237,7 @@ document.addEventListener("DOMContentLoaded", () => {
             for (let k = 0; k < txt.length; k++) {
                 const charCell = document.createElement("div");
                 charCell.className = "cinta-cell w-9 h-9 rounded-lg flex items-center justify-center font-mono font-black text-sm relative border border-slate-700/60 shadow-md cursor-pointer select-none";
-                
+
                 // Mapear el índice del criptograma k (leído fila por fila) al índice del texto original (escrito col por col)
                 const c = k % diametro;
                 const f = Math.floor(k / diametro);
@@ -385,9 +391,10 @@ document.addEventListener("DOMContentLoaded", () => {
                 inputTexto.value = textoPortapapeles;
                 enviarDatos();
                 inputTexto.focus();
+                CryptoUX.showToast("Pegado", "Texto insertado correctamente.", "success");
             }
         } catch {
-            mostrarError("Permiso denegado. Concede acceso al portapapeles en tu navegador.");
+            CryptoUX.showToast("Permiso denegado", "Concede acceso al portapapeles en tu navegador.", "error");
         }
     });
 
@@ -398,41 +405,18 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     btnCopiar.addEventListener('click', async () => {
-        if (!outputTexto.value) return;
+        if (!outputTexto.value) {
+            CryptoUX.showToast("Aviso", "No hay texto para copiar.", "info");
+            return;
+        }
         try {
             await navigator.clipboard.writeText(outputTexto.value);
-            mostrarExito("Resultado copiado al portapapeles");
+            CryptoUX.showToast("¡Copiado!", "Resultado copiado al portapapeles.", "success");
         } catch {
             outputTexto.select();
             document.execCommand("copy");
         }
     });
-
-    // ==========================================
-    // TOASTS
-    // ==========================================
-    function mostrarToast(mensaje, tipo) {
-        const container = document.getElementById('toast-container');
-        const toast = document.createElement('div');
-        const isError = tipo === 'error';
-        toast.className = `flex items-start gap-3 px-4 py-3 rounded-xl shadow-xl border backdrop-blur-sm text-sm font-medium animate-fade-in transition-opacity ${
-            isError
-                ? 'bg-red-950/90 text-red-200 border-red-700/50'
-                : 'bg-emerald-950/90 text-emerald-200 border-emerald-700/50'
-        }`;
-        toast.innerHTML = isError
-            ? `<svg class="w-4 h-4 mt-0.5 flex-shrink-0 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg><span>${mensaje}</span>`
-            : `<svg class="w-4 h-4 mt-0.5 flex-shrink-0 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg><span>${mensaje}</span>`;
-        container.appendChild(toast);
-        setTimeout(() => {
-            toast.style.opacity = '0';
-            toast.style.transition = 'opacity .4s ease';
-            setTimeout(() => toast.remove(), 400);
-        }, 3000);
-    }
-
-    function mostrarError(msg) { mostrarToast(msg, 'error'); }
-    function mostrarExito(msg) { mostrarToast(msg, 'ok'); }
 
     // ==========================================
     // TUTORIAL

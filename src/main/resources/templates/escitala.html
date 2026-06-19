@@ -1,15 +1,25 @@
 <!DOCTYPE html>
-<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<html lang="es" xmlns:th="http://www.thymeleaf.org" class="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Escítala 3D | CriptoSuite</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.5.1/sockjs.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = { darkMode: 'class', theme: { extend: {} } }
+        if (localStorage.getItem('color-theme') === 'dark' || (!('color-theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
+    </script>
     <link rel="stylesheet" th:href="@{/css/global.css}">
+
     <style>
-        body { background-color: #0f172a; color: #f8fafc; }
         .scene-3d { perspective: 1200px; }
         .cylinder-3d {
             transform-style: preserve-3d;
@@ -17,324 +27,293 @@
         }
         .face-3d { backface-visibility: hidden; position: absolute; }
 
-        /* Estilos para la cinta física y resaltados */
+        /* Estilos Dinámicos para la Cinta (Modo Claro/Oscuro) */
         .cinta-cell {
+            background: linear-gradient(135deg, #f8fafc, #e2e8f0);
+            border: 1px solid rgba(203, 213, 225, 0.6);
+            color: #475569;
+            transition: all 0.2s ease;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5);
+        }
+        .dark .cinta-cell {
             background: linear-gradient(135deg, #1e293b, #0f172a);
             border: 1px solid rgba(51, 65, 85, 0.6);
             color: #94a3b8;
-            transition: all 0.2s ease;
             box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
         }
+
         .cinta-cell.highlighted {
+            background: rgba(6, 182, 212, 0.15) !important;
+            border-color: #0891b2 !important;
+            color: #0891b2 !important;
+            box-shadow: 0 0 12px rgba(6, 182, 212, 0.2);
+            transform: translateY(-2px);
+        }
+        .dark .cinta-cell.highlighted {
             background: rgba(6, 182, 212, 0.2) !important;
             border-color: #22d3ee !important;
             color: #22d3ee !important;
             box-shadow: 0 0 12px rgba(34, 211, 238, 0.35);
-            transform: translateY(-2px);
         }
-        .baston-char {
-            transition: all 0.2s ease;
-            cursor: pointer;
-            display: inline-block;
-        }
+
+        .baston-char { transition: all 0.2s ease; cursor: pointer; display: inline-block; }
         .baston-char.highlighted {
-            color: #fbbf24 !important;
-            text-shadow: 0 0 12px #fbbf24;
-            transform: scale(1.3);
-            z-index: 10;
+            color: #d97706 !important; text-shadow: 0 0 8px #f59e0b;
+            transform: scale(1.3); z-index: 10;
+        }
+        .dark .baston-char.highlighted {
+            color: #fbbf24 !important; text-shadow: 0 0 12px #fbbf24;
         }
 
         .tutorial-focus {
-            position: relative;
-            z-index: 20;
+            position: relative; z-index: 20;
             box-shadow: 0 0 0 4px rgba(34,211,238,.5), 0 0 35px rgba(34,211,238,.4);
-            border-radius: 12px;
-            transition: all .3s ease;
+            border-radius: 12px; transition: all .3s ease;
         }
 
-        /* Radio toggle mejorado */
+        /* Radio toggle */
         .radio-toggle input:checked + .radio-label-cifrar { background: #06b6d4; color: #fff; box-shadow: 0 0 16px rgba(6,182,212,.4); }
         .radio-toggle input:checked + .radio-label-descifrar { background: #2563eb; color: #fff; box-shadow: 0 0 16px rgba(37,99,235,.4); }
 
-        /* Slider personalizado */
+        /* Slider */
         input[type=range] {
-            -webkit-appearance: none;
-            appearance: none;
-            height: 6px;
-            border-radius: 3px;
+            -webkit-appearance: none; appearance: none;
+            height: 6px; border-radius: 3px;
+            background: linear-gradient(to right, #06b6d4 var(--fill), #cbd5e1 var(--fill));
+            outline: none; cursor: pointer;
+        }
+        .dark input[type=range] {
             background: linear-gradient(to right, #06b6d4 var(--fill), #1e293b var(--fill));
-            outline: none;
-            cursor: pointer;
         }
         input[type=range]::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            width: 18px; height: 18px;
-            border-radius: 50%;
-            background: #06b6d4;
-            border: 2px solid #0f172a;
-            box-shadow: 0 0 0 2px #06b6d4;
-            cursor: pointer;
-            transition: box-shadow .2s;
+            -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%;
+            background: #06b6d4; border: 2px solid #fff; box-shadow: 0 0 0 2px #06b6d4;
+            cursor: pointer; transition: box-shadow .2s;
         }
+        .dark input[type=range]::-webkit-slider-thumb { border-color: #0f172a; }
         input[type=range]::-webkit-slider-thumb:hover { box-shadow: 0 0 0 5px rgba(6,182,212,.3); }
 
-        /* Textarea mejorado */
+        /* Componentes UX */
         .text-area-panel { min-height: 160px; }
-
-        /* Animación fade-in */
-        @keyframes fadeInUp {
-            from { opacity: 0; transform: translateY(12px); }
-            to   { opacity: 1; transform: translateY(0); }
-        }
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
         .animate-fade-in { animation: fadeInUp .45s ease both; }
         .animate-fade-in-delay { animation: fadeInUp .45s .15s ease both; }
 
-        /* Scrollbar */
-        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
-
-        /* glass-panel si no viene del global.css */
-        .glass-panel {
-            background: rgba(15,23,42,.7);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(51,65,85,.6);
-        }
-
-        /* Cyber grid si no viene del global */
-        .cyber-grid {
-            background-image:
-                    linear-gradient(rgba(6,182,212,.03) 1px, transparent 1px),
-                    linear-gradient(90deg, rgba(6,182,212,.03) 1px, transparent 1px);
-            background-size: 40px 40px;
-        }
-
-        /* Stat badge */
         .stat-badge {
-            background: rgba(15,23,42,.8);
-            border: 1px solid rgba(51,65,85,.7);
+            background: rgba(241, 245, 249, .8); border: 1px solid rgba(203, 213, 225, .7);
+        }
+        .dark .stat-badge {
+            background: rgba(15, 23, 42, .8); border-color: rgba(51, 65, 85, .7);
         }
 
-        /* Botón acción */
+        /* Botones de acción */
         .btn-action {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            padding: 6px 14px;
-            font-size: 11px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: .06em;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all .2s;
-            white-space: nowrap;
+            display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px;
+            font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em;
+            border-radius: 8px; cursor: pointer; transition: all .2s; white-space: nowrap;
         }
-        .btn-util {
-            background: rgba(30,41,59,.8);
-            color: #94a3b8;
-            border: 1px solid rgba(51,65,85,.5);
-        }
-        .btn-util:hover { background: rgba(6,182,212,.12); color: #22d3ee; border-color: rgba(6,182,212,.3); }
-        .btn-util-red:hover { background: rgba(239,68,68,.12); color: #f87171; border-color: rgba(239,68,68,.3); }
-        .btn-primary {
-            background: rgba(8,47,73,.7);
-            color: #67e8f9;
-            border: 1px solid rgba(6,182,212,.4);
-        }
-        .btn-primary:hover { background: rgba(6,182,212,.25); border-color: rgba(6,182,212,.7); }
-        .btn-rotate {
-            background: rgba(8,47,73,.5);
-            color: #a5f3fc;
-            border: 1px solid rgba(6,182,212,.3);
-        }
-        .btn-rotate.active { background: rgba(127,29,29,.5); color: #fca5a5; border-color: rgba(239,68,68,.4); }
+
+        .btn-util { background: rgba(241, 245, 249, .8); color: #475569; border: 1px solid rgba(203, 213, 225, .5); }
+        .dark .btn-util { background: rgba(30, 41, 59, .8); color: #94a3b8; border-color: rgba(51, 65, 85, .5); }
+        .btn-util:hover { background: rgba(6, 182, 212, .12); color: #0891b2; border-color: rgba(6, 182, 212, .3); }
+        .dark .btn-util:hover { color: #22d3ee; }
+
+        .btn-util-red:hover { background: rgba(239, 68, 68, .12); color: #dc2626; border-color: rgba(239, 68, 68, .3); }
+        .dark .btn-util-red:hover { color: #f87171; }
+
+        .btn-primary { background: rgba(224, 242, 254, .7); color: #0284c7; border: 1px solid rgba(6, 182, 212, .4); }
+        .dark .btn-primary { background: rgba(8, 47, 73, .7); color: #67e8f9; }
+        .btn-primary:hover { background: rgba(6, 182, 212, .25); border-color: rgba(6, 182, 212, .7); }
+
+        .btn-rotate { background: rgba(224, 242, 254, .5); color: #0284c7; border: 1px solid rgba(6, 182, 212, .3); }
+        .dark .btn-rotate { background: rgba(8, 47, 73, .5); color: #a5f3fc; }
+        .btn-rotate.active { background: rgba(254, 226, 226, .5); color: #dc2626; border-color: rgba(239, 68, 68, .4); }
+        .dark .btn-rotate.active { background: rgba(127, 29, 29, .5); color: #fca5a5; }
 
         /* View toggle */
         .view-btn { padding: 5px 12px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; border-radius: 6px; cursor: pointer; transition: all .2s; color: #64748b; }
         .view-btn.active { background: #06b6d4; color: #fff; box-shadow: 0 0 12px rgba(6,182,212,.35); }
-        .view-btn:not(.active):hover { color: #e2e8f0; }
+        .view-btn:not(.active):hover { color: #0f172a; }
+        .dark .view-btn:not(.active):hover { color: #e2e8f0; }
 
-        /* Sección info */
-        .info-box { background: rgba(6,182,212,.06); border: 1px solid rgba(6,182,212,.18); border-radius: 12px; }
+        .section-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; }
 
-        /* Línea divisora de sección */
-        .section-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: #64748b; }
-
-        /* Connection dot */
         .conn-dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; }
-        .conn-dot.connected { background: #34d399; box-shadow: 0 0 6px #34d399; }
-        .conn-dot.disconnected { background: #f87171; box-shadow: 0 0 6px #f87171; }
+        .conn-dot.connected { background: #10b981; box-shadow: 0 0 6px #10b981; }
+        .conn-dot.disconnected { background: #ef4444; box-shadow: 0 0 6px #ef4444; }
     </style>
 </head>
-<body class="min-h-screen p-3 sm:p-5 md:p-8 font-sans antialiased cyber-grid">
+<body class="text-slate-800 dark:text-slate-100 min-h-screen font-sans cyber-grid antialiased transition-colors duration-300">
 
-<div id="toast-container" class="fixed top-4 right-4 z-50 flex flex-col gap-2 max-w-xs w-full"></div>
+<div id="toast-container" class="fixed top-20 right-5 z-50 flex flex-col gap-2 max-w-xs w-full"></div>
 
-<div class="max-w-7xl mx-auto">
+<nav class="border-b border-slate-200 dark:border-slate-800/60 bg-white/70 dark:bg-slate-950/70 backdrop-blur-md sticky top-0 z-50 transition-colors duration-300">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex items-center justify-between h-16">
 
-    <!-- HEADER -->
+            <a th:href="@{/}" class="flex items-center gap-2 px-3 py-2 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800 hover:text-cyan-600 dark:hover:text-cyan-400 transition-all font-medium">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+                Volver al Menú
+            </a>
+
+            <div class="flex items-center gap-4">
+                <button id="theme-toggle" class="p-2 ml-2 rounded-lg bg-slate-200 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-300 dark:hover:bg-slate-700 transition-colors" aria-label="Cambiar tema">
+                    <svg id="theme-toggle-light-icon" class="hidden w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4.22 2.32a1 1 0 011.415 0l.707.707a1 1 0 01-1.414 1.415l-.707-.708a1 1 0 010-1.414zm3.78 4.68a1 1 0 110 2h-1a1 1 0 110-2h1zm-2.32 4.22a1 1 0 010 1.415l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.415 0zM10 16a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zm-4.22-2.32a1 1 0 010 1.415l-.707.708a1 1 0 01-1.415-1.414l.707-.707a1 1 0 011.415 0zM2 10a1 1 0 110-2h1a1 1 0 110 2H2zm2.32-4.22a1 1 0 011.415 0l.707.707a1 1 0 01-1.415 1.415l-.707-.707a1 1 0 010-1.415zM10 5a5 5 0 100 10 5 5 0 000-10z"></path>
+                    </svg>
+                    <svg id="theme-toggle-dark-icon" class="hidden w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"></path>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+</nav>
+
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
     <header class="mb-6 sm:mb-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 animate-fade-in">
         <div class="flex items-start gap-4">
-            <div class="hidden sm:flex w-12 h-12 rounded-xl bg-cyan-500/10 border border-cyan-500/20 items-center justify-center flex-shrink-0">
-                <svg class="w-6 h-6 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div class="hidden sm:flex w-12 h-12 rounded-xl bg-cyan-100 dark:bg-cyan-500/10 border border-cyan-300 dark:border-cyan-500/20 items-center justify-center flex-shrink-0 transition-colors">
+                <svg class="w-6 h-6 text-cyan-600 dark:text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 4.5v15m7.5-7.5h-15"/>
                     <circle cx="12" cy="12" r="9" stroke-width="1.5"/>
                 </svg>
             </div>
             <div>
                 <div class="flex items-center gap-2 mb-1">
-                    <h1 class="text-2xl sm:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">Escítala Espartana</h1>
-                    <span id="connStatus" class="flex items-center gap-1.5 text-[10px] font-semibold text-slate-500 bg-slate-900 border border-slate-700 px-2 py-0.5 rounded-full">
+                    <h1 class="text-2xl sm:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-600 to-blue-600 dark:from-cyan-400 dark:to-blue-500 transition-colors">Escítala Espartana</h1>
+                    <span id="connStatus" class="flex items-center gap-1.5 text-[10px] font-semibold text-slate-600 dark:text-slate-500 bg-slate-100 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 px-2 py-0.5 rounded-full transition-colors">
                         <span class="conn-dot disconnected" id="connDot"></span>
                         <span id="connLabel">offline</span>
                     </span>
                 </div>
-                <p class="text-slate-400 text-xs sm:text-sm">Cifrado de transposición clásico con simulador holográfico 3D</p>
+                <p class="text-slate-500 dark:text-slate-400 text-xs sm:text-sm transition-colors">Cifrado de transposición clásico con simulador holográfico 3D</p>
             </div>
         </div>
-        <a th:href="@{/}" class="btn-action btn-util text-xs sm:text-sm px-4 py-2 w-full sm:w-auto justify-center">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
-            Inicio
-        </a>
     </header>
 
-    <!-- MAIN GRID -->
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6 animate-fade-in-delay">
 
-        <!-- COLUMNA IZQUIERDA -->
         <div class="lg:col-span-5 flex flex-col gap-4 sm:gap-6">
 
-            <!-- PANEL PARÁMETROS -->
-            <div class="glass-panel rounded-2xl p-5 sm:p-6">
-                <h2 class="text-sm font-bold text-white mb-5 border-b border-slate-700/60 pb-3 flex items-center gap-2">
-                    <svg class="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/></svg>
+            <div class="glass-panel rounded-2xl p-5 sm:p-6 transition-colors duration-300">
+                <h2 class="text-sm font-bold text-slate-800 dark:text-white mb-5 border-b border-slate-300 dark:border-slate-700/60 pb-3 flex items-center gap-2 transition-colors">
+                    <svg class="w-4 h-4 text-cyan-600 dark:text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110-4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/></svg>
                     Parámetros
                 </h2>
                 <div class="space-y-6">
 
-                    <!-- Operación -->
                     <div>
-                        <p class="section-title mb-2">Operación</p>
-                        <div class="grid grid-cols-2 gap-2 p-1 bg-slate-900/80 rounded-xl border border-slate-700/60">
+                        <p class="section-title text-slate-500 dark:text-slate-400 mb-2 transition-colors">Operación</p>
+                        <div class="grid grid-cols-2 gap-2 p-1 bg-slate-100 dark:bg-slate-900/80 rounded-xl border border-slate-200 dark:border-slate-700/60 transition-colors">
                             <label class="radio-toggle cursor-pointer">
                                 <input type="radio" name="operacion" value="CIFRAR" class="sr-only" checked>
-                                <div class="radio-label-cifrar text-center px-4 py-2.5 text-xs font-bold rounded-lg text-slate-400 hover:text-white transition select-none">
+                                <div class="radio-label-cifrar text-center px-4 py-2.5 text-xs font-bold rounded-lg text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white transition select-none">
                                     🔒 Cifrar
                                 </div>
                             </label>
                             <label class="radio-toggle cursor-pointer">
                                 <input type="radio" name="operacion" value="DESCIFRAR" class="sr-only">
-                                <div class="radio-label-descifrar text-center px-4 py-2.5 text-xs font-bold rounded-lg text-slate-400 hover:text-white transition select-none">
+                                <div class="radio-label-descifrar text-center px-4 py-2.5 text-xs font-bold rounded-lg text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white transition select-none">
                                     🔓 Descifrar
                                 </div>
                             </label>
                         </div>
                     </div>
 
-                    <!-- Clave slider -->
                     <div>
                         <div class="flex justify-between items-center mb-3">
-                            <p class="section-title">Diámetro del Bastón</p>
+                            <p class="section-title text-slate-500 dark:text-slate-400 transition-colors">Diámetro del Bastón</p>
                             <div class="flex items-center gap-1.5">
-                                <span id="claveValueDisplay" class="text-lg font-black text-cyan-400 tabular-nums w-7 text-right">4</span>
+                                <span id="claveValueDisplay" class="text-lg font-black text-cyan-600 dark:text-cyan-400 tabular-nums w-7 text-right transition-colors">4</span>
                                 <span class="text-xs text-slate-500">unidades</span>
                             </div>
                         </div>
                         <input type="range" id="clave" min="2" max="15" value="4" class="w-full" style="--fill: 18%">
                         <div class="flex justify-between mt-1.5">
-                            <span class="text-[10px] text-slate-600">2</span>
-                            <span class="text-[10px] text-slate-600">15</span>
+                            <span class="text-[10px] text-slate-500 dark:text-slate-600">2</span>
+                            <span class="text-[10px] text-slate-500 dark:text-slate-600">15</span>
                         </div>
                     </div>
 
-                    <div class="stat-badge rounded-lg p-2.5 text-center border-cyan-500/20">
+                    <div class="stat-badge rounded-lg p-2.5 text-center border-cyan-300 dark:border-cyan-500/20 transition-colors">
                         <span class="block text-[9px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Diámetro</span>
-                        <span id="statVueltas" class="text-sm font-black text-cyan-400 tabular-nums">4</span>
+                        <span id="statVueltas" class="text-sm font-black text-cyan-600 dark:text-cyan-400 tabular-nums transition-colors">4</span>
                     </div>
 
                 </div>
 
-                <!-- Info box -->
-                <div class="mt-6 info-box p-4">
-                    <h3 class="text-cyan-400 font-bold text-xs mb-2 flex items-center gap-2">
+                <div class="mt-6 bg-cyan-50 dark:bg-cyan-900/10 border border-cyan-200 dark:border-cyan-800/30 rounded-xl p-4 transition-colors">
+                    <h3 class="text-cyan-700 dark:text-cyan-400 font-bold text-xs mb-2 flex items-center gap-2 transition-colors">
                         <svg class="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                         ¿Cómo funciona?
                     </h3>
-                    <p class="text-[11px] text-slate-400 leading-relaxed">
-                        La <strong class="text-slate-300">Escítala</strong> es un cifrado de <strong class="text-slate-300">transposición</strong>: no altera las letras, solo reordena su posición.
+                    <p class="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed transition-colors">
+                        La <strong class="text-slate-800 dark:text-slate-300">Escítala</strong> es un cifrado de <strong class="text-slate-800 dark:text-slate-300">transposición</strong>: no altera las letras, solo reordena su posición.
                         El mensaje se enrolla en un bastón de <em>N</em> caras; al desenrollar la cinta, el texto aparece mezclado.
-                        Solo un receptor con el mismo diámetro puede volver a alinear las caras y leer el mensaje.
                     </p>
                 </div>
             </div>
 
-            <!-- PANEL SIMULADOR 3D -->
-            <div class="glass-panel rounded-2xl p-5 sm:p-6 flex-1 flex flex-col">
+            <div class="glass-panel rounded-2xl p-5 sm:p-6 flex-1 flex flex-col transition-colors duration-300">
                 <div class="flex flex-col xs:flex-row justify-between items-start xs:items-center gap-3 mb-4">
-                    <p class="section-title text-cyan-500">Simulador 3D</p>
+                    <p class="section-title text-cyan-600 dark:text-cyan-500 transition-colors">Simulador 3D</p>
                     <div class="flex items-center gap-2 w-full xs:w-auto">
-                        <!-- Vista toggle -->
-                        <div class="flex bg-slate-900/80 rounded-lg border border-slate-700/60 p-0.5 flex-1 xs:flex-none">
+                        <div class="flex bg-white dark:bg-slate-900/80 rounded-lg border border-slate-200 dark:border-slate-700/60 p-0.5 flex-1 xs:flex-none transition-colors">
                             <button id="btnViewHoriz" class="view-btn active flex-1 xs:flex-none">Horiz</button>
                             <button id="btnViewVert" class="view-btn flex-1 xs:flex-none">Vert</button>
                         </div>
-                        <!-- Giro -->
-                        <button id="btnAutoGiro" class="btn-action btn-rotate flex-shrink-0">
+                        <button id="btnAutoGiro" class="btn-action btn-rotate flex-shrink-0 transition-colors">
                             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
                             Girar
                         </button>
                     </div>
                 </div>
 
-                <!-- Escena 3D -->
-                <div id="sceneContainer" class="scene-3d w-full h-36 sm:h-40 flex items-center justify-center relative rounded-xl border border-cyan-500/15 bg-slate-950/60 overflow-visible transition-all duration-500 my-1">
+                <div id="sceneContainer" class="scene-3d w-full h-36 sm:h-40 flex items-center justify-center relative rounded-xl border border-cyan-300 dark:border-cyan-500/15 bg-slate-50 dark:bg-slate-950/60 overflow-visible transition-all duration-500 my-1">
                     <div id="cylinder" class="cylinder-3d flex justify-center items-center relative w-full h-[40px]"></div>
                 </div>
 
-                <!-- Stats -->
                 <div class="grid grid-cols-3 gap-2 mt-4">
-                    <div class="stat-badge rounded-lg p-2.5 text-center">
+                    <div class="stat-badge rounded-lg p-2.5 text-center transition-colors">
                         <span class="block text-[9px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Longitud</span>
-                        <span id="statLongitud" class="text-sm font-black text-slate-200 tabular-nums">0</span>
+                        <span id="statLongitud" class="text-sm font-black text-slate-700 dark:text-slate-200 tabular-nums transition-colors">0</span>
                     </div>
-                    <div class="stat-badge rounded-lg p-2.5 text-center border-cyan-500/20">
+                    <div class="stat-badge rounded-lg p-2.5 text-center border-cyan-300 dark:border-cyan-500/20 transition-colors">
                         <span class="block text-[9px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Caras</span>
-                        <span id="statVueltas" class="text-sm font-black text-cyan-400 tabular-nums">4</span>
+                        <span id="statVueltas" class="text-sm font-black text-cyan-600 dark:text-cyan-400 tabular-nums transition-colors">4</span>
                     </div>
-                    <div class="stat-badge rounded-lg p-2.5 text-center">
+                    <div class="stat-badge rounded-lg p-2.5 text-center transition-colors">
                         <span class="block text-[9px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Relleno X</span>
-                        <span id="statRelleno" class="text-sm font-black text-red-400 tabular-nums">0</span>
+                        <span id="statRelleno" class="text-sm font-black text-red-500 dark:text-red-400 tabular-nums transition-colors">0</span>
                     </div>
                 </div>
             </div>
 
-            <!-- REPRESENTACIÓN DE LA CINTA FÍSICA -->
-            <div id="panelCinta" class="glass-panel rounded-2xl p-5 sm:p-6 flex flex-col">
-                <h3 class="text-sm font-bold text-white mb-2 flex items-center gap-2">
-                    <svg class="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7"/></svg>
+            <div id="panelCinta" class="glass-panel rounded-2xl p-5 sm:p-6 flex flex-col transition-colors duration-300">
+                <h3 class="text-sm font-bold text-slate-800 dark:text-white mb-2 flex items-center gap-2 transition-colors">
+                    <svg class="w-4 h-4 text-cyan-600 dark:text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7"/></svg>
                     Simulación: Cinta Desenrollada
                 </h3>
-                <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">
-                    Esta tira representa la cinta física de cuero (criptograma). Al enrollarse en el bastón, las letras se alinean longitudinalmente. Pasa el cursor por las letras para ver su correspondencia.
+                <p class="text-[11px] text-slate-500 dark:text-slate-400 mb-4 leading-relaxed transition-colors">
+                    Esta tira representa la cinta física de cuero (criptograma). Pasa el cursor por las letras para ver su correspondencia.
                 </p>
-                <div class="relative overflow-x-auto py-3 px-2 custom-scrollbar bg-slate-950/60 rounded-xl border border-cyan-500/10">
+                <div class="relative overflow-x-auto py-3 px-2 custom-scrollbar bg-slate-50 dark:bg-slate-950/60 rounded-xl border border-cyan-200 dark:border-cyan-500/10 transition-colors">
                     <div id="cintaDesenrollada" class="flex items-center gap-2 min-w-max select-none py-1">
-                        <span class="text-xs text-slate-600 font-mono italic">Esperando entrada...</span>
+                        <span class="text-xs text-slate-500 dark:text-slate-600 font-mono italic">Esperando entrada...</span>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- COLUMNA DERECHA -->
         <div class="lg:col-span-7 flex flex-col gap-4 sm:gap-6">
 
-            <!-- PANEL TEXTO ENTRADA -->
-            <div class="glass-panel rounded-2xl p-5 sm:p-6 flex flex-col" style="min-height: 200px;">
+            <div class="glass-panel rounded-2xl p-5 sm:p-6 flex flex-col transition-colors duration-300" style="min-height: 200px;">
                 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
                     <div>
-                        <p class="section-title mb-0.5">Texto Original</p>
-                        <p class="text-[10px] text-slate-600">Texto plano a enrollar en el bastón</p>
+                        <p class="section-title text-slate-600 dark:text-slate-400 mb-0.5 transition-colors">Texto Original</p>
+                        <p class="text-[10px] text-slate-500">Texto plano a enrollar en el bastón</p>
                     </div>
                     <div class="flex gap-2 w-full sm:w-auto">
                         <button id="btnPegar" type="button" class="btn-action btn-util flex-1 sm:flex-none justify-center">
@@ -349,17 +328,16 @@
                 </div>
                 <textarea id="textoEntrada"
                           placeholder="Escribe el texto a enrollar en el bastón…"
-                          class="w-full flex-1 bg-slate-900/30 border border-slate-700/40 rounded-xl text-white text-base sm:text-lg placeholder-slate-600 resize-none outline-none custom-scrollbar p-3 sm:p-4 focus:border-cyan-500/40 focus:bg-slate-900/50 transition text-area-panel"
+                          class="w-full flex-1 bg-transparent border-none text-base sm:text-lg resize-none outline-none custom-scrollbar p-3 sm:p-4 focus:ring-0 transition-colors text-area-panel"
                           style="min-height: 140px;"></textarea>
             </div>
 
-            <!-- PANEL RESULTADO -->
-            <div class="glass-panel rounded-2xl p-5 sm:p-6 flex flex-col border-cyan-500/20 relative overflow-hidden" style="min-height: 200px;">
-                <div class="absolute top-0 right-0 w-48 h-48 bg-cyan-500/5 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
+            <div class="glass-panel rounded-2xl p-5 sm:p-6 flex flex-col border-cyan-300 dark:border-cyan-500/20 relative overflow-hidden transition-colors duration-300" style="min-height: 200px;">
+                <div class="absolute top-0 right-0 w-48 h-48 bg-cyan-500/10 dark:bg-cyan-500/5 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
                 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4 relative z-10">
                     <div>
-                        <p class="section-title text-cyan-500 mb-0.5">Resultado Transpuesto</p>
-                        <p class="text-[10px] text-slate-600">Texto cifrado listo para transmitir</p>
+                        <p class="section-title text-cyan-600 dark:text-cyan-500 mb-0.5 transition-colors">Resultado Transpuesto</p>
+                        <p class="text-[10px] text-slate-500">Texto cifrado listo para transmitir</p>
                     </div>
                     <button id="btnCopiar" class="btn-action btn-primary w-full sm:w-auto justify-center">
                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
@@ -369,7 +347,7 @@
                 <textarea id="textoSalida"
                           placeholder="Esperando mensaje…"
                           readonly
-                          class="w-full flex-1 bg-slate-900/30 border border-cyan-500/15 rounded-xl text-cyan-300 text-base sm:text-lg font-mono resize-none outline-none custom-scrollbar p-3 sm:p-4 relative z-10 text-area-panel"
+                          class="w-full flex-1 bg-transparent border-none text-base sm:text-lg font-mono resize-none outline-none custom-scrollbar p-3 sm:p-4 relative z-10 text-area-panel transition-colors"
                           style="min-height: 140px;"></textarea>
             </div>
 
@@ -377,39 +355,31 @@
     </div>
 </div>
 
-<!-- BOTÓN TUTORIAL -->
 <button id="btnTutorial" title="Tutorial interactivo"
         class="fixed bottom-6 right-6 sm:bottom-8 sm:right-8 z-40 bg-cyan-600 hover:bg-cyan-500 text-white w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center shadow-[0_0_24px_rgba(6,182,212,.5)] border-2 border-cyan-300/40 transition-all hover:scale-110 hover:shadow-[0_0_32px_rgba(6,182,212,.7)] cursor-pointer">
     <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
 </button>
 
-<!-- OVERLAY TUTORIAL -->
 <div id="tutorialOverlay" class="fixed inset-0 bg-transparent pointer-events-none z-40 hidden transition-opacity duration-300"></div>
 
-<!-- BURBUJA TUTORIAL -->
-<div id="tutorialBubble" class="fixed z-50 w-[270px] sm:w-80 bg-slate-900 border border-cyan-500/40 rounded-2xl shadow-[0_20px_60px_rgba(6,182,212,.35)] transform transition-all duration-400 opacity-0 scale-95 hidden flex-col pointer-events-auto overflow-hidden">
-    <div class="bg-gradient-to-r from-slate-800/90 to-slate-800/60 border-b border-cyan-500/25 p-3 flex justify-between items-center">
-        <div class="flex items-center gap-2 text-cyan-400 font-bold uppercase tracking-wider text-[10px]">
+<div id="tutorialBubble" class="fixed z-50 w-[270px] sm:w-80 bg-white dark:bg-slate-900 border border-cyan-300 dark:border-cyan-500/40 rounded-2xl shadow-[0_20px_60px_rgba(6,182,212,.15)] dark:shadow-[0_20px_60px_rgba(6,182,212,.35)] transform transition-all duration-400 opacity-0 scale-95 hidden flex-col pointer-events-auto overflow-hidden">
+    <div class="bg-cyan-50 dark:bg-slate-800/90 border-b border-cyan-200 dark:border-cyan-500/25 p-3 flex justify-between items-center transition-colors">
+        <div class="flex items-center gap-2 text-cyan-600 dark:text-cyan-400 font-bold uppercase tracking-wider text-[10px]">
             <svg class="w-3.5 h-3.5 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
             Entrenamiento · Escítala
         </div>
-        <button id="btnCerrarTutorial" class="text-slate-500 hover:text-red-400 p-1 rounded-lg hover:bg-slate-700/50 transition cursor-pointer">
+        <button id="btnCerrarTutorial" class="text-slate-400 dark:text-slate-500 hover:text-red-500 dark:hover:text-red-400 p-1 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700/50 transition cursor-pointer">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
         </button>
     </div>
     <div class="p-4 sm:p-5">
-        <h3 id="tutTitle" class="text-base font-black text-white mb-1.5">Paso 1</h3>
-        <p id="tutText" class="text-slate-300 text-sm leading-relaxed">Instrucciones aquí…</p>
+        <h3 id="tutTitle" class="text-base font-black text-slate-800 dark:text-white mb-1.5 transition-colors">Paso 1</h3>
+        <p id="tutText" class="text-slate-600 dark:text-slate-300 text-sm leading-relaxed transition-colors">Instrucciones aquí…</p>
     </div>
-    <div class="bg-slate-950/60 px-4 py-3 border-t border-cyan-500/20 flex justify-between items-center gap-2">
-        <div class="flex gap-1.5" id="tutDots">
-            <span class="w-2 h-2 rounded-full bg-cyan-400 shadow-[0_0_6px_#22d3ee]"></span>
-            <span class="w-2 h-2 rounded-full bg-slate-700"></span>
-            <span class="w-2 h-2 rounded-full bg-slate-700"></span>
-            <span class="w-2 h-2 rounded-full bg-slate-700"></span>
-        </div>
+    <div class="bg-slate-50 dark:bg-slate-950/60 px-4 py-3 border-t border-slate-200 dark:border-cyan-500/20 flex justify-between items-center gap-2 transition-colors">
+        <div class="flex gap-1.5" id="tutDots"></div>
         <div class="flex gap-2">
-            <button id="btnTutPrev" class="hidden px-3 py-1.5 text-[11px] font-bold text-slate-400 hover:text-white uppercase transition cursor-pointer rounded-lg hover:bg-slate-800">← Atrás</button>
+            <button id="btnTutPrev" class="hidden px-3 py-1.5 text-[11px] font-bold text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white uppercase transition cursor-pointer rounded-lg hover:bg-slate-200 dark:hover:bg-slate-800">← Atrás</button>
             <button id="btnTutNext" class="px-4 py-1.5 bg-cyan-600 hover:bg-cyan-500 text-white text-[11px] font-bold rounded-lg uppercase shadow-lg shadow-cyan-500/25 transition cursor-pointer">Siguiente →</button>
         </div>
     </div>
@@ -429,5 +399,7 @@
         s.style.setProperty('--fill', ((val - min) / (max - min) * 100) + '%');
     })();
 </script>
+<script th:src="@{/js/theme.js}"></script>
+<script th:src="@{/js/crypto-utils.js}"></script>
 </body>
 </html>
