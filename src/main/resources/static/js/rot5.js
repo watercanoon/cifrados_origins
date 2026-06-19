@@ -10,6 +10,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const btnCopiar = document.getElementById("btnCopiar");
     const btnLimpiar = document.getElementById("btnLimpiar");
     const btnPegar = document.getElementById("btnPegar");
+    const btnCopiarOriginal = document.getElementById("btnCopiarOriginal");
+    const btnPegarCifrado = document.getElementById("btnPegarCifrado");
 
     // ==========================================
     // CONEXIÓN WEBSOCKET Y NOTIFICACIONES
@@ -90,7 +92,7 @@ document.addEventListener("DOMContentLoaded", () => {
     inputTexto.addEventListener("input", cifrarDesdeOriginal);
     outputTexto.addEventListener("input", descifrarDesdeCifrado);
 
-    // UX: Copiar al portapapeles moderno
+    // UX: Copiar al portapapeles moderno (Texto Cifrado)
     btnCopiar.addEventListener("click", () => {
         if (!outputTexto.value) {
             CryptoUX.showToast("Aviso", "No hay texto para copiar.", "info");
@@ -104,7 +106,7 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     });
 
-    // UX: Pegar desde el portapapeles
+    // UX: Pegar desde el portapapeles (Texto Original)
     btnPegar.addEventListener("click", async () => {
         try {
             const textoPortapapeles = await navigator.clipboard.readText();
@@ -116,6 +118,36 @@ document.addEventListener("DOMContentLoaded", () => {
                 CryptoUX.showToast("Pegado", "Texto insertado correctamente.", "success");
             }
         } catch (err) {
+            CryptoUX.showToast("Permiso denegado", "Concede acceso al portapapeles en tu navegador.", "error");
+        }
+    });
+
+    // UX: Copiar Texto Original al portapapeles
+    btnCopiarOriginal.addEventListener("click", async () => {
+        if (!inputTexto.value) {
+            CryptoUX.showToast("Aviso", "No hay texto original para copiar.", "info");
+            return;
+        }
+        try {
+            await navigator.clipboard.writeText(inputTexto.value);
+            CryptoUX.showToast("¡Copiado!", "Texto original copiado al portapapeles.", "success");
+        } catch {
+            inputTexto.select();
+            document.execCommand("copy");
+        }
+    });
+
+    // UX: Pegar Texto Cifrado desde el portapapeles
+    btnPegarCifrado.addEventListener("click", async () => {
+        try {
+            const textoPortapapeles = await navigator.clipboard.readText();
+            if (textoPortapapeles) {
+                outputTexto.value = textoPortapapeles;
+                descifrarDesdeCifrado();
+                outputTexto.focus();
+                CryptoUX.showToast("Pegado", "Texto cifrado insertado correctamente.", "success");
+            }
+        } catch {
             CryptoUX.showToast("Permiso denegado", "Concede acceso al portapapeles en tu navegador.", "error");
         }
     });
