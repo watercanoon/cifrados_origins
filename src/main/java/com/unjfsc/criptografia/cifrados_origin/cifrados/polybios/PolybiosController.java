@@ -19,12 +19,15 @@ public class PolybiosController {
     @SendTo("/topic/polybios")
     public CifradoResponse manejarCifradoPolybios(CifradoRequest request) {
         String idioma = request.getIdioma() != null ? request.getIdioma() : "ES";
+        String tipoCoordenadas = request.getClave() != null ? request.getClave() : "NUM";
         String resultado = polybiosService.procesarPolybios(
                 request.getTexto(),
                 request.getOperacion(),
-                idioma
+                idioma,
+                tipoCoordenadas
         );
 
         return new CifradoResponse(resultado, "POLYBIOS");
     }
+
 }

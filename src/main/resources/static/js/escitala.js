@@ -11,6 +11,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const btnCopiar  = document.getElementById('btnCopiar');
     const btnLimpiar = document.getElementById('btnLimpiar');
     const btnPegar   = document.getElementById('btnPegar');
+    const btnCopiarOriginal = document.getElementById('btnCopiarOriginal');
+    const btnPegarCifrado = document.getElementById('btnPegarCifrado');
 
     // Controles 3D
     const btnAutoGiro   = document.getElementById('btnAutoGiro');
@@ -398,10 +400,42 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
+    btnCopiarOriginal.addEventListener('click', async () => {
+        if (!inputTexto.value) {
+            CryptoUX.showToast("Aviso", "No hay texto para copiar.", "info");
+            return;
+        }
+        try {
+            await navigator.clipboard.writeText(inputTexto.value);
+            CryptoUX.showToast("¡Copiado!", "Texto original copiado al portapapeles.", "success");
+        } catch {
+            inputTexto.select();
+            document.execCommand("copy");
+        }
+    });
+
     btnLimpiar.addEventListener('click', () => {
         inputTexto.value = "";
         enviarDatos();
         inputTexto.focus();
+    });
+
+    btnPegarCifrado.addEventListener('click', async () => {
+        try {
+            const textoPortapapeles = await navigator.clipboard.readText();
+            if (textoPortapapeles) {
+                const radioDescifrar = document.querySelector('input[name="operacion"][value="DESCIFRAR"]');
+                if (radioDescifrar) {
+                    radioDescifrar.checked = true;
+                }
+                inputTexto.value = textoPortapapeles;
+                enviarDatos();
+                inputTexto.focus();
+                CryptoUX.showToast("Pegado", "Texto cifrado insertado para descifrar.", "success");
+            }
+        } catch {
+            CryptoUX.showToast("Permiso denegado", "Concede acceso al portapapeles en tu navegador.", "error");
+        }
     });
 
     btnCopiar.addEventListener('click', async () => {
