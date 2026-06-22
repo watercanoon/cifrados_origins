@@ -8,11 +8,16 @@ public class PlayfairService {
     private static final String DEFAULT_ALPHABET = "ABCDEFGHIKLMNOPQRSTUVWXYZ";
 
     public String procesarPlayfair(String texto, String clave, String operacion, String idioma, String alfabetoCustom) {
+        return procesarPlayfair(texto, clave, operacion, idioma, alfabetoCustom, false);
+    }
+
+    public String procesarPlayfair(String texto, String clave, String operacion, String idioma, String alfabetoCustom, Boolean eliminarRelleno) {
         if (texto == null || texto.trim().isEmpty()) {
             throw new IllegalArgumentException("El texto a procesar no puede estar vacío.");
         }
         if (clave == null) clave = "";
         if (idioma == null || idioma.isBlank()) idioma = "ES";
+        if (eliminarRelleno == null) eliminarRelleno = false;
 
         String baseAlphabet = determinarBaseAlphabet(idioma, alfabetoCustom);
 
@@ -31,7 +36,7 @@ public class PlayfairService {
         if (cifrar) {
             return encrypt(texto, matrix, baseAlphabet, idioma);
         } else {
-            return decrypt(texto, matrix, baseAlphabet, idioma);
+            return decrypt(texto, matrix, baseAlphabet, idioma, eliminarRelleno);
         }
     }
 
@@ -132,10 +137,46 @@ public class PlayfairService {
         return formatted.toString();
     }
 
-    private String decrypt(String text, char[][] matrix, String baseAlphabet, String idioma) {
+    private String decrypt(String text, char[][] matrix, String baseAlphabet, String idioma, boolean eliminarRelleno) {
         String preparedText = normalizeString(text, idioma, baseAlphabet);
         if (preparedText.length() % 2 != 0) preparedText += "X";
-        return cipherProcess(preparedText, matrix, 4).toLowerCase();
+        String decrypted = cipherProcess(preparedText, matrix, 4);
+        if (eliminarRelleno) {
+            decrypted = removePadding(decrypted);
+        }
+        return decrypted.toLowerCase();
+    }
+
+    private String removePadding(String text) {
+        if (text == null || text.isEmpty()) return "";
+        StringBuilder sb = new StringBuilder();
+        int len = text.length();
+
+        for (int i = 0; i < len; i++) {
+            // Identificar relleno en dígrafos duplicados:
+            // Patrón: C1 + 'X' + C2 donde C1 == C2 y C1 != 'X'
+            // O bien: C1 + 'Q' + C2 donde C1 == C2 y C1 == 'X'
+            if (i > 0 && i < len - 1) {
+                char prev = text.charAt(i - 1);
+                char curr = text.charAt(i);
+                char next = text.charAt(i + 1);
+
+                if (curr == 'X' && prev == next && prev != 'X') {
+                    continue; // Omitir el relleno 'X'
+                }
+                if (curr == 'Q' && prev == next && prev == 'X') {
+                    continue; // Omitir el relleno 'Q'
+                }
+            }
+            sb.append(text.charAt(i));
+        }
+
+        String result = sb.toString();
+        // Quitar la 'X' final de relleno si existe
+        if (result.length() > 0 && result.charAt(result.length() - 1) == 'X') {
+            result = result.substring(0, result.length() - 1);
+        }
+        return result;
     }
 
     private String cipherProcess(String text, char[][] matrix, int shift) {

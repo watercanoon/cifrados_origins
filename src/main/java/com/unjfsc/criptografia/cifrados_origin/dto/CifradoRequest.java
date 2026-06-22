@@ -10,6 +10,7 @@ public class CifradoRequest {
     private String alfabetoCustomInt; // Para el disco móvil (Interior)
     private String tipoColumnas; // NUEVO: Para el modo de transposición por columnas ("SIMPLE" o "CLAVE")
     private String tipoFilas; // NUEVO: Para el modo de transposición por filas ("SIMPLE" o "CLAVE")
+    private Boolean eliminarRelleno; // NUEVO: Para habilitar/deshabilitar la eliminación de relleno en Playfair
 
     // Genera los Getters y Setters para todos, incluyendo el nuevo:
     public String getAlfabetoCustom() { return alfabetoCustom; }
@@ -35,4 +36,7 @@ public class CifradoRequest {
 
     public String getTipoFilas() { return tipoFilas; }
     public void setTipoFilas(String tipoFilas) { this.tipoFilas = tipoFilas; }
+
+    public Boolean getEliminarRelleno() { return eliminarRelleno; }
+    public void setEliminarRelleno(Boolean eliminarRelleno) { this.eliminarRelleno = eliminarRelleno; }
 }

@@ -534,6 +534,7 @@ document.addEventListener("DOMContentLoaded", () => {
         outputTexto.value = "";
         let resultado = "";
         let charIndex = 0;
+        let processedCount = 0;
 
         const directionSign = (keyInfo.direction === 'D') ? 1 : -1;
         const moduloLen = extAlf.length;
@@ -549,10 +550,26 @@ document.addEventListener("DOMContentLoaded", () => {
                 }
 
                 const c = txt[charIndex];
-                const block = Math.floor(charIndex / keyInfo.blockSize);
-                const shiftOffset = directionSign * block * keyInfo.shiftAmount;
+                
+                let isAlphabetChar = false;
+                if (isCifrar) {
+                    isAlphabetChar = extAlf.indexOf(c) !== -1;
+                } else {
+                    isAlphabetChar = intAlf.indexOf(c) !== -1;
+                }
 
-                if (charIndex > 0 && charIndex % keyInfo.blockSize === 0) {
+                let shiftOffset = 0;
+                let block = 0;
+                if (isAlphabetChar) {
+                    block = Math.floor(processedCount / keyInfo.blockSize);
+                    shiftOffset = directionSign * block * keyInfo.shiftAmount;
+                } else {
+                    const prevCount = Math.max(0, processedCount - 1);
+                    const lastBlock = Math.floor(prevCount / keyInfo.blockSize);
+                    shiftOffset = directionSign * lastBlock * keyInfo.shiftAmount;
+                }
+
+                if (isAlphabetChar && processedCount > 0 && processedCount % keyInfo.blockSize === 0) {
                     actualizarRotacion(shiftOffset);
                     CryptoUX.showToast("Giro de disco", `Bloque ${block + 1}, offset ${shiftOffset} pos.`, "info");
                 }
@@ -568,6 +585,7 @@ document.addEventListener("DOMContentLoaded", () => {
                         const idxInt = (idxI + shiftOffset - (idxExt - idxO) + moduloLen * 100) % moduloLen;
                         resChar = intAlf[idxInt];
                         highlightChars(c, resChar);
+                        processedCount++;
                     }
                 } else {
                     const idxInt = intAlf.indexOf(c);
@@ -575,6 +593,7 @@ document.addEventListener("DOMContentLoaded", () => {
                         const idxExt = (idxO + idxI + shiftOffset - idxInt + moduloLen * 100) % moduloLen;
                         resChar = extAlf[idxExt];
                         highlightChars(resChar, c);
+                        processedCount++;
                     }
                 }
 

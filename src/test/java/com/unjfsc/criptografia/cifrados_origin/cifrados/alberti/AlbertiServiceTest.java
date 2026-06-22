@@ -56,6 +56,20 @@ class AlbertiServiceTest {
     }
 
     @Test
+    void testCifrarDescifrarConEspaciosYSimbolos() {
+        String pt = "HELLO WORLD! TEST";
+        String clave = "K(Aa, 4, 3d)";
+        
+        String ct = service.cifrar(pt, clave, "EN", null, null);
+        assertNotNull(ct);
+        assertNotEquals(pt, ct);
+        
+        // Decrypted version should restore spaces and symbols exactly
+        String decrypted = service.descifrar(ct, clave, "EN", null, null);
+        assertEquals(pt, decrypted);
+    }
+
+    @Test
     void testClaveInvalida() {
         assertThrows(IllegalArgumentException.class, () -> {
             service.cifrar("HELLO", "giro123", "EN", null, null);

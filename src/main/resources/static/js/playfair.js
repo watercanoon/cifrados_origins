@@ -20,6 +20,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const selectIdioma = document.getElementById("idioma");
     const customContainer = document.getElementById("customAlphabetContainer");
     const inputCustom = document.getElementById("alfabetoCustom");
+    const checkEliminarRelleno = document.getElementById("eliminarRelleno");
 
     const ALFABETO = "ABCDEFGHIKLMNOPQRSTUVWXYZ"; // La 'J' se une a la 'I'
 
@@ -165,7 +166,8 @@ document.addEventListener("DOMContentLoaded", () => {
             operacion: operacion,
             clave: inputClave.value.toUpperCase(),
             idioma: selectIdioma.value,
-            alfabetoCustom: inputCustom.value
+            alfabetoCustom: inputCustom.value,
+            eliminarRelleno: checkEliminarRelleno.checked
         }));
     }
 
@@ -258,6 +260,10 @@ document.addEventListener("DOMContentLoaded", () => {
         const val = e.target.value.toUpperCase().replace(/[^A-Z]/g, "");
         e.target.value = val;
         actualizarMatrizVisual();
+        recalcularDesdeUltimoCampo();
+    });
+
+    checkEliminarRelleno.addEventListener("change", () => {
         recalcularDesdeUltimoCampo();
     });
 

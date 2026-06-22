@@ -18,12 +18,15 @@ public class PlayfairController {
     @MessageMapping("/playfair")
     @SendTo("/topic/playfair")
     public CifradoResponse manejarCifradoPlayfair(CifradoRequest request) {
+        boolean eliminarRelleno = request.getEliminarRelleno() != null ? request.getEliminarRelleno() : false;
+
         String resultado = playfairService.procesarPlayfair(
                 request.getTexto(),
                 request.getClave(),
                 request.getOperacion(),
                 request.getIdioma(),
-                request.getAlfabetoCustom()
+                request.getAlfabetoCustom(),
+                eliminarRelleno
         );
 
         return new CifradoResponse(resultado, "PLAYFAIR");

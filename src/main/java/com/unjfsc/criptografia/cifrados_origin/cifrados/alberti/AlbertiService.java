@@ -155,25 +155,30 @@ public class AlbertiService {
 
         StringBuilder resultado = new StringBuilder();
         int directionSign = (ak.direction == 'D') ? 1 : -1;
+        int processedCount = 0;
 
         for (int i = 0; i < txt.length(); i++) {
             char c = txt.charAt(i);
-            int block = i / ak.blockSize;
-            int shift = directionSign * block * ak.shiftAmount;
 
             if (isCifrar) {
                 int idxExt = alfExt.indexOf(c);
                 if (idxExt != -1) {
+                    int block = processedCount / ak.blockSize;
+                    int shift = directionSign * block * ak.shiftAmount;
                     int idxInt = (idxI + shift - (idxExt - idxO) + moduloLen * 1000) % moduloLen;
                     resultado.append(alfInt.charAt(idxInt));
+                    processedCount++;
                 } else {
                     resultado.append(c);
                 }
             } else {
                 int idxInt = alfInt.indexOf(c);
                 if (idxInt != -1) {
+                    int block = processedCount / ak.blockSize;
+                    int shift = directionSign * block * ak.shiftAmount;
                     int idxExt = (idxO + idxI + shift - idxInt + moduloLen * 1000) % moduloLen;
                     resultado.append(alfExt.charAt(idxExt));
+                    processedCount++;
                 } else {
                     resultado.append(c);
                 }
