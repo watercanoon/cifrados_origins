@@ -13,7 +13,7 @@ class GruposServiceTest {
         String clave = "1 3 5 4 2";
         String ctEsperado = "TDSAO LSANA COENI SEALD OUOSN NMNAA TSEDE LPZAA";
 
-        String ct = service.cifrar(pt, clave, true);
+        String ct = service.cifrar(pt, clave, "ES", "");
         assertEquals(ctEsperado, ct);
     }
 
@@ -23,7 +23,7 @@ class GruposServiceTest {
         String clave = "8 6 4 2 1 3 5 7";
         String ptEsperado = "EL GENIO HACE LO QUE DEBE Y EL TALENTO LO QUE PUEDE";
 
-        String pt = service.descifrar(ct, clave, true);
+        String pt = service.descifrar(ct, clave, "ES", "");
         assertEquals(ptEsperado, pt);
     }
 
@@ -32,11 +32,11 @@ class GruposServiceTest {
         String pt = "PERMUTACIONPERIODICA";
         String clave = "1 3 5 4 2";
 
-        String ct = service.cifrar(pt, clave, true);
+        String ct = service.cifrar(pt, clave, "ES", "");
         assertNotNull(ct);
         assertNotEquals(pt, ct);
 
-        String decrypted = service.descifrar(ct, clave, true);
+        String decrypted = service.descifrar(ct, clave, "ES", "");
         assertEquals(pt, decrypted);
     }
 
@@ -44,7 +44,7 @@ class GruposServiceTest {
     void testClaveInvalidaDuplicado() {
         // Contiene duplicado '3'
         assertThrows(IllegalArgumentException.class, () -> {
-            service.cifrar("TODAS", "1 3 3 4 2", true);
+            service.cifrar("TODAS", "1 3 3 4 2", "ES", "");
         });
     }
 
@@ -52,14 +52,14 @@ class GruposServiceTest {
     void testClaveInvalidaFueraDeRango() {
         // '6' está fuera del rango [1, 5]
         assertThrows(IllegalArgumentException.class, () -> {
-            service.cifrar("TODAS", "1 3 6 4 2", true);
+            service.cifrar("TODAS", "1 3 6 4 2", "ES", "");
         });
     }
 
     @Test
     void testClaveInvalidaCaracteresNoPermitidos() {
         assertThrows(IllegalArgumentException.class, () -> {
-            service.cifrar("TODAS", "1 3 A 4 2", true);
+            service.cifrar("TODAS", "1 3 A 4 2", "ES", "");
         });
     }
 }

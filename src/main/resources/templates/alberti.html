@@ -22,7 +22,10 @@
       box-shadow: 0 0 0 4px rgba(34,211,238,.5), 0 0 35px rgba(34,211,238,.4);
       border-radius: 12px; transition: all .3s ease;
     }
-    .alberti-wheel { transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1); }
+    .alberti-wheel {
+      transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+      transform-origin: center;
+    }
 
     /* Radio toggle */
     .radio-toggle input:checked + .radio-label-cifrar { background: #06b6d4; color: #fff; box-shadow: 0 0 16px rgba(6,182,212,.4); }
@@ -322,8 +325,8 @@
 
         <!-- Alineación base -->
         <div class="mt-5 text-center bg-slate-100 dark:bg-slate-900/60 border border-slate-250 dark:border-slate-700/50 rounded-xl py-2.5 px-8 w-full max-w-xs transition-all">
-          <p class="text-[10px] text-slate-500 uppercase tracking-wider">Alineación base (Letra A)</p>
-          <p class="text-xl font-mono font-bold text-cyan-400 mt-0.5">A ➔ <span id="alignDisplay" class="text-amber-400">c</span></p>
+          <p id="alignBaseLabel" class="text-[10px] text-slate-500 uppercase tracking-wider">Alineación base (Letra A)</p>
+          <p class="text-xl font-mono font-bold text-cyan-400 mt-0.5"><span id="alignOuterChar">A</span> ➔ <span id="alignDisplay" class="text-amber-400">c</span></p>
         </div>
       </div>
 

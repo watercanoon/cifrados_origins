@@ -9,7 +9,7 @@ public class AtbashService {
     private static final String ALFABETO_EN = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
     public String procesarAtbash(String texto, String idioma, String alfabetoCustom) {
-        // 🛡️ VALIDACIÓN
+        //  VALIDACIÓN
         if (texto == null || texto.trim().isEmpty()) {
             throw new IllegalArgumentException("El texto a procesar no puede estar vacío.");
         }

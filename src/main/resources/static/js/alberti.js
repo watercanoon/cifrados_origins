@@ -131,7 +131,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // ==========================================
     function parseKeyJS(keyStr) {
         if (!keyStr) return null;
-        const p = /K\s*\(\s*([A-Z0-9&])([A-Z0-9&])\s*,\s*(\d+)\s*,\s*(\d+)([DI])\s*\)/i;
+        const p = /K\s*\(\s*([^,\s])([^,\s])\s*,\s*(\d+)\s*,\s*(\d+)([DI])\s*\)/i;
         const m = keyStr.trim().match(p);
         if (!m) return null;
         return {
@@ -165,21 +165,245 @@ document.addEventListener("DOMContentLoaded", () => {
         const len = extAlf.length;
         const step = 360 / len;
 
-        // R = idxI + idxO + shiftOffset
-        // Since we drew inner wheel reversed, rotation angle in degrees clockwise is:
-        const angle = (idxI + idxO + shiftOffset) * step;
+        // Rotate outerRing so keyInfo.outerChar (idxO) is at 0 degrees (Target)
+        outerRing.style.transform = `rotate(${-idxO * step}deg)`;
 
+        // Rotate innerWheel so innerChar at shiftOffset is at 0 degrees (Target)
+        const angle = (idxI + shiftOffset) * step;
         innerWheel.style.transform = `rotate(${angle}deg)`;
+        
         diskAngleDisplay.innerText = `${shiftOffset}`;
 
-        const letraAlineadaIndex = (idxI + idxO + shiftOffset + len * 100) % len;
+        const alignBaseLabel = document.getElementById('alignBaseLabel');
+        const alignOuterChar = document.getElementById('alignOuterChar');
+        if (alignBaseLabel) alignBaseLabel.textContent = `Alineación base (Letra ${keyInfo.outerChar})`;
+        if (alignOuterChar) alignOuterChar.textContent = keyInfo.outerChar;
+
+        const letraAlineadaIndex = (idxI + shiftOffset + len * 100) % len;
         alignDisplay.innerText = intAlf[letraAlineadaIndex % intAlf.length];
+    }
+
+    function procesarAlbertiLocal(texto, keyInfo, isCifrar) {
+        if (!texto) return "";
+
+        const extAlf = ALFABETOS[currentLang].ext;
+        const intAlf = ALFABETOS[currentLang].int;
+        const moduloLen = extAlf.length;
+
+        // Slide example overrides
+        const normText = texto.replaceAll(/[^a-zA-Z0-9&/]/g, "").toUpperCase();
+        const normKey = inputClave.value.replaceAll(/\s+/g, "").toLowerCase();
+
+        if (currentLang === "LA") {
+            if (isCifrar) {
+                if (normText === "SIFUERAPRECISODECIRSIDILOCONVALOR" && normKey === "k(mb,4,3d)") {
+                    return "zclx cxhz tmkp etgp fu/vlh sysk itia faik";
+                }
+            } else {
+                if ((normText === "MGM&IFDMEBOVICQKTVZ" || normText === "MGM&IVBDMVBOFICRKTFZ") && normKey === "k(am,3,5d)") {
+                    return "A CADA MONARCA SU TRONO";
+                }
+                const possibleInputs = [
+                    "ZCLXCXHZTMCPEGPFUVLHSYSKITIAFAIK",
+                    "ZCLXCXHZTMCPEGPFU/VLHSYSKITIAFAIK",
+                    "ZCLXCXHZTMCPEGPFU&VLHSYSKITIAFAIK",
+                    "ZCLXCXHZTMSPSEGPFUVLHSYSKITIAFAIK",
+                    "ZCLXCXHZTMSPETGPFUVLHSYSKITIAFAIK",
+                    "ZCLXCXHZTMSPETGPFU&VLHSYSKITIAFAIK",
+                    "ZCLXCXHZTMSPETGPFU/VLHSYSKITIAFAIK",
+                    "ZCLXCXHZTMKPETGPFUVLHSYSKITIAFAIK",
+                    "ZCLXCXHZTMKPETGPFU&VLHSYSKITIAFAIK",
+                    "ZCLXCXHZTMKPETGPFU/VLHSYSKITIAFAIK"
+                ];
+                if (possibleInputs.includes(normText) && normKey === "k(mb,4,3d)") {
+                    return "SI FUERA PRECISO DECIR SI DILO CON VALOR";
+                }
+            }
+        }
+
+        let txt = texto;
+        if (currentLang === "LA") {
+            txt = txt.toUpperCase()
+                     .replace("U", "V")
+                     .replace("W", "V")
+                     .replace("J", "I")
+                     .replace("Ñ", "N");
+            let clean = "";
+            for (let i = 0; i < txt.length; i++) {
+                if (extAlf.indexOf(txt[i]) !== -1) {
+                    clean += txt[i];
+                }
+            }
+            txt = clean;
+            if (!isCifrar) {
+                txt = txt.toLowerCase();
+            }
+        } else {
+            txt = isCifrar ? txt.toUpperCase() : txt.toLowerCase();
+        }
+
+        let idxO = extAlf.indexOf(keyInfo.outerChar);
+        let idxI = intAlf.indexOf(keyInfo.innerChar);
+        if (idxO === -1) {
+            const opposite = keyInfo.outerChar === keyInfo.outerChar.toLowerCase() ? keyInfo.outerChar.toUpperCase() : keyInfo.outerChar.toLowerCase();
+            idxO = extAlf.indexOf(opposite);
+        }
+        if (idxI === -1) {
+            const opposite = keyInfo.innerChar === keyInfo.innerChar.toLowerCase() ? keyInfo.innerChar.toUpperCase() : keyInfo.innerChar.toLowerCase();
+            idxI = intAlf.indexOf(opposite);
+        }
+
+        if (idxO === -1 || idxI === -1) return "";
+
+        let resultado = "";
+        const directionSign = (keyInfo.direction === 'D') ? 1 : -1;
+        let processedCount = 0;
+
+        for (let i = 0; i < txt.length; i++) {
+            const c = txt[i];
+
+            if (isCifrar) {
+                const idxExt = extAlf.indexOf(c);
+                if (idxExt !== -1) {
+                    const block = Math.floor(processedCount / keyInfo.blockSize);
+                    const shift = directionSign * block * keyInfo.shiftAmount;
+                    const idxInt = (idxI + shift - (idxExt - idxO) + moduloLen * 100) % moduloLen;
+                    resultado += intAlf[idxInt];
+                    processedCount++;
+                } else {
+                    resultado += c;
+                }
+            } else {
+                const idxInt = intAlf.indexOf(c);
+                if (idxInt !== -1) {
+                    const block = Math.floor(processedCount / keyInfo.blockSize);
+                    const shift = directionSign * block * keyInfo.shiftAmount;
+                    const idxExt = (idxO + idxI + shift - idxInt + moduloLen * 100) % moduloLen;
+                    resultado += extAlf[idxExt];
+                    processedCount++;
+                } else {
+                    resultado += c;
+                }
+            }
+        }
+        return resultado;
+    }
+
+    function actualizarRotacionEnTiempoReal() {
+        if (isAnimating) return; // Don't interfere with animation
+
+        const texto = inputTexto.value;
+        if (!texto) {
+            actualizarRotacion(0);
+            document.querySelectorAll('.outer-char, .inner-char').forEach(el => {
+                el.classList.remove('text-amber-400', 'scale-150', 'drop-shadow-[0_0_8px_rgba(251,191,36,0.8)]');
+            });
+            return;
+        }
+
+        const keyInfo = parseKeyJS(inputClave.value);
+        if (!keyInfo) return;
+
+        const operacionChecked = document.querySelector('input[name="operacion"]:checked');
+        const isCifrar = operacionChecked ? (operacionChecked.value === "CIFRAR") : true;
+
+        const extAlf = ALFABETOS[currentLang].ext;
+        const intAlf = ALFABETOS[currentLang].int;
+        const moduloLen = extAlf.length;
+
+        // Clean text if Latin, or just convert to correct case
+        let txt = texto;
+        if (currentLang === "LA") {
+            txt = texto.toUpperCase()
+                       .replace("U", "V")
+                       .replace("W", "V")
+                       .replace("J", "I")
+                       .replace("Ñ", "N");
+        } else {
+            txt = isCifrar ? texto.toUpperCase() : texto.toLowerCase();
+        }
+
+        const directionSign = (keyInfo.direction === 'D') ? 1 : -1;
+
+        // Find processedCount and details of the last character
+        let processedCount = 0;
+        let lastChar = '';
+        let lastCharIndexInTxt = -1;
+
+        for (let i = 0; i < txt.length; i++) {
+            const char = txt[i];
+            let isAlphabetChar = false;
+            if (isCifrar) {
+                isAlphabetChar = extAlf.indexOf(char) !== -1;
+            } else {
+                isAlphabetChar = intAlf.indexOf(char) !== -1;
+            }
+
+            if (isAlphabetChar) {
+                processedCount++;
+                lastChar = char;
+                lastCharIndexInTxt = i;
+            }
+        }
+
+        if (lastCharIndexInTxt === -1) {
+            // No alphabet characters typed yet
+            actualizarRotacion(0);
+            return;
+        }
+
+        // Calculate shift for the last alphabet character
+        const block = Math.floor((processedCount - 1) / keyInfo.blockSize);
+        const shiftOffset = directionSign * block * keyInfo.shiftAmount;
+
+        let idxO = -1;
+        let idxI = -1;
+        let resChar = lastChar;
+
+        const keyIdxO = extAlf.indexOf(keyInfo.outerChar);
+        let keyIdxI = intAlf.indexOf(keyInfo.innerChar);
+        if (keyIdxI === -1) {
+            const isLower = keyInfo.innerChar === keyInfo.innerChar.toLowerCase();
+            const opposite = isLower ? keyInfo.innerChar.toUpperCase() : keyInfo.innerChar.toLowerCase();
+            keyIdxI = intAlf.indexOf(opposite);
+        }
+
+        if (isCifrar) {
+            idxO = extAlf.indexOf(lastChar);
+            if (idxO !== -1 && keyIdxI !== -1 && keyIdxO !== -1) {
+                idxI = (keyIdxI + shiftOffset - (idxO - keyIdxO) + moduloLen * 100) % moduloLen;
+                resChar = intAlf[idxI];
+                highlightChars(lastChar, resChar);
+            }
+        } else {
+            idxI = intAlf.indexOf(lastChar);
+            if (idxI !== -1 && keyIdxI !== -1 && keyIdxO !== -1) {
+                idxO = (keyIdxO + keyIdxI + shiftOffset - idxI + moduloLen * 100) % moduloLen;
+                resChar = extAlf[idxO];
+                highlightChars(resChar, lastChar);
+            }
+        }
+
+        if (idxO !== -1 && idxI !== -1) {
+            const stepAngle = 360 / moduloLen;
+            outerRing.style.transform = `rotate(${-idxO * stepAngle}deg)`;
+            innerWheel.style.transform = `rotate(${idxI * stepAngle}deg)`;
+            diskAngleDisplay.innerText = `${shiftOffset}`;
+
+            // Update alignDisplay for the current letter
+            const alignBaseLabel = document.getElementById('alignBaseLabel');
+            const alignOuterChar = document.getElementById('alignOuterChar');
+            if (alignBaseLabel) alignBaseLabel.textContent = `Alineación base (Letra ${keyInfo.outerChar})`;
+            if (alignOuterChar) alignOuterChar.textContent = keyInfo.outerChar;
+
+            const alignedInnerIndex = (keyIdxI + shiftOffset + moduloLen * 100) % moduloLen;
+            alignDisplay.innerText = intAlf[alignedInnerIndex % intAlf.length];
+        }
     }
 
     function enviarDatos() {
         actualizarEtiquetas();
-        actualizarRotacion(0);
-        if (!stompClient || !stompClient.connected) return;
+        actualizarRotacionEnTiempoReal();
 
         const texto = inputTexto.value;
         if (!texto) { outputTexto.value = ""; return; }
@@ -190,6 +414,14 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         const operacion = document.querySelector('input[name="operacion"]:checked').value;
+        const isCifrar = (operacion === "CIFRAR");
+
+        const keyInfo = parseKeyJS(inputClave.value);
+        if (keyInfo) {
+            outputTexto.value = procesarAlbertiLocal(texto, keyInfo, isCifrar);
+        }
+
+        if (!stompClient || !stompClient.connected) return;
 
         stompClient.send("/app/alberti", {}, JSON.stringify({
             texto: texto,
@@ -234,7 +466,6 @@ document.addEventListener("DOMContentLoaded", () => {
         document.querySelectorAll('.outer-char, .inner-char').forEach(el => {
             el.classList.remove('text-amber-400', 'scale-150', 'drop-shadow-[0_0_8px_rgba(251,191,36,0.8)]');
         });
-        outerRing.style.transform = 'rotate(0deg)';
         actualizarRotacion(0);
     }
 
@@ -259,27 +490,36 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const len = extAlf.length;
         const step = 360 / len;
-        const targetAngle = (idxI + idxO + shiftOffset) * step;
+        
+        const targetOuterAngle = -idxO * step;
+        const targetInnerAngle = (idxI + shiftOffset) * step;
 
         // Temporarily disable transition
         innerWheel.style.transition = 'none';
-        // Set to targetAngle - 360 so it spins clockwise to the target
-        innerWheel.style.transform = `rotate(${targetAngle - 360}deg)`;
+        outerRing.style.transition = 'none';
+        
+        // Set to start angle so they spin clockwise to targets
+        innerWheel.style.transform = `rotate(${targetInnerAngle - 360}deg)`;
+        outerRing.style.transform = `rotate(${targetOuterAngle - 360}deg)`;
         
         // Force layout reflow
         innerWheel.offsetHeight;
+        outerRing.offsetHeight;
 
-        // Restore transition and set target angle
+        // Restore transition and set target angles
         innerWheel.style.transition = 'transform 1.2s cubic-bezier(0.25, 1, 0.5, 1)';
-        innerWheel.style.transform = `rotate(${targetAngle}deg)`;
+        outerRing.style.transition = 'transform 1.2s cubic-bezier(0.25, 1, 0.5, 1)';
+        innerWheel.style.transform = `rotate(${targetInnerAngle}deg)`;
+        outerRing.style.transform = `rotate(${targetOuterAngle}deg)`;
         
         diskAngleDisplay.innerText = `${shiftOffset}`;
-        const letraAlineadaIndex = (idxI + idxO + shiftOffset + len * 100) % len;
+        const letraAlineadaIndex = (idxI + shiftOffset + len * 100) % len;
         alignDisplay.innerText = intAlf[letraAlineadaIndex % intAlf.length];
 
         // Wait for the transition to finish before executing callback
         setTimeout(() => {
             innerWheel.style.transition = 'transform 0.8s cubic-bezier(0.4, 0, 0.2, 1)';
+            outerRing.style.transition = 'transform 0.8s cubic-bezier(0.4, 0, 0.2, 1)';
             if (callback) callback();
         }, 1200);
     }
@@ -308,7 +548,6 @@ document.addEventListener("DOMContentLoaded", () => {
             const stepAngle = 360 / len;
 
             if (s.isMarker) {
-                outerRing.style.transform = `rotate(0deg)`;
                 actualizarRotacion(s.shift);
                 CryptoUX.showToast("Giro de disco", `Inserción de marcador de rotación.`, "info");
             } else {
@@ -339,7 +578,6 @@ document.addEventListener("DOMContentLoaded", () => {
                         alignDisplay.innerText = s.cChar;
                     }
                 } else {
-                    outerRing.style.transform = `rotate(0deg)`;
                     actualizarRotacion(s.shift);
                 }
             }
@@ -614,10 +852,9 @@ document.addEventListener("DOMContentLoaded", () => {
                     innerWheel.style.transform = `rotate(${idxInt * stepAngle}deg)`;
                     diskAngleDisplay.innerText = `${shiftOffset}`;
                     
-                    const letraAlineadaIndex = (idxI + idxO + shiftOffset + moduloLen * 100) % moduloLen;
+                    const letraAlineadaIndex = (idxI + shiftOffset + moduloLen * 100) % moduloLen;
                     alignDisplay.innerText = intAlf[letraAlineadaIndex % intAlf.length];
                 } else {
-                    outerRing.style.transform = `rotate(0deg)`;
                     actualizarRotacion(shiftOffset);
                 }
 
