@@ -6,7 +6,9 @@ document.addEventListener("DOMContentLoaded", () => {
     const outputTexto  = document.getElementById('textoSalida');
     const inputClave   = document.getElementById('clave');
     const radiosOperacion = document.querySelectorAll('input[name="operacion"]');
-    const radiosIdioma = document.querySelectorAll('input[name="idioma"]'); // Para espacios (ELIMINAR / MANTENER)
+    const selectIdioma = document.getElementById('idioma');
+    const inputAlfabetoCustom = document.getElementById('alfabetoCustom');
+    const customAlphabetContainer = document.getElementById('customAlphabetContainer');
 
     // Simulador
     const filaOrigen      = document.getElementById('filaOrigen');
@@ -71,11 +73,38 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // ==========================================
-    // PARSER DE CLAVE
+    // PARSER DE CLAVE Y ALFABETOS
     // ==========================================
+    const ALFABETO_ES = "ABCDEFGHIJKLMNÑOPQRSTUVWXYZ";
+    const ALFABETO_EN = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
+    function normalizarConAlfabeto(text, alf) {
+        if (!text) return "";
+        let upper = text.toUpperCase()
+            .replace(/[ÁÄÂÀ]/g, "A")
+            .replace(/[ÉËÊÈ]/g, "E")
+            .replace(/[ÍÏÎÌ]/g, "I")
+            .replace(/[ÓÖÔÒ]/g, "O")
+            .replace(/[ÚÜÛÙ]/g, "U");
+        if (!alf.includes('Ñ') && alf.includes('N')) {
+            upper = upper.replaceAll('Ñ', 'N');
+        }
+        let res = "";
+        for (let c of upper) {
+            if (alf.includes(c)) res += c;
+        }
+        return res;
+    }
+
     function parseKey(keyStr) {
         if (!keyStr) return null;
-        const tokens = keyStr.trim().split(/\s+/);
+        let trimmed = keyStr.trim();
+        let tokens;
+        if (trimmed.includes(" ") || trimmed.includes("\t")) {
+            tokens = trimmed.split(/\s+/);
+        } else {
+            tokens = trimmed.split("");
+        }
         const p = [];
         for (let t of tokens) {
             const val = parseInt(t);
@@ -179,20 +208,62 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!texto) { outputTexto.value = ""; return; }
 
         const operacion = document.querySelector('input[name="operacion"]:checked').value;
-        const idioma = document.querySelector('input[name="idioma"]:checked').value; // ELIMINAR / MANTENER
+        const idioma = selectIdioma.value;
+        const alfabetoCustom = inputAlfabetoCustom.value;
 
         stompClient.send("/app/grupos", {}, JSON.stringify({
             texto: texto,
             operacion: operacion,
             clave: inputClave.value.toString(),
-            idioma: idioma
+            idioma: idioma,
+            alfabetoCustom: alfabetoCustom
         }));
     }
 
+    function actualizarEtiquetas() {
+        const operacionChecked = document.querySelector('input[name="operacion"]:checked');
+        if (!operacionChecked) return;
+        const operacion = operacionChecked.value;
+        const isCifrar = (operacion === 'CIFRAR');
+
+        const lblEntrada = document.getElementById("labelEntrada");
+        const descEntrada = document.getElementById("descEntrada");
+        const lblSalida = document.getElementById("labelSalida");
+        const descSalida = document.getElementById("descSalida");
+
+        if (lblEntrada) lblEntrada.textContent = isCifrar ? "Texto Original" : "Texto Cifrado";
+        if (descEntrada) descEntrada.textContent = isCifrar ? "Mensaje plano a permutar por bloques" : "Criptograma a descifrar por bloques";
+        if (lblSalida) lblSalida.textContent = isCifrar ? "Texto Cifrado" : "Texto Original";
+        if (descSalida) descSalida.textContent = isCifrar ? "Resultado del proceso de transposición por bloques" : "Mensaje original obtenido";
+
+        if (inputTexto) inputTexto.placeholder = isCifrar ? "Escribe la frase a cifrar..." : "Escribe el criptograma a descifrar...";
+        if (outputTexto) outputTexto.placeholder = isCifrar ? "El criptograma permutado se mostrará aquí..." : "El texto original descifrado se mostrará aquí...";
+    }
+
     inputTexto.addEventListener('input', enviarDatos);
-    radiosOperacion.forEach(r => r.addEventListener('change', enviarDatos));
-    radiosIdioma.forEach(r => r.addEventListener('change', enviarDatos));
+    radiosOperacion.forEach(r => r.addEventListener('change', () => {
+        actualizarEtiquetas();
+        enviarDatos();
+    }));
     inputClave.addEventListener('input', enviarDatos);
+
+    if (selectIdioma) {
+        selectIdioma.addEventListener('change', () => {
+            if (selectIdioma.value === 'CUSTOM') {
+                customAlphabetContainer.classList.remove('hidden');
+            } else {
+                customAlphabetContainer.classList.add('hidden');
+            }
+            dibujarConectores();
+            enviarDatos();
+        });
+    }
+    if (inputAlfabetoCustom) {
+        inputAlfabetoCustom.addEventListener('input', () => {
+            dibujarConectores();
+            enviarDatos();
+        });
+    }
 
     // ==========================================
     // ANIMACIÓN PASO A PASO
@@ -201,7 +272,8 @@ document.addEventListener("DOMContentLoaded", () => {
         if (animationInterval) clearTimeout(animationInterval);
         isAnimating = false;
         btnAnimar.innerHTML = "⚡ Animar";
-        btnAnimar.classList.replace('text-red-300', 'text-amber-300');
+        btnAnimar.classList.remove('text-red-500', 'dark:text-red-400');
+        btnAnimar.classList.add('text-amber-600', 'dark:text-amber-300');
         
         // Reset highlights
         document.querySelectorAll('.cell-box').forEach(el => el.classList.remove('active'));
@@ -232,32 +304,48 @@ document.addEventListener("DOMContentLoaded", () => {
         const P = p.length;
         const operacion = document.querySelector('input[name="operacion"]:checked').value;
         const isCifrar = (operacion === "CIFRAR");
-        const eliminarEspacios = document.querySelector('input[name="idioma"]:checked').value === "ELIMINAR";
+
+        // Determinar alfabeto activo
+        const idioma = selectIdioma.value;
+        const alfabetoCustom = inputAlfabetoCustom.value;
+        let alfabeto = ALFABETO_ES;
+        if (idioma === "EN") {
+            alfabeto = ALFABETO_EN;
+        } else if (idioma === "CUSTOM") {
+            let sb = "";
+            for (let c of alfabetoCustom.toUpperCase()) {
+                if (!sb.includes(c)) sb += c;
+            }
+            alfabeto = sb;
+            if (alfabeto.length < 2) {
+                mostrarError("El alfabeto personalizado debe tener al menos 2 caracteres.");
+                return;
+            }
+        }
 
         // Preparar cadena
-        let txt = texto;
+        let txt = normalizarConAlfabeto(texto, alfabeto);
         if (isCifrar) {
-            txt = eliminarEspacios ? texto.replaceAll("\\s+", "").toUpperCase() : texto.toUpperCase();
-            
             // Relleno
             let rem = txt.length % P;
             if (rem !== 0) {
                 let padLen = P - rem;
+                let padChar = alfabeto.includes('X') ? 'X' : alfabeto.charAt(alfabeto.length - 1);
                 for (let i = 0; i < padLen; i++) {
-                    txt += "X";
+                    txt += padChar;
                 }
             }
         } else {
-            txt = texto.replaceAll("\\s+", "");
             if (txt.length % P !== 0) {
-                mostrarError("La longitud del criptograma debe ser múltiplo del período P.");
+                mostrarError("La longitud del criptograma (filtrado por el alfabeto) debe ser múltiplo del período P.");
                 return;
             }
         }
 
         isAnimating = true;
         btnAnimar.innerHTML = "⏹ Detener";
-        btnAnimar.classList.replace('text-amber-300', 'text-red-300');
+        btnAnimar.classList.remove('text-amber-600', 'dark:text-amber-300');
+        btnAnimar.classList.add('text-red-500', 'dark:text-red-400');
         
         outputTexto.value = "";
         let finalResult = "";
@@ -265,7 +353,6 @@ document.addEventListener("DOMContentLoaded", () => {
         let charIndexInBlock = 0;
 
         // Calcular permutación inversa
-        const inv = new Set();
         const invArr = [];
         for (let i = 0; i < P; i++) {
             invArr[p[i] - 1] = i + 1;
@@ -297,7 +384,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 }
                 
                 // Mostrar toast del bloque
-                mostrarToast(`Procesando bloque ${blockIndex + 1}: "${blockText}"`, 'ok');
+                mostrarExito(`Procesando bloque ${blockIndex + 1}: "${blockText}"`);
             }
 
             const origBoxes = filaOrigen.querySelectorAll('.cell-box');
@@ -340,7 +427,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 // Append to result
                 let nextResultPart = charValue;
                 if (isCifrar && charIndexInBlock === P - 1) {
-                    // Si completó bloque y es cifrar, añadir espacio para formatear
                     nextResultPart += " ";
                 }
                 finalResult += nextResultPart;
@@ -531,4 +617,5 @@ document.addEventListener("DOMContentLoaded", () => {
     // INIT
     connect();
     dibujarConectores();
+    actualizarEtiquetas();
 });

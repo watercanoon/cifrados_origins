@@ -441,12 +441,33 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
+    function actualizarEtiquetas() {
+        const operacionChecked = document.querySelector('input[name="operacion"]:checked');
+        if (!operacionChecked) return;
+        const operacion = operacionChecked.value;
+        const isCifrar = (operacion === 'CIFRAR');
+
+        const lblEntrada = document.getElementById("labelEntrada");
+        const descEntrada = document.getElementById("descEntrada");
+        const lblSalida = document.getElementById("labelSalida");
+        const descSalida = document.getElementById("descSalida");
+
+        if (lblEntrada) lblEntrada.textContent = isCifrar ? "Texto Original" : "Texto Cifrado";
+        if (descEntrada) descEntrada.textContent = isCifrar ? "Mensaje plano a procesar por series" : "Criptograma a descifrar por series";
+        if (lblSalida) lblSalida.textContent = isCifrar ? "Texto Cifrado" : "Texto Original";
+        if (descSalida) descSalida.textContent = isCifrar ? "Resultado del proceso de series" : "Mensaje original obtenido";
+
+        if (inputTexto) inputTexto.placeholder = isCifrar ? "Escribe la frase a procesar..." : "Escribe el criptograma a descifrar...";
+        if (outputTexto) outputTexto.placeholder = isCifrar ? "El resultado aparecerá aquí..." : "El texto original descifrado se mostrará aquí...";
+    }
+
     // Listeners to redraw and re-send in real time
     inputTexto.addEventListener('input', () => {
         dibujarSimulador();
         enviarDatos();
     });
     radiosOperacion.forEach(r => r.addEventListener('change', () => {
+        actualizarEtiquetas();
         dibujarSimulador();
         enviarDatos();
     }));
@@ -671,5 +692,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Inicializar
     renderSeriesSelects();
+    actualizarEtiquetas();
     connect();
 });

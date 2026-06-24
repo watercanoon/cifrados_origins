@@ -27,12 +27,13 @@ public class GruposController {
                 return response;
             }
 
-            boolean eliminarEspacios = !"MANTENER".equalsIgnoreCase(request.getIdioma());
             String clave = request.getClave() != null ? request.getClave() : "";
+            String idioma = request.getIdioma() != null ? request.getIdioma() : "ES";
+            String alfabetoCustom = request.getAlfabetoCustom() != null ? request.getAlfabetoCustom() : "";
 
             String resultado = "CIFRAR".equalsIgnoreCase(request.getOperacion())
-                    ? gruposService.cifrar(request.getTexto(), clave, eliminarEspacios)
-                    : gruposService.descifrar(request.getTexto(), clave, eliminarEspacios);
+                    ? gruposService.cifrar(request.getTexto(), clave, idioma, alfabetoCustom)
+                    : gruposService.descifrar(request.getTexto(), clave, idioma, alfabetoCustom);
 
             response.setResultado(resultado);
 

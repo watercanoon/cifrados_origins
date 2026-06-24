@@ -5,12 +5,18 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Discos de Alberti | CriptoSuite</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = { darkMode: 'class', theme: { extend: {} } }
+    if (localStorage.getItem('color-theme') === 'dark' || (!('color-theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+        document.documentElement.classList.add('dark');
+    } else {
+        document.documentElement.classList.remove('dark');
+    }
+  </script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.5.1/sockjs.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
   <link rel="stylesheet" th:href="@{/css/global.css}">
   <style>
-    body { background-color: #0f172a; color: #f8fafc; }
-
     .tutorial-focus {
       position: relative; z-index: 20;
       box-shadow: 0 0 0 4px rgba(34,211,238,.5), 0 0 35px rgba(34,211,238,.4);
@@ -48,11 +54,6 @@
     .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
     .custom-scrollbar::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
 
-    .glass-panel {
-      background: rgba(15,23,42,.7);
-      backdrop-filter: blur(12px);
-      border: 1px solid rgba(51,65,85,.6);
-    }
     .cyber-grid {
       background-image:
               linear-gradient(rgba(6,182,212,.03) 1px, transparent 1px),
@@ -81,24 +82,35 @@
 
     /* Disco wrapper: shadow de profundidad */
     .disk-container {
+      background: radial-gradient(ellipse at center, #f8fafc 0%, #e2e8f0 100%);
+      border: 1px solid #cbd5e1;
+      box-shadow: inset 0 2px 10px rgba(0,0,0,.05), 0 0 30px rgba(6,182,212,.06);
+    }
+    .dark .disk-container {
       background: radial-gradient(ellipse at center, #0f1c2e 0%, #070e1a 100%);
       border: 1px solid rgba(51,65,85,.5);
       box-shadow: inset 0 2px 20px rgba(0,0,0,.4), 0 0 30px rgba(6,182,212,.06);
     }
 
     /* Letras del anillo exterior */
-    .outer-char { color: #94a3b8; font-size: 11px; font-weight: 700; }
+    .outer-char { color: #475569; font-size: 11px; font-weight: 700; }
+    .dark .outer-char { color: #cbd5e1; }
     @media (min-width: 640px) { .outer-char { font-size: 12px; } }
 
     /* Letras del anillo interior */
-    .inner-char { color: #22d3ee; font-size: 10px; font-weight: 700; }
+    .inner-char { color: #0891b2; font-size: 10px; font-weight: 700; }
+    .dark .inner-char { color: #22d3ee; }
     @media (min-width: 640px) { .inner-char { font-size: 11px; } }
 
     /* Selector de idioma */
     .lang-select {
-      background: rgba(15,23,42,.9); border: 1px solid rgba(6,182,212,.3);
-      color: #22d3ee; font-size: 11px; border-radius: 8px;
+      background: rgba(255, 255, 255, 0.9); border: 1px solid rgba(6,182,212,.3);
+      color: #0891b2; font-size: 11px; border-radius: 8px;
       padding: 5px 10px; outline: none; cursor: pointer;
+    }
+    .dark .lang-select {
+      background: rgba(15,23,42,.9);
+      color: #22d3ee;
     }
     .lang-select:hover { border-color: rgba(6,182,212,.6); }
 
@@ -114,11 +126,39 @@
     }
   </style>
 </head>
-<body class="min-h-screen p-3 sm:p-5 md:p-8 font-sans antialiased cyber-grid">
+<body class="text-slate-800 dark:text-slate-100 min-h-screen font-sans cyber-grid antialiased transition-colors duration-300">
 
-<div id="toast-container" class="fixed top-4 right-4 z-50 flex flex-col gap-2 max-w-xs w-full"></div>
+<div id="toast-container" class="fixed top-20 right-5 z-50 flex flex-col gap-2 max-w-xs w-full"></div>
 
-<div class="max-w-7xl mx-auto">
+<nav class="border-b border-slate-200 dark:border-slate-800/60 bg-white/70 dark:bg-slate-950/70 backdrop-blur-md sticky top-0 z-50 transition-colors duration-300">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="flex items-center justify-between h-16">
+
+      <a th:href="@{/}" class="flex items-center gap-2 px-3 py-2 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800 hover:text-cyan-600 dark:hover:text-cyan-400 transition-all font-medium">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+        Volver al Menú
+      </a>
+
+      <div class="flex items-center gap-4">
+        <div class="hidden md:flex items-center gap-2 px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 transition-colors">
+          <span class="conn-dot disconnected" id="connDot"></span>
+          <span id="connLabel" class="text-xs font-medium text-slate-600 dark:text-slate-400 uppercase tracking-wider">offline</span>
+        </div>
+
+        <button id="theme-toggle" class="p-2 ml-2 rounded-lg bg-slate-200 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-300 dark:hover:bg-slate-700 transition-colors" aria-label="Cambiar tema">
+          <svg id="theme-toggle-light-icon" class="hidden w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4.22 2.32a1 1 0 011.415 0l.707.707a1 1 0 01-1.414 1.415l-.707-.708a1 1 0 010-1.414zm3.78 4.68a1 1 0 110 2h-1a1 1 0 110-2h1zm-2.32 4.22a1 1 0 010 1.415l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.415 0zM10 16a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zm-4.22-2.32a1 1 0 010 1.415l-.707.708a1 1 0 01-1.415-1.414l.707-.707a1 1 0 011.415 0zM2 10a1 1 0 110-2h1a1 1 0 110 2H2zm2.32-4.22a1 1 0 011.415 0l.707.707a1 1 0 01-1.415 1.415l-.707-.707a1 1 0 010-1.415zM10 5a5 5 0 100 10 5 5 0 000-10z"></path>
+          </svg>
+          <svg id="theme-toggle-dark-icon" class="hidden w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"></path>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
 
   <!-- HEADER -->
   <header class="mb-6 sm:mb-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 animate-fade-in">
@@ -131,20 +171,10 @@
         </svg>
       </div>
       <div>
-        <div class="flex items-center gap-2 mb-1">
-          <h1 class="text-2xl sm:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">Discos de Alberti</h1>
-          <span class="flex items-center gap-1.5 text-[10px] font-semibold text-slate-500 bg-slate-900 border border-slate-700 px-2 py-0.5 rounded-full">
-                        <span class="conn-dot disconnected" id="connDot"></span>
-                        <span id="connLabel">offline</span>
-                    </span>
-        </div>
-        <p class="text-slate-400 text-xs sm:text-sm">Cifrado polialfabético mediante anillos concéntricos móviles</p>
+        <h1 class="text-2xl sm:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-500 to-blue-500 dark:from-cyan-400 dark:to-blue-500">Discos de Alberti</h1>
+        <p class="text-slate-500 dark:text-slate-400 text-xs sm:text-sm">Cifrado polialfabético mediante anillos concéntricos móviles</p>
       </div>
     </div>
-    <a th:href="@{/}" class="btn-action btn-util text-xs sm:text-sm px-4 py-2 w-full sm:w-auto justify-center">
-      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
-      Inicio
-    </a>
   </header>
 
   <!-- CONFIGURACIÓN (SUPERIOR) -->
@@ -170,49 +200,81 @@
         </div>
       </div>
 
-      <!-- Idioma -->
+      <!-- Idioma / Alfabetos -->
       <div>
         <div class="flex justify-between items-center mb-2">
-          <p class="section-title">Alfabeto</p>
-          <span id="alertaLongitud" class="text-[9px] font-bold text-red-400 hidden">¡Longitud desigual!</span>
+          <p class="section-title">Alfabeto Base</p>
+          <span id="alertaLongitud" class="text-[9px] font-bold text-red-500 dark:text-red-400 hidden">¡Longitud desigual!</span>
         </div>
-        <select id="idiomaSelector" class="lang-select w-full">
+        <select id="idiomaSelector" class="lang-select w-full mb-3">
           <option value="LA">🏛️ Latín (Original Alberti) — 24 caracteres</option>
-          <option value="ES">🇪🇸 Español — 27 letras (con Ñ)</option>
+          <option value="ES" selected>🇪🇸 Español — 27 letras (con Ñ)</option>
           <option value="EN">🇬🇧 English — 26 letters</option>
           <option value="CUSTOM">⚙️ Personalizado (Libre)</option>
         </select>
 
-        <div id="customAlphabetContainer" class="hidden mt-3 space-y-2 bg-slate-900/60 p-3 rounded-xl border border-cyan-500/30 shadow-inner">
+        <div id="customAlphabetContainer" class="space-y-3 bg-slate-100 dark:bg-slate-900/60 p-3 rounded-xl border border-slate-200 dark:border-cyan-500/30 shadow-inner">
           <div>
             <div class="flex justify-between">
-              <label class="text-[10px] uppercase font-bold text-slate-500">Disco Exterior (Plano)</label>
-              <span id="countExt" class="text-[10px] font-bold text-cyan-500">26</span>
+              <label class="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400">Disco Exterior (Plano)</label>
+              <span id="countExt" class="text-[10px] font-bold text-cyan-600 dark:text-cyan-400">27</span>
             </div>
-            <input type="text" id="customExt" value="ABCDEFGHIJKLMNOPQRSTUVWXYZ" class="w-full mt-1 bg-slate-950 border border-slate-700 rounded-lg text-slate-300 text-xs p-2 font-mono outline-none focus:border-cyan-500 transition">
+            <input type="text" id="customExt" value="ABCDEFGHIJKLMNÑOPQRSTUVWXYZ" class="w-full mt-1 bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-700 dark:text-slate-300 text-xs p-2 font-mono outline-none focus:border-cyan-500 transition">
           </div>
           <div>
             <div class="flex justify-between">
-              <label class="text-[10px] uppercase font-bold text-slate-500">Disco Interior (Cifrado)</label>
-              <span id="countInt" class="text-[10px] font-bold text-cyan-500">26</span>
+              <label class="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400">Disco Interior (Central)</label>
+              <span id="countInt" class="text-[10px] font-bold text-cyan-600 dark:text-cyan-400">27</span>
             </div>
-            <input type="text" id="customInt" value="cdefghijklmnopqrstuvwxyzab" class="w-full mt-1 bg-slate-950 border border-slate-700 rounded-lg text-cyan-300 text-xs p-2 font-mono outline-none focus:border-cyan-500 transition">
+            <input type="text" id="customInt" value="cdefghijklmnñopqrstuvwxyzab" class="w-full mt-1 bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg text-cyan-600 dark:text-cyan-300 text-xs p-2 font-mono outline-none focus:border-cyan-500 transition">
           </div>
         </div>
       </div>
 
-      <!-- Clave en formato Alberti -->
-      <div>
-        <div class="flex justify-between items-center mb-2">
-          <p class="section-title">Clave de Cifrado (Formato K(Mb, X, Yd))</p>
+      <!-- Clave de Cifrado (Parámetros) -->
+      <div class="space-y-4">
+        <p class="section-title">Parámetros de Clave</p>
+        
+        <div class="grid grid-cols-2 gap-3 bg-slate-100 dark:bg-slate-900/60 p-3 rounded-xl border border-slate-200 dark:border-cyan-500/30">
+          <!-- Letra Exterior -->
+          <div>
+            <label class="text-[9px] uppercase font-bold text-slate-500 dark:text-slate-400">Ext (Claro)</label>
+            <select id="claveLetraExt" class="w-full mt-1 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-800 dark:text-white text-xs p-2 outline-none focus:border-cyan-500 transition"></select>
+          </div>
+          <!-- Letra Interior -->
+          <div>
+            <label class="text-[9px] uppercase font-bold text-slate-500 dark:text-slate-400">Int (Cifrado)</label>
+            <select id="claveLetraInt" class="w-full mt-1 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-cyan-600 dark:text-cyan-400 text-xs p-2 outline-none focus:border-cyan-500 transition"></select>
+          </div>
         </div>
-        <input type="text" id="clave" value="K(Mb, 4, 3d)" 
-               placeholder="Ej: K(Mb, 4, 3d)" 
-               class="w-full bg-slate-900 border border-slate-700 rounded-lg text-cyan-300 text-sm p-3 font-mono outline-none focus:border-cyan-500/80 transition">
-        <p class="text-[10px] text-slate-500 mt-1.5 leading-relaxed">
-          Formato: <strong class="text-cyan-400">K(Coincidencia, Bloque, Giro)</strong>.<br>
-          Ejemplo: <code class="text-amber-400 font-mono">K(Mb, 4, 3d)</code> alinea M con b, cifra bloques de 4, y gira 3 posiciones a la derecha después de cada bloque.
-        </p>
+
+        <div class="grid grid-cols-3 gap-2 bg-slate-100 dark:bg-slate-900/60 p-3 rounded-xl border border-slate-200 dark:border-cyan-500/30">
+          <!-- Bloque -->
+          <div>
+            <label class="text-[9px] uppercase font-bold text-slate-500 dark:text-slate-400">Bloque</label>
+            <input type="number" id="claveBloque" value="4" min="1" max="99" class="w-full mt-1 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-800 dark:text-white text-xs p-2 outline-none focus:border-cyan-500 transition">
+          </div>
+          <!-- Giro -->
+          <div>
+            <label class="text-[9px] uppercase font-bold text-slate-500 dark:text-slate-400">Giro</label>
+            <input type="number" id="claveGiro" value="3" min="0" max="99" class="w-full mt-1 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-800 dark:text-white text-xs p-2 outline-none focus:border-cyan-500 transition">
+          </div>
+          <!-- Sentido -->
+          <div>
+            <label class="text-[9px] uppercase font-bold text-slate-500 dark:text-slate-400">Sentido</label>
+            <select id="claveSentido" class="w-full mt-1 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-800 dark:text-white text-xs p-2 outline-none focus:border-cyan-500 transition">
+              <option value="D" selected>Derecha (d)</option>
+              <option value="I">Izquierda (i)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Clave Generada (Read-only) -->
+        <div>
+          <label class="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400">Clave Resultante</label>
+          <input type="text" id="clave" value="K(Mb, 4, 3d)" readonly
+                 class="w-full mt-1 bg-slate-200 dark:bg-slate-950/65 border border-slate-300 dark:border-slate-800 rounded-lg text-amber-600 dark:text-amber-400 text-xs p-2.5 font-mono cursor-not-allowed outline-none select-none">
+        </div>
       </div>
 
     </div>
@@ -241,25 +303,25 @@
 
           <div class="absolute top-0 w-8 h-[45%] bg-gradient-to-b from-cyan-500/20 to-transparent z-10 pointer-events-none" style="clip-path: polygon(50% 0%, 100% 0%, 50% 100%, 0% 0%); top: -10px;"></div>
 
-          <div id="outerRing" class="absolute w-full h-full rounded-full"></div>
+          <div id="outerRing" class="alberti-wheel absolute w-full h-full rounded-full"></div>
 
-          <div id="innerWheel" class="alberti-wheel absolute w-44 h-44 sm:w-56 sm:h-56 rounded-full border border-cyan-500/40 bg-slate-900/95 flex items-center justify-center shadow-[inset_0_15px_30px_rgba(0,0,0,0.8)]">
+          <div id="innerWheel" class="alberti-wheel absolute w-44 h-44 sm:w-56 sm:h-56 rounded-full border border-slate-200 dark:border-cyan-500/40 bg-white dark:bg-slate-900/95 flex items-center justify-center shadow-[inset_0_5px_15px_rgba(0,0,0,0.05)] dark:shadow-[inset_0_15px_30px_rgba(0,0,0,0.8)]">
             <div id="innerLetters" class="absolute w-full h-full z-10"></div>
 
-            <div class="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-slate-950 border-[5px] border-slate-800/80 shadow-[0_10px_20px_rgba(0,0,0,0.6),inset_0_2px_8px_rgba(255,255,255,0.05)] flex flex-col items-center justify-center z-20 relative">
-              <div class="absolute top-1.5 left-1.5 w-1.5 h-1.5 rounded-full bg-slate-900 shadow-inner"></div>
-              <div class="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-slate-900 shadow-inner"></div>
-              <div class="absolute bottom-1.5 left-1.5 w-1.5 h-1.5 rounded-full bg-slate-900 shadow-inner"></div>
-              <div class="absolute bottom-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-slate-900 shadow-inner"></div>
+            <div class="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-slate-100 dark:bg-slate-950 border-[5px] border-slate-200 dark:border-slate-800/80 shadow-[0_5px_10px_rgba(0,0,0,0.05)] dark:shadow-[0_10px_20px_rgba(0,0,0,0.6)] flex flex-col items-center justify-center z-20 relative">
+              <div class="absolute top-1.5 left-1.5 w-1.5 h-1.5 rounded-full bg-slate-250 dark:bg-slate-900 shadow-inner"></div>
+              <div class="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-slate-250 dark:bg-slate-900 shadow-inner"></div>
+              <div class="absolute bottom-1.5 left-1.5 w-1.5 h-1.5 rounded-full bg-slate-250 dark:bg-slate-900 shadow-inner"></div>
+              <div class="absolute bottom-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-slate-250 dark:bg-slate-900 shadow-inner"></div>
 
               <span class="text-[9px] text-slate-500 uppercase tracking-tight font-bold mb-1">Giro</span>
-              <span id="diskAngleDisplay" class="text-xl sm:text-2xl font-black text-cyan-400 tabular-nums drop-shadow-[0_0_5px_rgba(34,211,238,0.4)]">0</span>
+              <span id="diskAngleDisplay" class="text-xl sm:text-2xl font-black text-cyan-600 dark:text-cyan-400 tabular-nums drop-shadow-[0_0_5px_rgba(34,211,238,0.4)]">0</span>
             </div>
           </div>
         </div>
 
         <!-- Alineación base -->
-        <div class="mt-5 text-center bg-slate-900/60 border border-slate-700/50 rounded-xl py-2.5 px-8 w-full max-w-xs">
+        <div class="mt-5 text-center bg-slate-100 dark:bg-slate-900/60 border border-slate-250 dark:border-slate-700/50 rounded-xl py-2.5 px-8 w-full max-w-xs transition-all">
           <p class="text-[10px] text-slate-500 uppercase tracking-wider">Alineación base (Letra A)</p>
           <p class="text-xl font-mono font-bold text-cyan-400 mt-0.5">A ➔ <span id="alignDisplay" class="text-amber-400">c</span></p>
         </div>
@@ -290,7 +352,7 @@
       <div id="panelEntrada" class="glass-panel rounded-2xl p-5 sm:p-6 flex flex-col" style="min-height: 200px;">
         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
           <div>
-            <p id="labelEntrada" class="section-title mb-0.5">Mensaje Plano o Mensaje Claro</p>
+            <p id="labelEntrada" class="section-title mb-0.5">Texto Original</p>
             <p class="text-[10px] text-slate-600">Mensaje a procesar en los discos</p>
           </div>
           <div class="flex gap-2 w-full sm:w-auto">
@@ -315,7 +377,7 @@
         <div class="absolute top-0 right-0 w-48 h-48 bg-cyan-500/5 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4 relative z-10">
           <div>
-            <p id="labelSalida" class="section-title text-cyan-500 mb-0.5">Criptograma o Texto Cifrado</p>
+            <p id="labelSalida" class="section-title text-cyan-500 mb-0.5">Texto Cifrado</p>
             <p class="text-[10px] text-slate-600">Salida procesada por los anillos Alberti</p>
           </div>
           <div class="flex gap-2 w-full sm:w-auto">
@@ -371,6 +433,7 @@
   </div>
 </div>
 
+<script th:src="@{/js/theme.js}"></script>
 <script th:src="@{/js/alberti.js}"></script>
 
 </body>

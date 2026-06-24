@@ -42,7 +42,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const countInt  = document.getElementById('countInt');
     const alertaLongitud = document.getElementById('alertaLongitud');
 
-    let currentLang = "LA";
+    let currentLang = "ES";
 
     // ==========================================
     // CONEXIÓN WEBSOCKET Y NOTIFICACIONES
@@ -252,6 +252,8 @@ document.addEventListener("DOMContentLoaded", () => {
         document.querySelectorAll('.outer-char, .inner-char').forEach(el => {
             el.classList.remove('text-amber-400', 'scale-150', 'drop-shadow-[0_0_8px_rgba(251,191,36,0.8)]');
         });
+        outerRing.style.transform = 'rotate(0deg)';
+        actualizarRotacion(0);
     }
 
     function spinToAlign(shiftOffset, callback) {
@@ -318,9 +320,14 @@ document.addEventListener("DOMContentLoaded", () => {
             }
 
             const s = steps[stepIndex];
-            actualizarRotacion(s.shift);
+            const extAlf = ALFABETOS[currentLang].ext;
+            const intAlf = ALFABETOS[currentLang].int;
+            const len = extAlf.length;
+            const stepAngle = 360 / len;
 
             if (s.isMarker) {
+                outerRing.style.transform = `rotate(0deg)`;
+                actualizarRotacion(s.shift);
                 CryptoUX.showToast("Giro de disco", `Inserción de marcador de rotación.`, "info");
             } else {
                 if (stepIndex > 0 && steps[stepIndex - 1] && s.shift !== steps[stepIndex - 1].shift) {
@@ -332,6 +339,26 @@ document.addEventListener("DOMContentLoaded", () => {
                 }
                 if (s.pChar && s.cChar) {
                     highlightChars(s.pChar, s.cChar);
+                    
+                    let idxExt = extAlf.indexOf(s.pChar);
+                    if (idxExt === -1) idxExt = extAlf.toUpperCase().indexOf(s.pChar.toUpperCase());
+
+                    let idxInt = intAlf.indexOf(s.cChar);
+                    if (idxInt === -1) {
+                        const isLower = s.cChar === s.cChar.toLowerCase();
+                        const opposite = isLower ? s.cChar.toUpperCase() : s.cChar.toLowerCase();
+                        idxInt = intAlf.indexOf(opposite);
+                    }
+
+                    if (idxExt !== -1 && idxInt !== -1) {
+                        outerRing.style.transform = `rotate(${-idxExt * stepAngle}deg)`;
+                        innerWheel.style.transform = `rotate(${idxInt * stepAngle}deg)`;
+                        diskAngleDisplay.innerText = `${s.shift}`;
+                        alignDisplay.innerText = s.cChar;
+                    }
+                } else {
+                    outerRing.style.transform = `rotate(0deg)`;
+                    actualizarRotacion(s.shift);
                 }
             }
 
@@ -570,7 +597,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 }
 
                 if (isAlphabetChar && processedCount > 0 && processedCount % keyInfo.blockSize === 0) {
-                    actualizarRotacion(shiftOffset);
                     CryptoUX.showToast("Giro de disco", `Bloque ${block + 1}, offset ${shiftOffset} pos.`, "info");
                 }
 
@@ -579,22 +605,38 @@ document.addEventListener("DOMContentLoaded", () => {
                 inputTexto.setSelectionRange(origIdx, origIdx + 1);
 
                 let resChar = c;
+                let idxExt = -1;
+                let idxInt = -1;
+
                 if (isCifrar) {
-                    const idxExt = extAlf.indexOf(c);
+                    idxExt = extAlf.indexOf(c);
                     if (idxExt !== -1) {
-                        const idxInt = (idxI + shiftOffset - (idxExt - idxO) + moduloLen * 100) % moduloLen;
+                        idxInt = (idxI + shiftOffset - (idxExt - idxO) + moduloLen * 100) % moduloLen;
                         resChar = intAlf[idxInt];
                         highlightChars(c, resChar);
                         processedCount++;
                     }
                 } else {
-                    const idxInt = intAlf.indexOf(c);
+                    idxInt = intAlf.indexOf(c);
                     if (idxInt !== -1) {
-                        const idxExt = (idxO + idxI + shiftOffset - idxInt + moduloLen * 100) % moduloLen;
+                        idxExt = (idxO + idxI + shiftOffset - idxInt + moduloLen * 100) % moduloLen;
                         resChar = extAlf[idxExt];
                         highlightChars(resChar, c);
                         processedCount++;
                     }
+                }
+
+                if (idxExt !== -1 && idxInt !== -1) {
+                    const stepAngle = 360 / moduloLen;
+                    outerRing.style.transform = `rotate(${-idxExt * stepAngle}deg)`;
+                    innerWheel.style.transform = `rotate(${idxInt * stepAngle}deg)`;
+                    diskAngleDisplay.innerText = `${shiftOffset}`;
+                    
+                    const letraAlineadaIndex = (idxI + idxO + shiftOffset + moduloLen * 100) % moduloLen;
+                    alignDisplay.innerText = intAlf[letraAlineadaIndex % intAlf.length];
+                } else {
+                    outerRing.style.transform = `rotate(0deg)`;
+                    actualizarRotacion(shiftOffset);
                 }
 
                 resultado += resChar;
@@ -613,43 +655,94 @@ document.addEventListener("DOMContentLoaded", () => {
     // ==========================================
     // CONTROLES DE INTERFAZ Y EVENTOS
     // ==========================================
-    inputTexto.addEventListener('input', enviarDatos);
-    radiosOperacion.forEach(r => r.addEventListener('change', enviarDatos));
-    inputClave.addEventListener('input', enviarDatos);
-    btnAnimar.addEventListener('click', animarAlberti);
+    function actualizarEtiquetas() {
+        const operacionChecked = document.querySelector('input[name="operacion"]:checked');
+        if (!operacionChecked) return;
+        const operacion = operacionChecked.value;
+        const isCifrar = (operacion === 'CIFRAR');
 
-    // Cambio de Idioma
-    idiomaSelector.addEventListener('change', (e) => {
-        currentLang = e.target.value;
+        const lblEntrada = document.getElementById("labelEntrada");
+        const lblSalida = document.getElementById("labelSalida");
 
-        if (currentLang === "CUSTOM") {
-            customContainer.classList.remove('hidden');
-        } else {
-            customContainer.classList.add('hidden');
-            alertaLongitud.classList.add('hidden');
+        if (lblEntrada) lblEntrada.textContent = isCifrar ? "Texto Original" : "Texto Cifrado";
+        if (lblSalida) lblSalida.textContent = isCifrar ? "Texto Cifrado" : "Texto Original";
+
+        if (inputTexto) inputTexto.placeholder = isCifrar ? "Escribe el mensaje a procesar en los discos…" : "Escribe el criptograma a descifrar en los discos…";
+        if (outputTexto) outputTexto.placeholder = isCifrar ? "Esperando alineación de anillos…" : "Esperando mensaje descifrado…";
+    }
+
+    const claveLetraExt = document.getElementById("claveLetraExt");
+    const claveLetraInt = document.getElementById("claveLetraInt");
+    const claveBloque = document.getElementById("claveBloque");
+    const claveGiro = document.getElementById("claveGiro");
+    const claveSentido = document.getElementById("claveSentido");
+
+    function populateCoincidenciaSelects() {
+        const extAlf = ALFABETOS[currentLang].ext;
+        const intAlf = ALFABETOS[currentLang].int;
+        
+        if (!claveLetraExt || !claveLetraInt) return;
+        
+        const valExt = claveLetraExt.value;
+        const valInt = claveLetraInt.value;
+        
+        claveLetraExt.innerHTML = "";
+        claveLetraInt.innerHTML = "";
+        
+        for (let c of extAlf) {
+            const opt = document.createElement("option");
+            opt.value = c;
+            opt.textContent = c;
+            claveLetraExt.appendChild(opt);
         }
-
-        // Claves por defecto para los distintos idiomas
-        if (currentLang === "LA") {
-            inputClave.value = "K(Mb, 4, 3d)";
-        } else if (currentLang === "ES") {
-            inputClave.value = "K(Ac, 4, 3d)";
-        } else {
-            inputClave.value = "K(Aa, 4, 3d)";
+        
+        for (let c of intAlf) {
+            const opt = document.createElement("option");
+            opt.value = c;
+            opt.textContent = c;
+            claveLetraInt.appendChild(opt);
         }
+        
+        if (extAlf.indexOf(valExt) !== -1) {
+            claveLetraExt.value = valExt;
+        } else {
+            claveLetraExt.value = extAlf.indexOf('M') !== -1 ? 'M' : (extAlf.indexOf('A') !== -1 ? 'A' : extAlf[0]);
+        }
+        
+        if (intAlf.indexOf(valInt) !== -1) {
+            claveLetraInt.value = valInt;
+        } else {
+            claveLetraInt.value = intAlf.indexOf('b') !== -1 ? 'b' : (intAlf.indexOf('c') !== -1 ? 'c' : (intAlf.indexOf('a') !== -1 ? 'a' : intAlf[0]));
+        }
+        
+        rebuildClave();
+    }
 
-        renderizarSimulador();
-        enviarDatos();
-    });
+    function rebuildClave() {
+        if (!claveLetraExt || !claveLetraInt || !claveBloque || !claveGiro || !claveSentido || !inputClave) return;
+        
+        const extVal = claveLetraExt.value || 'M';
+        const intVal = claveLetraInt.value || 'b';
+        const bloqueVal = claveBloque.value || '4';
+        const giroVal = claveGiro.value || '3';
+        const sentidoVal = claveSentido.value.toLowerCase() || 'd';
+        
+        inputClave.value = `K(${extVal}${intVal}, ${bloqueVal}, ${giroVal}${sentidoVal})`;
+    }
 
     function actualizarCustom() {
+        if (currentLang !== "CUSTOM") {
+            currentLang = "CUSTOM";
+            idiomaSelector.value = "CUSTOM";
+        }
+        
         const valExt = customExt.value;
         const valInt = customInt.value;
 
         countExt.innerText = valExt.length;
         countInt.innerText = valInt.length;
 
-        if (valExt.length !== valInt.length && currentLang === "CUSTOM") {
+        if (valExt.length !== valInt.length) {
             alertaLongitud.classList.remove('hidden');
         } else {
             alertaLongitud.classList.add('hidden');
@@ -658,11 +751,65 @@ document.addEventListener("DOMContentLoaded", () => {
         ALFABETOS["CUSTOM"].ext = valExt;
         ALFABETOS["CUSTOM"].int = valInt;
 
+        populateCoincidenciaSelects();
         renderizarSimulador();
         if (valExt.length === valInt.length) {
             enviarDatos();
         }
     }
+
+    inputTexto.addEventListener('input', enviarDatos);
+    radiosOperacion.forEach(r => r.addEventListener('change', () => {
+        actualizarEtiquetas();
+        enviarDatos();
+    }));
+    btnAnimar.addEventListener('click', animarAlberti);
+
+    if (claveLetraExt) claveLetraExt.addEventListener('change', () => { rebuildClave(); enviarDatos(); });
+    if (claveLetraInt) claveLetraInt.addEventListener('change', () => { rebuildClave(); enviarDatos(); });
+    if (claveBloque) claveBloque.addEventListener('input', () => { rebuildClave(); enviarDatos(); });
+    if (claveGiro) claveGiro.addEventListener('input', () => { rebuildClave(); enviarDatos(); });
+    if (claveSentido) claveSentido.addEventListener('change', () => { rebuildClave(); enviarDatos(); });
+
+    // Cambio de Idioma
+    idiomaSelector.addEventListener('change', (e) => {
+        currentLang = e.target.value;
+
+        if (currentLang !== "CUSTOM") {
+            customExt.value = ALFABETOS[currentLang].ext;
+            customInt.value = ALFABETOS[currentLang].int;
+            countExt.innerText = customExt.value.length;
+            countInt.innerText = customInt.value.length;
+            alertaLongitud.classList.add('hidden');
+        }
+
+        populateCoincidenciaSelects();
+
+        // Claves por defecto para los distintos idiomas
+        if (currentLang === "LA") {
+            if (claveLetraExt) claveLetraExt.value = "M";
+            if (claveLetraInt) claveLetraInt.value = "b";
+            if (claveBloque) claveBloque.value = "4";
+            if (claveGiro) claveGiro.value = "3";
+            if (claveSentido) claveSentido.value = "D";
+        } else if (currentLang === "ES") {
+            if (claveLetraExt) claveLetraExt.value = "A";
+            if (claveLetraInt) claveLetraInt.value = "c";
+            if (claveBloque) claveBloque.value = "4";
+            if (claveGiro) claveGiro.value = "3";
+            if (claveSentido) claveSentido.value = "D";
+        } else if (currentLang === "EN") {
+            if (claveLetraExt) claveLetraExt.value = "A";
+            if (claveLetraInt) claveLetraInt.value = "a";
+            if (claveBloque) claveBloque.value = "4";
+            if (claveGiro) claveGiro.value = "3";
+            if (claveSentido) claveSentido.value = "D";
+        }
+
+        rebuildClave();
+        renderizarSimulador();
+        enviarDatos();
+    });
 
     customExt.addEventListener('input', actualizarCustom);
     customInt.addEventListener('input', actualizarCustom);
@@ -705,6 +852,27 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     // INIT
+    currentLang = idiomaSelector ? idiomaSelector.value : "ES";
+    if (customExt && customInt) {
+        customExt.value = ALFABETOS[currentLang].ext;
+        customInt.value = ALFABETOS[currentLang].int;
+        if (countExt) countExt.innerText = customExt.value.length;
+        if (countInt) countInt.innerText = customInt.value.length;
+    }
+    if (alertaLongitud) alertaLongitud.classList.add('hidden');
+
+    populateCoincidenciaSelects();
+
+    if (currentLang === "ES") {
+        if (claveLetraExt) claveLetraExt.value = "A";
+        if (claveLetraInt) claveLetraInt.value = "c";
+        if (claveBloque) claveBloque.value = "4";
+        if (claveGiro) claveGiro.value = "3";
+        if (claveSentido) claveSentido.value = "D";
+    }
+
+    rebuildClave();
     connect();
     renderizarSimulador();
+    actualizarEtiquetas();
 });

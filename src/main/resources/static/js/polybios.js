@@ -157,6 +157,13 @@ document.addEventListener("DOMContentLoaded", () => {
     function actualizarPlaceholders() {
         const operacion = document.querySelector('input[name="operacion"]:checked').value;
         const coordType = coordenadasSelector.value;
+        const isCifrar = (operacion === "CIFRAR");
+
+        const lblEntrada = document.getElementById("labelEntrada");
+        const lblSalida = document.getElementById("labelSalida");
+
+        if (lblEntrada) lblEntrada.textContent = isCifrar ? "Texto Original" : "Texto Cifrado";
+        if (lblSalida) lblSalida.textContent = isCifrar ? "Texto Cifrado" : "Texto Original";
 
         if (operacion === "CIFRAR") {
             inputTexto.placeholder = "Escribe el texto claro para cifrarlo Ej: Polybios";

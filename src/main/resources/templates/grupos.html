@@ -125,6 +125,17 @@
 
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
+  <!-- HEADER -->
+  <header class="mb-6 sm:mb-8 flex flex-col md:flex-row md:items-center gap-3 animate-fade-in">
+    <div class="flex items-center gap-2">
+      <h1 class="text-2xl sm:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-600 to-blue-600 dark:from-cyan-400 dark:to-blue-500 transition-colors whitespace-nowrap">Cifrado por Grupos</h1>
+    </div>
+    <span class="hidden md:block w-1.5 h-6 bg-slate-300 dark:bg-slate-700 rounded-full flex-shrink-0"></span>
+    <p class="text-slate-500 dark:text-slate-400 text-xs sm:text-sm transition-colors">
+      Cifrado de transposición que divide el mensaje en bloques de tamaño fijo y los desordena según una clave.
+    </p>
+  </header>
+
   <!-- CONFIGURACIÓN (SUPERIOR) -->
   <div id="panelParametros" class="glass-panel rounded-2xl p-5 sm:p-6 mb-6 sm:mb-8 animate-fade-in-delay">
     <h2 class="text-sm font-bold text-slate-800 dark:text-white mb-4 border-b border-slate-200 dark:border-slate-700/60 pb-3 flex items-center gap-2 transition-colors">
@@ -148,18 +159,20 @@
         </div>
       </div>
 
-      <!-- Tratamiento de Espacios -->
+      <!-- Alfabeto -->
       <div>
-        <p class="section-title mb-2 text-slate-500 dark:text-slate-400 transition-colors">Tratamiento de Espacios</p>
-        <div class="grid grid-cols-2 gap-2 p-1 bg-slate-100 dark:bg-slate-900/80 rounded-xl border border-slate-200 dark:border-slate-700/60 transition-colors">
-          <label class="radio-toggle cursor-pointer">
-            <input type="radio" name="idioma" value="ELIMINAR" class="sr-only" checked>
-            <div class="radio-label-cifrar text-center px-4 py-2.5 text-xs font-bold rounded-lg text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white transition select-none">❌ Quitar</div>
-          </label>
-          <label class="radio-toggle cursor-pointer">
-            <input type="radio" name="idioma" value="MANTENER" class="sr-only">
-            <div class="radio-label-descifrar text-center px-4 py-2.5 text-xs font-bold rounded-lg text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white transition select-none">🔍 Mantener</div>
-          </label>
+        <p class="section-title mb-2 text-slate-500 dark:text-slate-400 transition-colors">Alfabeto</p>
+        <select id="idioma" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-cyan-600 dark:text-cyan-300 text-sm p-3 outline-none focus:border-cyan-500/80 transition-colors">
+          <option value="ES" selected>Español (con Ñ)</option>
+          <option value="EN">Inglés / Americano</option>
+          <option value="CUSTOM">Personalizado</option>
+        </select>
+        
+        <div id="customAlphabetContainer" class="hidden mt-3">
+          <p class="section-title mb-1.5 text-slate-500 dark:text-slate-400 transition-colors text-[10px]">Alfabeto Personalizado</p>
+          <input type="text" id="alfabetoCustom" placeholder="Ej: ABCDEFGHIJKLMNÑOPQRSTUVWXYZ" 
+                 class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-cyan-600 dark:text-cyan-300 text-xs p-2.5 font-mono outline-none focus:border-cyan-500/80 uppercase transition-colors">
+          <p class="text-[9px] text-slate-400 dark:text-slate-500 mt-1 leading-relaxed">Letras únicas, mínimo 2 caracteres.</p>
         </div>
       </div>
 
@@ -172,8 +185,8 @@
                placeholder="Ej: 1 3 5 4 2" 
                class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-cyan-600 dark:text-cyan-300 text-sm p-3 font-mono outline-none focus:border-cyan-500/80 transition-colors">
         <p class="text-[10px] text-slate-500 dark:text-slate-500 mt-1.5 leading-relaxed transition-colors">
-          Formato: <strong class="text-cyan-500 dark:text-cyan-400">Números únicos del 1 al P separados por espacios</strong>.<br>
-          Ejemplo: <code class="text-amber-500 dark:text-amber-400 font-mono">1 3 5 4 2</code> (Periodo P = 5) extrae caracteres en ese orden.
+          Formato: <strong class="text-cyan-500 dark:text-cyan-400">Números únicos del 1 al P (con o sin espacios)</strong>.<br>
+          Ejemplos: <code class="text-amber-500 dark:text-amber-400 font-mono">13542</code> o <code class="text-amber-500 dark:text-amber-400 font-mono">1 3 5 4 2</code> (Periodo P = 5).
         </p>
       </div>
 
@@ -212,18 +225,31 @@
         </div>
       </div>
 
-      <!-- Info Box -->
-      <div class="info-box p-4 rounded-2xl glass-panel border border-slate-700/60">
-        <h3 class="text-cyan-700 dark:text-cyan-400 font-bold text-xs mb-2 flex items-center gap-2 transition-colors">
-          <svg class="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-          ¿Cómo funciona?
+      <!-- Info Box: ¿Cómo funciona? -->
+      <div class="info-box p-5 rounded-2xl border border-cyan-100 dark:border-cyan-500/20 transition-colors">
+        <h3 class="text-cyan-700 dark:text-cyan-400 font-bold text-xs mb-3 flex items-center gap-2 transition-colors">
+          <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          ¿Cómo funciona el Cifrado por Grupos?
         </h3>
-        <p class="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed mb-1.5 transition-colors">
-          El cifrado por grupos divide el mensaje en bloques del tamaño del **período ($P$)** y reordena los caracteres de cada bloque según una **permutación ($Pm$)**.
-        </p>
-        <p class="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed transition-colors">
-          Para descifrar, se calcula la **permutación inversa ($Pm^{-1}$)**, que indica la celda de destino original para cada letra del criptograma.
-        </p>
+        <div class="space-y-3 text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed transition-colors">
+          <p>
+            El cifrado por grupos (o permutación por bloques) es una transposición periódica. Sigue este procedimiento:
+          </p>
+          <ul class="list-decimal list-inside space-y-1.5 pl-1">
+            <li>
+              <strong>División en Bloques:</strong> El mensaje original se divide en segmentos continuos de longitud fija \(P\) (definido por el tamaño de la permutación).
+            </li>
+            <li>
+              <strong>Fórmula de Reordenamiento:</strong> En cada bloque, los caracteres cambian de posición de acuerdo con la clave ingresada. Por ejemplo, con clave <code class="text-amber-600 dark:text-amber-400 font-mono">13542</code>, el tercer carácter pasa a la segunda posición, el quinto a la tercera, etc.
+            </li>
+            <li>
+              <strong>Relleno Automático:</strong> Si el mensaje original no es múltiplo de \(P\), se agregan caracteres de relleno (como <code class="font-mono">X</code>) al final del último bloque.
+            </li>
+            <li>
+              <strong>Descifrado:</strong> Se aplica la permutación inversa \(P^{-1}\) para devolver cada carácter a su posición original.
+            </li>
+          </ul>
+        </div>
       </div>
 
     </div>
@@ -235,8 +261,8 @@
       <div id="panelEntrada" class="glass-panel rounded-2xl p-5 sm:p-6 flex flex-col" style="min-height: 200px;">
         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
           <div>
-            <p class="section-title text-slate-800 dark:text-white mb-0.5 transition-colors">Texto Original</p>
-            <p class="text-[10px] text-slate-500 dark:text-slate-500 transition-colors">Mensaje plano a permutar por bloques</p>
+            <p id="labelEntrada" class="section-title text-slate-800 dark:text-white mb-0.5 transition-colors">Texto Original</p>
+            <p id="descEntrada" class="text-[10px] text-slate-500 dark:text-slate-500 transition-colors">Mensaje plano a permutar por bloques</p>
           </div>
           <div class="flex gap-2 w-full sm:w-auto">
             <button id="btnPegar" type="button" class="btn-action btn-util flex-1 sm:flex-none justify-center">
@@ -260,8 +286,8 @@
         <div class="absolute top-0 right-0 w-48 h-48 bg-cyan-500/10 dark:bg-cyan-500/5 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4 relative z-10">
           <div>
-            <p class="section-title text-cyan-600 dark:text-cyan-500 mb-0.5 transition-colors">Resultado Transpuesto</p>
-            <p class="text-[10px] text-slate-500 dark:text-slate-500 transition-colors">Mensaje reordenado periódicamente</p>
+            <p id="labelSalida" class="section-title text-cyan-600 dark:text-cyan-500 mb-0.5 transition-colors">Texto Cifrado</p>
+            <p id="descSalida" class="text-[10px] text-slate-500 dark:text-slate-500 transition-colors">Resultado del proceso de transposición por bloques</p>
           </div>
           <div class="flex gap-2 w-full sm:w-auto">
             <button id="btnAnimar" type="button" class="btn-action btn-primary w-full sm:w-auto justify-center bg-gradient-to-r from-amber-500/10 to-yellow-500/10 dark:from-amber-500/20 dark:to-yellow-500/20 text-amber-600 dark:text-amber-300 border-amber-300 dark:border-amber-500/40 hover:from-amber-500/20 hover:to-yellow-500/20 dark:hover:from-amber-500/30 dark:hover:to-yellow-500/30 transition-all">

@@ -5,19 +5,24 @@ import org.springframework.stereotype.Service;
 @Service
 public class GruposService {
 
-    public String cifrar(String texto, String clave, boolean eliminarEspacios) {
-        return procesar(texto, clave, eliminarEspacios, true);
+    private static final String ALFABETO_ES = "ABCDEFGHIJKLMNÑOPQRSTUVWXYZ";
+    private static final String ALFABETO_EN = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
+    public String cifrar(String texto, String clave, String idioma, String alfabetoCustom) {
+        return procesar(texto, clave, idioma, alfabetoCustom, true);
     }
 
-    public String descifrar(String texto, String clave, boolean eliminarEspacios) {
-        return procesar(texto, clave, eliminarEspacios, false);
+    public String descifrar(String texto, String clave, String idioma, String alfabetoCustom) {
+        return procesar(texto, clave, idioma, alfabetoCustom, false);
     }
 
-    private String procesar(String texto, String clave, boolean eliminarEspacios, boolean isCifrar) {
+    private String procesar(String texto, String clave, String idioma, String alfabetoCustom, boolean isCifrar) {
         if (texto == null || texto.isEmpty()) return "";
 
+        String alfabeto = obtenerAlfabeto(idioma, alfabetoCustom);
+
         // Normalizar texto y clave para chequeo de fallbacks
-        String normText = texto.replaceAll("\\s+", "").toUpperCase();
+        String normText = cleanAndNormalize(texto, alfabeto);
         String normKey = clave.replaceAll("\\s+", "");
 
         // Overrides para ejemplos de diapositivas
@@ -36,16 +41,17 @@ public class GruposService {
         int P = p.length;
 
         if (isCifrar) {
-            // Tratamiento de espacios
-            String cleanText = eliminarEspacios ? texto.replaceAll("\\s+", "").toUpperCase() : texto.toUpperCase();
+            // Normalizar y filtrar texto usando el alfabeto
+            String cleanText = cleanAndNormalize(texto, alfabeto);
             
-            // Rellenar con X si no es múltiplo del periodo P
+            // Relleno
             int rem = cleanText.length() % P;
             if (rem != 0) {
                 int padLen = P - rem;
                 StringBuilder sb = new StringBuilder(cleanText);
+                char padChar = alfabeto.indexOf('X') != -1 ? 'X' : alfabeto.charAt(alfabeto.length() - 1);
                 for (int i = 0; i < padLen; i++) {
-                    sb.append("X");
+                    sb.append(padChar);
                 }
                 cleanText = sb.toString();
             }
@@ -70,10 +76,10 @@ public class GruposService {
             return formatted.toString();
 
         } else {
-            // Quitar espacios para descifrar
-            String ct = texto.replaceAll("\\s+", "");
+            // Quitar espacios y filtrar caracteres ajenos al alfabeto
+            String ct = cleanAndNormalize(texto, alfabeto);
             if (ct.length() % P != 0) {
-                throw new IllegalArgumentException("La longitud del criptograma (sin espacios) debe ser un múltiplo del período " + P + ".");
+                throw new IllegalArgumentException("La longitud del criptograma (filtrado por el alfabeto seleccionado) debe ser un múltiplo del período " + P + ".");
             }
 
             // Calcular permutación inversa
@@ -94,12 +100,59 @@ public class GruposService {
         }
     }
 
+    private String obtenerAlfabeto(String idioma, String alfabetoCustom) {
+        if ("CUSTOM".equalsIgnoreCase(idioma) && alfabetoCustom != null && !alfabetoCustom.isEmpty()) {
+            StringBuilder sb = new StringBuilder();
+            for (char c : alfabetoCustom.toUpperCase().toCharArray()) {
+                if (sb.indexOf(String.valueOf(c)) == -1) {
+                    sb.append(c);
+                }
+            }
+            if (sb.length() < 2) {
+                throw new IllegalArgumentException("El alfabeto personalizado debe tener al menos 2 caracteres únicos.");
+            }
+            return sb.toString();
+        } else if ("EN".equalsIgnoreCase(idioma)) {
+            return ALFABETO_EN;
+        }
+        return ALFABETO_ES; // Por defecto Español
+    }
+
+    private String cleanAndNormalize(String text, String alfabeto) {
+        if (text == null) return "";
+        String upper = text.toUpperCase();
+        upper = upper.replace('Á', 'A')
+                .replace('É', 'E')
+                .replace('Í', 'I')
+                .replace('Ó', 'O')
+                .replace('Ú', 'U')
+                .replace('Ü', 'U');
+
+        if (alfabeto.indexOf('Ñ') == -1 && alfabeto.indexOf('N') != -1) {
+            upper = upper.replace('Ñ', 'N');
+        }
+
+        StringBuilder sb = new StringBuilder();
+        for (char c : upper.toCharArray()) {
+            if (alfabeto.indexOf(c) != -1) {
+                sb.append(c);
+            }
+        }
+        return sb.toString();
+    }
+
     private int[] parseClave(String clave) {
         if (clave == null || clave.trim().isEmpty()) {
             throw new IllegalArgumentException("La clave de permutación no puede estar vacía.");
         }
 
-        String[] tokens = clave.trim().split("\\s+");
+        String trimmed = clave.trim();
+        String[] tokens;
+        if (trimmed.contains(" ") || trimmed.contains("\t")) {
+            tokens = trimmed.split("\\s+");
+        } else {
+            tokens = trimmed.split("");
+        }
         int[] p = new int[tokens.length];
 
         try {
@@ -107,7 +160,7 @@ public class GruposService {
                 p[i] = Integer.parseInt(tokens[i]);
             }
         } catch (NumberFormatException e) {
-            throw new IllegalArgumentException("La clave debe contener únicamente números enteros separados por espacios.");
+            throw new IllegalArgumentException("La clave debe contener únicamente números enteros (con o sin espacios).");
         }
 
         // Validar que sea una permutación de 1 a P

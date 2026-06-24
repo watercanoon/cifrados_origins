@@ -377,8 +377,25 @@ document.addEventListener("DOMContentLoaded", () => {
         enviarDatos();
     });
 
+    function actualizarEtiquetas() {
+        const operacionChecked = document.querySelector('input[name="operacion"]:checked');
+        if (!operacionChecked) return;
+        const operacion = operacionChecked.value;
+        const isCifrar = (operacion === 'CIFRAR');
+
+        const lblEntrada = document.getElementById("labelEntrada");
+        const lblSalida = document.getElementById("labelSalida");
+
+        if (lblEntrada) lblEntrada.textContent = isCifrar ? "Texto Original" : "Texto Cifrado";
+        if (lblSalida) lblSalida.textContent = isCifrar ? "Texto Cifrado" : "Texto Original";
+
+        if (inputTexto) inputTexto.placeholder = isCifrar ? "Escribe el texto claro para cifrarlo.. Ej: escitala" : "Escribe el texto cifrado para descifrarlo..";
+        if (outputTexto) outputTexto.placeholder = isCifrar ? "El texto cifrado se mostrará aquí..." : "El texto original descifrado se mostrará aquí...";
+    }
+
     inputTexto.addEventListener('input', enviarDatos);
     radiosOperacion.forEach(r => r.addEventListener('change', () => {
+        actualizarEtiquetas();
         enviarDatos();
         inputTexto.focus();
     }));
@@ -550,4 +567,5 @@ document.addEventListener("DOMContentLoaded", () => {
     // INIT
     connect();
     construirCilindro3D("", 4);
+    actualizarEtiquetas();
 });
