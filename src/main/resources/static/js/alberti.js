@@ -29,7 +29,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Alfabetos
     const ALFABETOS = {
-        "LA": { ext: "ABCDEFGILMNOPQRSTVXZ1234", int: "&xysomqihfdbacegklnprtvz" },
+        "LA": { ext: "ABCDEFGILMNOPQRSTVXZ1234", int: "gklnprtvz&xysomqihfdbace" },
         "ES": { ext: "ABCDEFGHIJKLMNÑOPQRSTUVWXYZ", int: "cdefghijklmnñopqrstuvwxyzab" },
         "EN": { ext: "ABCDEFGHIJKLMNOPQRSTUVWXYZ",  int: "cdefghijklmnopqrstuvwxyzab" },
         "CUSTOM": { ext: "ABCDEFGHIJKLMNOPQRSTUVWXYZ", int: "cdefghijklmnopqrstuvwxyzab" }
@@ -42,7 +42,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const countInt  = document.getElementById('countInt');
     const alertaLongitud = document.getElementById('alertaLongitud');
 
-    let currentLang = "ES";
+    let currentLang = "LA";
 
     // ==========================================
     // CONEXIÓN WEBSOCKET Y NOTIFICACIONES
@@ -176,26 +176,8 @@ document.addEventListener("DOMContentLoaded", () => {
         alignDisplay.innerText = intAlf[letraAlineadaIndex % intAlf.length];
     }
 
-    function actualizarTitulos() {
-        const operacion = document.querySelector('input[name="operacion"]:checked');
-        if (!operacion) return;
-        const isCifrar = (operacion.value === "CIFRAR");
-        const labelEntrada = document.getElementById('labelEntrada');
-        const labelSalida = document.getElementById('labelSalida');
-        
-        if (labelEntrada && labelSalida) {
-            if (isCifrar) {
-                labelEntrada.textContent = "Mensaje Plano o Mensaje Claro";
-                labelSalida.textContent = "Criptograma o Texto Cifrado";
-            } else {
-                labelEntrada.textContent = "Criptograma o Texto Cifrado";
-                labelSalida.textContent = "Mensaje Plano o Mensaje Claro";
-            }
-        }
-    }
-
     function enviarDatos() {
-        actualizarTitulos();
+        actualizarEtiquetas();
         actualizarRotacion(0);
         if (!stompClient || !stompClient.connected) return;
 
@@ -852,7 +834,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     // INIT
-    currentLang = idiomaSelector ? idiomaSelector.value : "ES";
+    currentLang = idiomaSelector ? idiomaSelector.value : "LA";
     if (customExt && customInt) {
         customExt.value = ALFABETOS[currentLang].ext;
         customInt.value = ALFABETOS[currentLang].int;
@@ -863,7 +845,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
     populateCoincidenciaSelects();
 
-    if (currentLang === "ES") {
+    if (currentLang === "LA") {
+        if (claveLetraExt) claveLetraExt.value = "M";
+        if (claveLetraInt) claveLetraInt.value = "b";
+        if (claveBloque) claveBloque.value = "4";
+        if (claveGiro) claveGiro.value = "3";
+        if (claveSentido) claveSentido.value = "D";
+    } else if (currentLang === "ES") {
         if (claveLetraExt) claveLetraExt.value = "A";
         if (claveLetraInt) claveLetraInt.value = "c";
         if (claveBloque) claveBloque.value = "4";

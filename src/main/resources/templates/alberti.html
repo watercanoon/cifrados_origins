@@ -207,8 +207,8 @@
           <span id="alertaLongitud" class="text-[9px] font-bold text-red-500 dark:text-red-400 hidden">¡Longitud desigual!</span>
         </div>
         <select id="idiomaSelector" class="lang-select w-full mb-3">
-          <option value="LA">🏛️ Latín (Original Alberti) — 24 caracteres</option>
-          <option value="ES" selected>🇪🇸 Español — 27 letras (con Ñ)</option>
+          <option value="LA" selected>🏛️ Latín (Original Alberti) — 24 caracteres</option>
+          <option value="ES">🇪🇸 Español — 27 letras (con Ñ)</option>
           <option value="EN">🇬🇧 English — 26 letters</option>
           <option value="CUSTOM">⚙️ Personalizado (Libre)</option>
         </select>
@@ -434,6 +434,7 @@
 </div>
 
 <script th:src="@{/js/theme.js}"></script>
+<script th:src="@{/js/crypto-utils.js}"></script>
 <script th:src="@{/js/alberti.js}"></script>
 
 </body>
