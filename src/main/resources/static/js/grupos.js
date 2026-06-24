@@ -26,6 +26,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
     let isAnimating = false;
     let animationInterval = null;
+    let activeTarget = null;
+    let animationFrameId = null;
 
     // ==========================================
     // CONEXIÓN WEBSOCKET
@@ -52,10 +54,12 @@ document.addEventListener("DOMContentLoaded", () => {
                 if (data.error) {
                     mostrarError(data.error);
                     outputTexto.value = "";
-                    outputTexto.classList.replace('text-cyan-300', 'text-red-400');
+                    outputTexto.classList.remove('text-cyan-650', 'text-cyan-300');
+                    outputTexto.classList.add('text-red-500', 'dark:text-red-400');
                 } else {
                     outputTexto.value = data.resultado;
-                    outputTexto.classList.replace('text-red-400', 'text-cyan-300');
+                    outputTexto.classList.remove('text-red-500', 'dark:text-red-400');
+                    outputTexto.classList.add('text-cyan-650', 'dark:text-cyan-300');
                 }
             });
             enviarDatos();
@@ -391,25 +395,8 @@ document.addEventListener("DOMContentLoaded", () => {
     // ==========================================
     // TOASTS
     // ==========================================
-    function mostrarToast(mensaje, tipo) {
-        const container = document.getElementById('toast-container');
-        const toast = document.createElement('div');
-        const isError = tipo === 'error';
-        toast.className = `flex items-start gap-3 px-4 py-3 rounded-xl shadow-xl border backdrop-blur-sm text-sm font-medium animate-fade-in ${
-            isError ? 'bg-red-950/90 text-red-200 border-red-700/50' : 'bg-emerald-950/90 text-emerald-200 border-emerald-700/50'
-        }`;
-        toast.innerHTML = isError
-            ? `<svg class="w-4 h-4 mt-0.5 flex-shrink-0 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg><span>${mensaje}</span>`
-            : `<svg class="w-4 h-4 mt-0.5 flex-shrink-0 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg><span>${mensaje}</span>`;
-        container.appendChild(toast);
-        setTimeout(() => {
-            toast.style.opacity = '0';
-            toast.style.transition = 'opacity .4s ease';
-            setTimeout(() => toast.remove(), 400);
-        }, 3000);
-    }
-    function mostrarError(msg) { mostrarToast(msg, 'error'); }
-    function mostrarExito(msg) { mostrarToast(msg, 'ok'); }
+    function mostrarError(msg) { CryptoUX.showToast("Error", msg, "error"); }
+    function mostrarExito(msg) { CryptoUX.showToast("Éxito", msg, "success"); }
 
     // ==========================================
     // TUTORIAL DRAWER
@@ -436,7 +423,46 @@ document.addEventListener("DOMContentLoaded", () => {
         tutDotsContainer.appendChild(span);
     });
 
+    function stopTracking() {
+        if (animationFrameId) {
+            cancelAnimationFrame(animationFrameId);
+            animationFrameId = null;
+        }
+        activeTarget = null;
+    }
+
+    function updateBubblePosition() {
+        if (!activeTarget) return;
+        const rect = activeTarget.getBoundingClientRect();
+        const bubbleRect = bubble.getBoundingClientRect();
+
+        let top = rect.bottom + 15;
+        let left = rect.left + (rect.width / 2) - (bubbleRect.width / 2);
+
+        const padding = 15;
+        const screenWidth = window.innerWidth;
+        const screenHeight = window.innerHeight;
+
+        if (left < padding) left = padding;
+        if (left + bubbleRect.width > screenWidth - padding) {
+            left = screenWidth - bubbleRect.width - padding;
+        }
+
+        if (top + bubbleRect.height > screenHeight - padding) {
+            top = rect.top - bubbleRect.height - 15;
+        }
+        if (top < padding) {
+            top = padding;
+        }
+
+        bubble.style.top = `${top}px`;
+        bubble.style.left = `${left}px`;
+
+        animationFrameId = requestAnimationFrame(updateBubblePosition);
+    }
+
     function moverBurbuja(selector) {
+        stopTracking();
         document.querySelectorAll('.tutorial-focus').forEach(el => el.classList.remove('tutorial-focus'));
         const target = document.querySelector(selector);
         if (!target) return;
@@ -444,35 +470,11 @@ document.addEventListener("DOMContentLoaded", () => {
         target.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
         setTimeout(() => {
-            const rect = target.getBoundingClientRect();
+            activeTarget = target;
             bubble.classList.remove('hidden');
-            const bubbleRect = bubble.getBoundingClientRect();
-
-            let top  = rect.bottom + 15;
-            let left = rect.left + (rect.width / 2) - (bubbleRect.width / 2);
-
-            const padding = 15;
-            const screenWidth = document.documentElement.clientWidth;
-            const screenHeight = window.innerHeight;
-
-            if (left + bubbleRect.width > screenWidth - padding) {
-                left = screenWidth - bubbleRect.width - padding;
-            }
-            if (left < padding) {
-                left = padding;
-            }
-
-            if (top + bubbleRect.height > screenHeight - padding) {
-                top = rect.top - bubbleRect.height - 15;
-            }
-            if (top < padding) {
-                top = padding;
-            }
-
-            bubble.style.top  = `${top}px`;
-            bubble.style.left = `${left}px`;
+            updateBubblePosition();
             bubble.classList.remove('opacity-0', 'scale-95');
-        }, 450);
+        }, 300);
     }
 
     function updateTutorial() {
@@ -491,10 +493,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
             if (currentStep === tutorialData.length - 1) {
                 btnTutNext.innerHTML = "Terminar ✓";
-                btnTutNext.style.background = '#059669';
+                btnTutNext.classList.remove("bg-cyan-600", "hover:bg-cyan-500");
+                btnTutNext.classList.add("bg-emerald-600", "hover:bg-emerald-500");
             } else {
                 btnTutNext.innerHTML = "Siguiente →";
-                btnTutNext.style.background = '';
+                btnTutNext.classList.remove("bg-emerald-600", "hover:bg-emerald-500");
+                btnTutNext.classList.add("bg-cyan-600", "hover:bg-cyan-500");
             }
 
             moverBurbuja(tutorialData[currentStep].element);
@@ -509,6 +513,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     function closeTutorial() {
+        stopTracking();
         document.querySelectorAll('.tutorial-focus').forEach(el => el.classList.remove('tutorial-focus'));
         bubble.classList.add('opacity-0', 'scale-95');
         overlay.classList.add('opacity-0');

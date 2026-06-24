@@ -340,6 +340,9 @@ document.addEventListener("DOMContentLoaded", () => {
     ];
 
     let currentStep = 0;
+    let activeTarget = null;
+    let animationFrameId = null;
+
     const overlay = document.getElementById("tutorialOverlay");
     const bubble = document.getElementById("tutorialBubble");
     const tutTitle = document.getElementById("tutTitle");
@@ -354,7 +357,46 @@ document.addEventListener("DOMContentLoaded", () => {
         tutDotsContainer.appendChild(span);
     });
 
+    function stopTracking() {
+        if (animationFrameId) {
+            cancelAnimationFrame(animationFrameId);
+            animationFrameId = null;
+        }
+        activeTarget = null;
+    }
+
+    function updateBubblePosition() {
+        if (!activeTarget) return;
+        const rect = activeTarget.getBoundingClientRect();
+        const bubbleRect = bubble.getBoundingClientRect();
+
+        let top = rect.bottom + 15;
+        let left = rect.left + (rect.width / 2) - (bubbleRect.width / 2);
+
+        const padding = 15;
+        const screenWidth = window.innerWidth;
+        const screenHeight = window.innerHeight;
+
+        if (left < padding) left = padding;
+        if (left + bubbleRect.width > screenWidth - padding) {
+            left = screenWidth - bubbleRect.width - padding;
+        }
+
+        if (top + bubbleRect.height > screenHeight - padding) {
+            top = rect.top - bubbleRect.height - 15;
+        }
+        if (top < padding) {
+            top = padding;
+        }
+
+        bubble.style.top = `${top}px`;
+        bubble.style.left = `${left}px`;
+
+        animationFrameId = requestAnimationFrame(updateBubblePosition);
+    }
+
     function moverBurbuja(selector) {
+        stopTracking();
         document.querySelectorAll(".tutorial-focus").forEach(el => el.classList.remove("tutorial-focus"));
         const target = document.querySelector(selector);
         if (!target) return;
@@ -362,22 +404,9 @@ document.addEventListener("DOMContentLoaded", () => {
         target.scrollIntoView({ behavior: "smooth", block: "center" });
 
         setTimeout(() => {
-            const rect = target.getBoundingClientRect();
+            activeTarget = target;
             bubble.classList.remove("hidden");
-            const bubbleRect = bubble.getBoundingClientRect();
-
-            let top = rect.bottom + 15;
-            let left = rect.left + (rect.width / 2) - (bubbleRect.width / 2);
-            if (left < 10) left = 10;
-            if (left + bubbleRect.width > window.innerWidth - 10) {
-                left = window.innerWidth - bubbleRect.width - 10;
-            }
-            if (top + bubbleRect.height > window.innerHeight - 10) {
-                top = rect.top - bubbleRect.height - 15;
-            }
-
-            bubble.style.top = `${top}px`;
-            bubble.style.left = `${left}px`;
+            updateBubblePosition();
             bubble.classList.remove("opacity-0", "scale-95");
         }, 300);
     }
@@ -395,7 +424,17 @@ document.addEventListener("DOMContentLoaded", () => {
             });
 
             btnTutPrev.classList.toggle("hidden", currentStep === 0);
-            btnTutNext.innerHTML = currentStep === tutorialData.length - 1 ? "Terminar" : "Siguiente";
+            
+            if (currentStep === tutorialData.length - 1) {
+                btnTutNext.innerHTML = "Terminar ✓";
+                btnTutNext.classList.remove("bg-cyan-600", "hover:bg-cyan-500");
+                btnTutNext.classList.add("bg-emerald-600", "hover:bg-emerald-500");
+            } else {
+                btnTutNext.innerHTML = "Siguiente →";
+                btnTutNext.classList.remove("bg-emerald-600", "hover:bg-emerald-500");
+                btnTutNext.classList.add("bg-cyan-600", "hover:bg-cyan-500");
+            }
+
             moverBurbuja(tutorialData[currentStep].element);
         }, 200);
     }
@@ -408,6 +447,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     function closeTutorial() {
+        stopTracking();
         document.querySelectorAll(".tutorial-focus").forEach(el => el.classList.remove("tutorial-focus"));
         bubble.classList.add("opacity-0", "scale-95");
         overlay.classList.add("opacity-0");

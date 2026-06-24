@@ -80,10 +80,12 @@ document.addEventListener("DOMContentLoaded", () => {
                 if (data.error) {
                     mostrarError(data.error);
                     outputTexto.value = "";
-                    outputTexto.classList.replace('text-teal-300', 'text-red-400');
+                    outputTexto.classList.remove('text-teal-650', 'text-teal-300');
+                    outputTexto.classList.add('text-red-500', 'dark:text-red-400');
                 } else {
                     outputTexto.value = data.resultado;
-                    outputTexto.classList.replace('text-red-400', 'text-teal-300');
+                    outputTexto.classList.remove('text-red-500', 'dark:text-red-400');
+                    outputTexto.classList.add('text-teal-650', 'dark:text-teal-300');
                 }
             });
             enviarDatos();
@@ -664,23 +666,8 @@ document.addEventListener("DOMContentLoaded", () => {
     // ==========================================
     // TOASTS Y ERRORES
     // ==========================================
-    function mostrarToast(mensaje, tipo) {
-        const container = document.getElementById('toast-container');
-        const toast = document.createElement('div');
-        const isError = tipo === 'error';
-        toast.className = `flex items-start gap-3 px-4 py-3 rounded-xl shadow-xl border backdrop-blur-sm text-sm font-medium animate-fade-in ${
-            isError ? 'bg-red-950/90 text-red-200 border-red-700/50' : 'bg-emerald-950/90 text-emerald-200 border-emerald-700/50'
-        }`;
-        toast.innerHTML = `
-          <span>${isError ? '❌' : '✨'}</span>
-          <p>${mensaje}</p>
-        `;
-        container.appendChild(toast);
-        setTimeout(() => toast.remove(), 4000);
-    }
-
-    function mostrarError(msg) { mostrarToast(msg, 'error'); }
-    function mostrarExito(msg) { mostrarToast(msg, 'ok'); }
+    function mostrarError(msg) { CryptoUX.showToast("Error", msg, "error"); }
+    function mostrarExito(msg) { CryptoUX.showToast("Éxito", msg, "success"); }
 
     // Inicializar
     renderSeriesSelects();
