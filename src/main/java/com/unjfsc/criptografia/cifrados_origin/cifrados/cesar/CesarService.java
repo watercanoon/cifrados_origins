@@ -2,6 +2,11 @@ package com.unjfsc.criptografia.cifrados_origin.cifrados.cesar;
 
 import org.springframework.stereotype.Service;
 
+/**
+ * Servicio para el cifrado y descifrado utilizando el método César.
+ * Consiste en un cifrado por sustitución monoalfabética en el cual cada letra
+ * se desplaza a lo largo del alfabeto una cantidad fija de posiciones.
+ */
 @Service
 public class CesarService {
 

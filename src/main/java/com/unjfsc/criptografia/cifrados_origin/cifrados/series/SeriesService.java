@@ -3,14 +3,37 @@ package com.unjfsc.criptografia.cifrados_origin.cifrados.series;
 import org.springframework.stereotype.Service;
 import java.util.*;
 
+/**
+ * Servicio para el cifrado y descifrado utilizando el método de Cifrado por Series Matemáticas.
+ * Este método es un cifrado de transposición por permutación. El mensaje se reordena tomando
+ * las posiciones del texto original correspondientes a diferentes series matemáticas especificadas
+ * en la clave (ej. Primos, Impares, Pares, Fibonacci, etc.). Si quedan caracteres sin tomar,
+ * se añaden en orden natural al final.
+ */
 @Service
 public class SeriesService {
 
-    public enum SeriesType { PRIMOS, MULTIPLOS, IMPARES, PARES, NATURALES, FIBONACCI, CUADRADOS, CUBOS, COMPUESTOS }
+    /**
+     * Tipos de series matemáticas disponibles para la transposición.
+     */
+    public enum SeriesType { 
+        PRIMOS, 
+        MULTIPLOS, 
+        IMPARES, 
+        PARES, 
+        NATURALES, 
+        FIBONACCI, 
+        CUADRADOS, 
+        CUBOS, 
+        COMPUESTOS 
+    }
 
+    /**
+     * Descriptor para almacenar la configuración de una serie específica extraída de la clave.
+     */
     public static class SeriesDescriptor {
         public SeriesType type;
-        public int k;
+        public int k; // Multiplicador para la serie de múltiplos (ej. k=4 para múltiplos de 4)
         public String originalName;
 
         public SeriesDescriptor(SeriesType type, int k, String originalName) {
@@ -20,21 +43,38 @@ public class SeriesService {
         }
     }
 
+    /**
+     * Cifra el texto reordenando los caracteres según las series de la clave.
+     *
+     * @param texto El texto en claro.
+     * @param clave Clave con las series separadas por comas (ej. "PR,I,P").
+     * @return El texto cifrado formateado con espacios entre los subgrupos de series.
+     */
     public String cifrar(String texto, String clave) {
         return procesar(texto, clave, true);
     }
 
+    /**
+     * Descifra el texto colocando los caracteres de vuelta a sus posiciones originales.
+     *
+     * @param texto El texto cifrado.
+     * @param clave Clave con las series en el mismo orden que al cifrar.
+     * @return El texto descifrado original.
+     */
     public String descifrar(String texto, String clave) {
         return procesar(texto, clave, false);
     }
 
+    /**
+     * Lógica central de procesamiento para cifrar o descifrar por transposición de series.
+     */
     private String procesar(String texto, String clave, boolean isCifrar) {
         if (texto == null || texto.isEmpty()) return "";
 
         String normText = normalizarTexto(texto);
         String normKey = clave.replaceAll("\\s+", "").toUpperCase();
 
-        // Slide overrides for exact matching
+        // Sobrescribir casos específicos definidos en diapositivas de clase
         if (isCifrar) {
             if (normText.equals("ELAUTENTICOSOÑADORESELQUESUEÑAIMPOSIBLES") && 
                 (normKey.contains("MULTIPLOS_4") || normKey.contains("M4"))) {
@@ -49,16 +89,17 @@ public class SeriesService {
 
         List<SeriesDescriptor> descriptors = parseSeries(clave);
         int N = normText.length();
+        // Generar mapa de correspondencia de índices (posiciones originales reordenadas)
         List<Integer> indexMap = generateIndexMap(descriptors, N);
 
         if (isCifrar) {
-            // Reordenar caracteres
+            // Reordenar caracteres según el mapa de índices
             StringBuilder rawOut = new StringBuilder();
             for (int idx : indexMap) {
                 rawOut.append(normText.charAt(idx - 1));
             }
 
-            // Separar por longitudes de submensajes para legibilidad
+            // Separar por longitudes de submensajes correspondientes a cada serie para legibilidad
             List<Integer> subLengths = getSubmessageLengths(descriptors, N);
             StringBuilder formatted = new StringBuilder();
             int curr = 0;
@@ -73,10 +114,10 @@ public class SeriesService {
             return formatted.toString();
 
         } else {
-            // Descifrar reubicando cada carácter
+            // Descifrar reconstruyendo las posiciones originales usando el mapa de índices
             String ct = normalizarTexto(texto);
             if (ct.length() != N) {
-                // Re-generar mapa para la longitud real del criptograma
+                // Re-generar mapa para la longitud real del criptograma si difiere del original
                 N = ct.length();
                 indexMap = generateIndexMap(descriptors, N);
             }
@@ -90,6 +131,9 @@ public class SeriesService {
         }
     }
 
+    /**
+     * Analiza y valida la clave, construyendo una lista de descriptores de series matemáticas.
+     */
     private List<SeriesDescriptor> parseSeries(String key) {
         List<SeriesDescriptor> list = new ArrayList<>();
         if (key == null || key.trim().isEmpty()) {
@@ -131,10 +175,15 @@ public class SeriesService {
         return list;
     }
 
+    /**
+     * Genera la lista ordenada de posiciones (1-indexed) recorridas por las series de la clave.
+     * Evita posiciones duplicadas (cada posición se toma a lo sumo una vez).
+     */
     private List<Integer> generateIndexMap(List<SeriesDescriptor> descriptors, int N) {
         List<Integer> indexMap = new ArrayList<>();
         boolean[] taken = new boolean[N + 1];
 
+        // Procesar las series en el orden en que se declararon en la clave
         for (SeriesDescriptor sd : descriptors) {
             List<Integer> candidates = generateCandidates(sd, N);
             for (int cand : candidates) {
@@ -145,7 +194,7 @@ public class SeriesService {
             }
         }
 
-        // Rellenar sobrantes con naturales
+        // Rellenar las posiciones sobrantes (no tomadas por ninguna serie) en orden natural
         for (int i = 1; i <= N; i++) {
             if (!taken[i]) {
                 indexMap.add(i);
@@ -156,6 +205,10 @@ public class SeriesService {
         return indexMap;
     }
 
+    /**
+     * Calcula cuántos caracteres nuevos se seleccionan con cada serie en base al texto disponible.
+     * Sirve para dividir el texto cifrado final en palabras legibles de longitudes variables.
+     */
     private List<Integer> getSubmessageLengths(List<SeriesDescriptor> descriptors, int N) {
         List<Integer> lengths = new ArrayList<>();
         boolean[] taken = new boolean[N + 1];
@@ -185,6 +238,9 @@ public class SeriesService {
         return lengths;
     }
 
+    /**
+     * Genera la secuencia matemática pura (1-indexed) de posiciones menores o iguales a N.
+     */
     private List<Integer> generateCandidates(SeriesDescriptor sd, int N) {
         List<Integer> list = new ArrayList<>();
         switch (sd.type) {
@@ -246,6 +302,9 @@ public class SeriesService {
         return list;
     }
 
+    /**
+     * Determina si un número es primo.
+     */
     private boolean isPrime(int n) {
         if (n < 2) return false;
         for (int i = 2; i * i <= n; i++) {
@@ -254,6 +313,10 @@ public class SeriesService {
         return true;
     }
 
+    /**
+     * Normaliza el texto quitando acentos, caracteres especiales y espacios.
+     * Conserva únicamente las letras de la A a la Z y la Ñ.
+     */
     private String normalizarTexto(String valor) {
         if (valor == null) return "";
         return valor.toUpperCase()
@@ -265,3 +328,4 @@ public class SeriesService {
                 .replaceAll("[^A-ZÑ]", "");
     }
 }
+

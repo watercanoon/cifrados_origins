@@ -1100,4 +1100,164 @@ document.addEventListener("DOMContentLoaded", () => {
     connect();
     renderizarSimulador();
     actualizarEtiquetas();
+
+    // ==========================================
+    // TUTORIAL INTERACTIVO
+    // ==========================================
+    const tutorialData = [
+        { element: "#panelParametros", title: "Operación y parámetros", text: "Configura el idioma, la operación y ajusta los parámetros de alineación inicial (Ext/Int), el tamaño del bloque, el giro y su sentido. La clave con formato K(Mb, 4, 3d) se generará automáticamente." },
+        { element: "#panelSimulador", title: "El disco de Alberti", text: "Visualiza el disco exterior fijo (en mayúsculas) y el disco interior móvil (en minúsculas). La alineación se ajusta en tiempo real según escribes o reproduces la animación." },
+        { element: "#panelEntrada", title: "Mensaje a procesar", text: "Introduce el texto plano que deseas cifrar o el texto cifrado que deseas descifrar aquí. Los caracteres no soportados se mantendrán intactos." },
+        { element: "#panelSalida", title: "Resultado obtenido", text: "Aquí se muestra el texto resultante en tiempo real. También puedes copiar el resultado rápidamente haciendo clic en el botón de copiar." }
+    ];
+
+    let currentStep = 0;
+    let activeTarget = null;
+    let animationFrameId = null;
+
+    const overlay = document.getElementById("tutorialOverlay");
+    const bubble = document.getElementById("tutorialBubble");
+    const tutTitle = document.getElementById("tutTitle");
+    const tutText = document.getElementById("tutText");
+    const btnTutNext = document.getElementById("btnTutNext");
+    const btnTutPrev = document.getElementById("btnTutPrev");
+    const tutDotsContainer = document.getElementById("tutDots");
+
+    if (tutDotsContainer) {
+        tutorialData.forEach(() => {
+            const span = document.createElement("span");
+            span.className = "w-2 h-2 rounded-full bg-slate-700";
+            tutDotsContainer.appendChild(span);
+        });
+    }
+
+    function stopTracking() {
+        if (animationFrameId) {
+            cancelAnimationFrame(animationFrameId);
+            animationFrameId = null;
+        }
+        activeTarget = null;
+    }
+
+    function updateBubblePosition() {
+        if (!activeTarget || !bubble) return;
+        const rect = activeTarget.getBoundingClientRect();
+        const bubbleRect = bubble.getBoundingClientRect();
+
+        let top = rect.bottom + 15;
+        let left = rect.left + (rect.width / 2) - (bubbleRect.width / 2);
+
+        const padding = 15;
+        const screenWidth = window.innerWidth;
+        const screenHeight = window.innerHeight;
+
+        if (left < padding) left = padding;
+        if (left + bubbleRect.width > screenWidth - padding) {
+            left = screenWidth - bubbleRect.width - padding;
+        }
+
+        if (top + bubbleRect.height > screenHeight - padding) {
+            top = rect.top - bubbleRect.height - 15;
+        }
+        if (top < padding) {
+            top = padding;
+        }
+
+        bubble.style.top = `${top}px`;
+        bubble.style.left = `${left}px`;
+
+        animationFrameId = requestAnimationFrame(updateBubblePosition);
+    }
+
+    function moverBurbuja(selector) {
+        stopTracking();
+        document.querySelectorAll(".tutorial-focus").forEach(el => el.classList.remove("tutorial-focus"));
+        const target = document.querySelector(selector);
+        if (!target) return;
+        target.classList.add("tutorial-focus");
+        target.scrollIntoView({ behavior: "smooth", block: "center" });
+
+        setTimeout(() => {
+            activeTarget = target;
+            if (bubble) {
+                bubble.classList.remove("hidden");
+                updateBubblePosition();
+                bubble.classList.remove("opacity-0", "scale-95");
+            }
+        }, 300);
+    }
+
+    function updateTutorial() {
+        if (!bubble) return;
+        bubble.classList.add("opacity-0", "scale-95");
+        setTimeout(() => {
+            if (tutTitle) tutTitle.innerHTML = tutorialData[currentStep].title;
+            if (tutText) tutText.innerHTML = tutorialData[currentStep].text;
+
+            if (tutDotsContainer) {
+                Array.from(tutDotsContainer.children).forEach((dot, i) => {
+                    dot.className = i === currentStep
+                        ? "w-2 h-2 rounded-full bg-cyan-400 shadow-[0_0_6px_#22d3ee] transition-all"
+                        : "w-2 h-2 rounded-full bg-slate-700 transition-all";
+                });
+            }
+
+            if (btnTutPrev) btnTutPrev.classList.toggle("hidden", currentStep === 0);
+            
+            if (btnTutNext) {
+                if (currentStep === tutorialData.length - 1) {
+                    btnTutNext.innerHTML = "Terminar ✓";
+                    btnTutNext.classList.remove("bg-cyan-600", "hover:bg-cyan-500");
+                    btnTutNext.classList.add("bg-emerald-600", "hover:bg-emerald-500");
+                } else {
+                    btnTutNext.innerHTML = "Siguiente →";
+                    btnTutNext.classList.remove("bg-emerald-600", "hover:bg-emerald-500");
+                    btnTutNext.classList.add("bg-cyan-600", "hover:bg-cyan-500");
+                }
+            }
+
+            moverBurbuja(tutorialData[currentStep].element);
+        }, 200);
+    }
+
+    const btnTutorial = document.getElementById("btnTutorial");
+    if (btnTutorial) {
+        btnTutorial.addEventListener("click", () => {
+            currentStep = 0;
+            if (overlay) {
+                overlay.classList.remove("hidden");
+                setTimeout(() => overlay.classList.remove("opacity-0"), 10);
+            }
+            updateTutorial();
+        });
+    }
+
+    function closeTutorial() {
+        stopTracking();
+        document.querySelectorAll(".tutorial-focus").forEach(el => el.classList.remove("tutorial-focus"));
+        if (bubble) bubble.classList.add("opacity-0", "scale-95");
+        if (overlay) overlay.classList.add("opacity-0");
+        setTimeout(() => {
+            if (bubble) bubble.classList.add("hidden");
+            if (overlay) overlay.classList.add("hidden");
+        }, 300);
+    }
+
+    const btnCerrarTutorial = document.getElementById("btnCerrarTutorial");
+    if (btnCerrarTutorial) btnCerrarTutorial.addEventListener("click", closeTutorial);
+    
+    if (btnTutNext) {
+        btnTutNext.addEventListener("click", () => {
+            currentStep < tutorialData.length - 1 ? (currentStep++, updateTutorial()) : closeTutorial();
+        });
+    }
+    
+    if (btnTutPrev) {
+        btnTutPrev.addEventListener("click", () => {
+            if (currentStep > 0) {
+                currentStep--;
+                updateTutorial();
+            }
+        });
+    }
 });

@@ -5,6 +5,12 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+/**
+ * Servicio para el cifrado y descifrado utilizando el método de Transposición por Filas.
+ * Reorganiza la posición de los caracteres del mensaje escribiéndolo verticalmente
+ * columna por columna en una matriz y leyéndolo horizontalmente fila por fila
+ * de acuerdo a la clave provista.
+ */
 @Service
 public class FilasService {
 

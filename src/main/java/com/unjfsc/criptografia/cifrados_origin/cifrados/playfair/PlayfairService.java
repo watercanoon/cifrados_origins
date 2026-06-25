@@ -2,6 +2,11 @@ package com.unjfsc.criptografia.cifrados_origin.cifrados.playfair;
 
 import org.springframework.stereotype.Service;
 
+/**
+ * Servicio para el cifrado y descifrado utilizando el método simétrico digrámico Playfair.
+ * Cifra parejas de letras mediante una cuadrícula de 5x5 generada a partir de una palabra clave,
+ * aplicando reglas basadas en filas, columnas y rectángulos.
+ */
 @Service
 public class PlayfairService {
 

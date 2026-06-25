@@ -2,6 +2,11 @@ package com.unjfsc.criptografia.cifrados_origin.cifrados.escitala;
 
 import org.springframework.stereotype.Service;
 
+/**
+ * Servicio para el cifrado y descifrado utilizando el método de Escítala.
+ * Recrea el clásico sistema espartano de transposición donde la cinta de pergamino
+ * se enrolla en una vara cilíndrica de un diámetro dado (columnas) para leer y escribir.
+ */
 @Service
 public class EscitalaService {
 

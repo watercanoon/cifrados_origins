@@ -2,6 +2,11 @@ package com.unjfsc.criptografia.cifrados_origin.cifrados.grupos;
 
 import org.springframework.stereotype.Service;
 
+/**
+ * Servicio para el cifrado y descifrado utilizando el método de Transposición por Grupos (o Bloques).
+ * Divide el mensaje en bloques del tamaño de la clave y permuta los caracteres
+ * dentro de cada bloque de acuerdo a los índices definidos en la clave de transposición.
+ */
 @Service
 public class GruposService {
 

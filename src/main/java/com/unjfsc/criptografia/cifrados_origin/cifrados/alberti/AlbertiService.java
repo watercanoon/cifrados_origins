@@ -2,6 +2,12 @@ package com.unjfsc.criptografia.cifrados_origin.cifrados.alberti;
 
 import org.springframework.stereotype.Service;
 
+/**
+ * Servicio para el cifrado y descifrado utilizando el método del Disco de Alberti.
+ * Este cifrado polialfabético inventado en 1467 por Leon Battista Alberti emplea
+ * un disco exterior (letras en claro) y un disco interior (letras cifradas)
+ * con desplazamientos periódicos (por bloques) en un sentido determinado.
+ */
 @Service
 public class AlbertiService {
 

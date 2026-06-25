@@ -6,6 +6,12 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+/**
+ * Servicio para el cifrado y descifrado utilizando el método de Transposición Columnar.
+ * Reorganiza el orden de los caracteres escribiendo el mensaje horizontalmente
+ * en una matriz y leyéndolo verticalmente por columnas de forma ordenada
+ * (ya sea simple o en base a una palabra clave).
+ */
 @Service
 public class ColumnasService {
 

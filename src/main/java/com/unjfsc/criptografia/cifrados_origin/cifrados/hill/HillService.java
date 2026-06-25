@@ -2,6 +2,11 @@ package com.unjfsc.criptografia.cifrados_origin.cifrados.hill;
 
 import org.springframework.stereotype.Service;
 
+/**
+ * Servicio para el cifrado y descifrado utilizando el cifrado polialfabético de Hill.
+ * Emplea multiplicación de matrices y vectores bajo aritmética modular en base a la longitud
+ * del alfabeto. Requiere una matriz de clave invertible.
+ */
 @Service
 public class HillService {
 

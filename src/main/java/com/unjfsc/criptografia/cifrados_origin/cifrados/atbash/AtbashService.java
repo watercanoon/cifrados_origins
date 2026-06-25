@@ -2,6 +2,11 @@ package com.unjfsc.criptografia.cifrados_origin.cifrados.atbash;
 
 import org.springframework.stereotype.Service;
 
+/**
+ * Servicio para el cifrado y descifrado utilizando el método Atbash.
+ * Este método de sustitución monoalfabética de origen hebreo funciona
+ * asociando cada carácter con su opuesto simétrico en el alfabeto activo.
+ */
 @Service
 public class AtbashService {
 
@@ -19,7 +24,6 @@ public class AtbashService {
             throw new IllegalArgumentException("El alfabeto debe tener al menos 2 caracteres válidos.");
         }
 
-        // ... resto de tu código intacto (StringBuilder resultado = new StringBuilder(); ...)
         StringBuilder resultado = new StringBuilder();
 
         for (char c : texto.toCharArray()) {
