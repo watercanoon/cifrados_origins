@@ -29,7 +29,7 @@ public class AtbashService {
         for (char c : texto.toCharArray()) {
             char upper = Character.toUpperCase(c);
             int index = alfabeto.indexOf(upper);
-
+            // Si el carácter existe en nuestro alfabeto, lo ciframos Posición opuesta = (Longitud total - 1) - índice actual
             if (index != -1) {
                 int inverso = alfabeto.length() - 1 - index;
                 char nuevo = alfabeto.charAt(inverso);

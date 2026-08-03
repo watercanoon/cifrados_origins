@@ -16,7 +16,7 @@ public class CesarService {
     public String procesarCesar(String texto, int desplazamiento, String operacion, String idioma, String alfabetoCustom) {
 
         // =========================================
-        // VALIDACIONES DE ROBUSTEZ (Esto lo atrapa el ExceptionHandler)
+        // VALIDACIONES DE ROBUSTEZ
         // =========================================
         if (texto == null || texto.trim().isEmpty()) {
             throw new IllegalArgumentException("El texto a procesar no puede estar vacío.");
